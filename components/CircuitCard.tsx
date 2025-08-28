@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { useWeather } from '../hooks/useWeather';
 import { useUnit } from '../state/UnitContext';
 import { colors, animations } from '../styles/commonStyles';
+import WeatherSymbol from './WeatherSymbol';
 
 export interface Circuit {
   slug: string;
@@ -85,6 +86,13 @@ export default function CircuitCard({ circuit, category }: Props) {
               </View>
             ) : current ? (
               <>
+                <View style={styles.weatherSymbolContainer}>
+                  <WeatherSymbol 
+                    weatherCode={current.weather_code} 
+                    size={32}
+                  />
+                  <Text style={styles.weatherLabel}>Current</Text>
+                </View>
                 <View style={styles.tempContainer}>
                   <Text style={[styles.temp, { color: colors.temperature }]}>
                     {Math.round(current.temperature)}{tempUnit}
@@ -183,6 +191,17 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: colors.primary,
     opacity: 0.6,
+  },
+  weatherSymbolContainer: {
+    alignItems: 'center',
+  },
+  weatherLabel: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginTop: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   tempContainer: {
     alignItems: 'flex-start',
