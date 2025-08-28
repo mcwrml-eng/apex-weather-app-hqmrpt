@@ -26,6 +26,7 @@ interface HourlyData {
   windDirection: number;
   humidity: number;
   precipitation: number;
+  weatherCode: number; // Added weather code for hourly data
 }
 
 interface Daily {
@@ -87,7 +88,7 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
         const url =
           `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}` +
           `&current=temperature_2m,apparent_temperature,wind_speed_10m,wind_direction_10m,relative_humidity_2m,weather_code` +
-          `&hourly=temperature_2m,wind_speed_10m,wind_direction_10m,relative_humidity_2m,precipitation` +
+          `&hourly=temperature_2m,wind_speed_10m,wind_direction_10m,relative_humidity_2m,precipitation,weather_code` +
           `&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max` +
           `&timezone=auto&forecast_days=7&forecast_hours=48` +
           `&temperature_unit=${unitParams.temperature_unit}&wind_speed_unit=${unitParams.wind_speed_unit}`;
@@ -135,6 +136,7 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
         const hourlyWindDirections = json?.hourly?.wind_direction_10m || [];
         const hourlyHumidity = json?.hourly?.relative_humidity_2m || [];
         const hourlyPrecipitation = json?.hourly?.precipitation || [];
+        const hourlyWeatherCodes = json?.hourly?.weather_code || [];
 
         const hourlyData: HourlyData[] = hourlyTimes.slice(0, 24).map((time: string, idx: number) => ({
           time,
@@ -143,6 +145,7 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
           windDirection: hourlyWindDirections[idx] ?? 0,
           humidity: hourlyHumidity[idx] ?? 0,
           precipitation: hourlyPrecipitation[idx] ?? 0,
+          weatherCode: hourlyWeatherCodes[idx] ?? 0,
         }));
 
         console.log('useWeather: Processed data - current temp:', cur.temperature, 'daily days:', days.length, 'hourly points:', hourlyData.length);
