@@ -8,6 +8,7 @@ import { useWeather } from '../../hooks/useWeather';
 import ChartDoughnut from '../../components/ChartDoughnut';
 import TrackMap from '../../components/TrackMap';
 import WeatherChart from '../../components/WeatherChart';
+import WeatherSymbol from '../../components/WeatherSymbol';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
@@ -95,6 +96,25 @@ function DetailScreen() {
             Wind arrows show current direction and speed across the track
           </Text>
         </View>
+
+        {/* Current Weather Display with Symbol */}
+        {!loading && current && (
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Current Weather</Text>
+            <View style={styles.currentWeatherContainer}>
+              <WeatherSymbol 
+                weatherCode={current.weather_code} 
+                size={48}
+                latitude={circuit.latitude}
+                longitude={circuit.longitude}
+              />
+              <View style={styles.currentWeatherText}>
+                <Text style={styles.cardValue}>{Math.round(current.temperature)}°{unit === 'metric' ? 'C' : 'F'}</Text>
+                <Text style={styles.muted}>Feels {Math.round(current.apparent_temperature)}°</Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         {!loading && current && (
           <View style={styles.cardRow}>
@@ -326,6 +346,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'Roboto_400Regular',
     marginTop: 8,
+  },
+  currentWeatherContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginTop: 12,
+  },
+  currentWeatherText: {
+    flex: 1,
   },
   chartHeader: {
     flexDirection: 'row',

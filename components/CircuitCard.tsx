@@ -90,6 +90,8 @@ export default function CircuitCard({ circuit, category }: Props) {
                   <WeatherSymbol 
                     weatherCode={current.weather_code} 
                     size={32}
+                    latitude={circuit.latitude}
+                    longitude={circuit.longitude}
                   />
                   <Text style={styles.weatherLabel}>Current</Text>
                 </View>
