@@ -1,11 +1,9 @@
 
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
-import { colors } from '../styles/commonStyles';
-import { useWeather } from '../hooks/useWeather';
 import { router } from 'expo-router';
-
-export type Category = 'f1' | 'motogp';
+import { useWeather } from '../hooks/useWeather';
+import { colors } from '../styles/commonStyles';
 
 export interface Circuit {
   slug: string;
@@ -15,44 +13,57 @@ export interface Circuit {
   longitude: number;
 }
 
+export type Category = 'f1' | 'motogp';
+
 interface Props {
   circuit: Circuit;
   category: Category;
 }
 
 export default function CircuitCard({ circuit, category }: Props) {
-  const { current } = useWeather(circuit.latitude, circuit.longitude, 'metric');
-  const scale = useMemo(() => new Animated.Value(1), []);
+  const { current, loading } = useWeather(circuit.latitude, circuit.longitude, 'metric');
+
+  const scaleValue = useMemo(() => new Animated.Value(1), []);
 
   const onPressIn = () => {
-    Animated.spring(scale, { toValue: 0.98, useNativeDriver: true }).start();
+    Animated.spring(scaleValue, {
+      toValue: 0.96,
+      useNativeDriver: true,
+    }).start();
   };
+
   const onPressOut = () => {
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
+    Animated.spring(scaleValue, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
   };
 
   return (
-    <Animated.View style={{ transform: [{ scale }], marginBottom: 12 }}>
+    <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
       <TouchableOpacity
+        style={styles.card}
+        activeOpacity={0.9}
+        onPress={() => router.push(`/circuit/${circuit.slug}?category=${category}`)}
         onPressIn={onPressIn}
         onPressOut={onPressOut}
-        onPress={() => {
-          console.log('Navigating to detail', circuit.slug);
-          router.push({ pathname: '/circuit/[slug]', params: { slug: circuit.slug, category } });
-        }}
-        activeOpacity={0.9}
-        style={styles.card}
       >
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>{circuit.name}</Text>
-          <Text style={styles.subtitle}>{circuit.country}</Text>
+        <View style={styles.header}>
+          <Text style={styles.name}>{circuit.name}</Text>
+          <Text style={styles.country}>{circuit.country}</Text>
         </View>
-
-        <View style={styles.right}>
-          <Text style={styles.temp}>
-            {current ? `${Math.round(current.temperature)}°C` : '—'}
-          </Text>
-          <Text style={styles.small}>{current ? `Wind ${Math.round(current.wind_speed)} km/h` : 'Loading…'}</Text>
+        
+        <View style={styles.weather}>
+          {loading ? (
+            <Text style={styles.weatherText}>Loading...</Text>
+          ) : current ? (
+            <>
+              <Text style={styles.temp}>{Math.round(current.temperature)}°C</Text>
+              <Text style={styles.wind}>{Math.round(current.wind_speed)} km/h</Text>
+            </>
+          ) : (
+            <Text style={styles.weatherText}>No data</Text>
+          )}
         </View>
       </TouchableOpacity>
     </Animated.View>
@@ -63,17 +74,46 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.card,
     borderRadius: 14,
-    padding: 14,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: colors.divider,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
     boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
   },
-  title: { color: colors.text, fontWeight: '700', fontSize: 16, fontFamily: 'Roboto_700Bold' },
-  subtitle: { color: colors.textMuted, marginTop: 2, fontFamily: 'Roboto_400Regular' },
-  right: { alignItems: 'flex-end' },
-  temp: { color: colors.text, fontWeight: '700', fontSize: 18, fontFamily: 'Roboto_700Bold' },
-  small: { color: colors.textMuted, marginTop: 2, fontFamily: 'Roboto_400Regular' },
+  header: {
+    marginBottom: 8,
+  },
+  name: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    fontFamily: 'Roboto_700Bold',
+    marginBottom: 2,
+  },
+  country: {
+    fontSize: 14,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+  },
+  weather: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  temp: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.primary,
+    fontFamily: 'Roboto_500Medium',
+  },
+  wind: {
+    fontSize: 14,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+  },
+  weatherText: {
+    fontSize: 14,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+  },
 });

@@ -6,6 +6,8 @@ import { colors, buttonStyles } from '../../styles/commonStyles';
 import { getCircuitBySlug } from '../../data/circuits';
 import { useWeather } from '../../hooks/useWeather';
 import ChartDoughnut from '../../components/ChartDoughnut';
+import TrackMap from '../../components/TrackMap';
+import WeatherChart from '../../components/WeatherChart';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
@@ -20,16 +22,30 @@ function DetailInner() {
   const circuit = getCircuitBySlug(slug, category);
   const { unit, toggleUnit } = useUnit();
 
-  const { current, daily, loading, error } = useWeather(circuit.latitude, circuit.longitude, unit);
+  const { current, daily, hourly, loading, error } = useWeather(circuit.latitude, circuit.longitude, unit);
 
   const settingsRef = useRef<BottomSheet>(null);
   const scheduleRef = useRef<BottomSheet>(null);
+  const chartsRef = useRef<BottomSheet>(null);
   const settingsSnap = useMemo(() => ['32%', '60%'], []);
   const scheduleSnap = useMemo(() => ['40%', '85%'], []);
+  const chartsSnap = useMemo(() => ['50%', '90%'], []);
   const openSettings = useCallback(() => settingsRef.current?.expand(), []);
   const openSchedule = useCallback(() => scheduleRef.current?.expand(), []);
+  const openCharts = useCallback(() => chartsRef.current?.expand(), []);
 
   const schedule: WeekendSession[] = useMemo(() => getWeekendSchedule(slug, category), [slug, category]);
+
+  // Convert hourly data for charts
+  const chartData = useMemo(() => {
+    return hourly.map(h => ({
+      time: h.time,
+      temperature: h.temperature,
+      windSpeed: h.windSpeed,
+      humidity: h.humidity,
+      precipitation: h.precipitation,
+    }));
+  }, [hourly]);
 
   return (
     <View style={styles.wrapper}>
@@ -48,6 +64,9 @@ function DetailInner() {
         <Text style={styles.subtitle}>{circuit.country} • {category.toUpperCase()}</Text>
 
         <View style={styles.actions}>
+          <TouchableOpacity onPress={openCharts} style={styles.actionBtn} activeOpacity={0.8}>
+            <Icon name="analytics-outline" size={22} color={colors.text} />
+          </TouchableOpacity>
           <TouchableOpacity onPress={openSchedule} style={styles.actionBtn} activeOpacity={0.8}>
             <Icon name="calendar-outline" size={22} color={colors.text} />
           </TouchableOpacity>
@@ -61,6 +80,22 @@ function DetailInner() {
         {loading && <Text style={styles.muted}>Loading weather…</Text>}
         {error && <Text style={styles.error}>Failed to load. Please try again.</Text>}
 
+        {/* Track Map with Wind Direction */}
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>Track Layout & Wind</Text>
+          <View style={styles.mapContainer}>
+            <TrackMap
+              circuitSlug={circuit.slug}
+              windDirection={current?.wind_direction || 0}
+              windSpeed={current?.wind_speed || 0}
+              size={200}
+            />
+          </View>
+          <Text style={styles.mapNote}>
+            Wind arrows show current direction and speed across the track
+          </Text>
+        </View>
+
         {!loading && current && (
           <View style={styles.cardRow}>
             <View style={styles.card}>
@@ -72,7 +107,9 @@ function DetailInner() {
             <View style={styles.card}>
               <Text style={styles.cardLabel}>Wind</Text>
               <Text style={styles.cardValue}>{Math.round(current.wind_speed)} {unit === 'metric' ? 'km/h' : 'mph'}</Text>
-              <Text style={styles.muted}>Humidity {current.humidity}%</Text>
+              <Text style={styles.muted}>
+                {Math.round(current.wind_direction)}° • {current.humidity}% humidity
+              </Text>
             </View>
           </View>
         )}
@@ -107,6 +144,25 @@ function DetailInner() {
               </ScrollView>
             </View>
 
+            {/* Weather Charts Preview */}
+            {chartData.length > 0 && (
+              <View style={styles.card}>
+                <View style={styles.chartHeader}>
+                  <Text style={styles.cardLabel}>24-Hour Forecast</Text>
+                  <TouchableOpacity onPress={openCharts} style={styles.viewAllBtn}>
+                    <Text style={styles.viewAllText}>View All Charts</Text>
+                    <Icon name="chevron-forward" size={16} color={colors.primary} />
+                  </TouchableOpacity>
+                </View>
+                <WeatherChart
+                  data={chartData}
+                  type="temperature"
+                  unit={unit}
+                  height={100}
+                />
+              </View>
+            )}
+
             <View style={styles.card}>
               <Text style={styles.cardLabel}>Weekend Schedule</Text>
               <View style={{ height: 8 }} />
@@ -128,16 +184,10 @@ function DetailInner() {
           </>
         )}
 
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Map</Text>
-          <Text style={styles.muted}>
-            react-native-maps is not supported on web in Natively. A map would be shown here on device.
-          </Text>
-        </View>
-
         <View style={{ height: 40 }} />
       </ScrollView>
 
+      {/* Settings Bottom Sheet */}
       <BottomSheet ref={settingsRef} index={-1} snapPoints={settingsSnap} enablePanDownToClose>
         <BottomSheetView style={styles.sheet}>
           <Text style={styles.sheetTitle}>Settings</Text>
@@ -156,6 +206,7 @@ function DetailInner() {
         </BottomSheetView>
       </BottomSheet>
 
+      {/* Schedule Bottom Sheet */}
       <BottomSheet ref={scheduleRef} index={-1} snapPoints={scheduleSnap} enablePanDownToClose>
         <BottomSheetView style={styles.sheet}>
           <Text style={styles.sheetTitle}>Weekend Schedule</Text>
@@ -173,6 +224,48 @@ function DetailInner() {
           ))}
           <View style={{ height: 8 }} />
           <Text style={styles.muted}>Local times. Subject to change.</Text>
+        </BottomSheetView>
+      </BottomSheet>
+
+      {/* Weather Charts Bottom Sheet */}
+      <BottomSheet ref={chartsRef} index={-1} snapPoints={chartsSnap} enablePanDownToClose>
+        <BottomSheetView style={styles.sheet}>
+          <Text style={styles.sheetTitle}>Weather Analysis</Text>
+          <View style={{ height: 8 }} />
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {chartData.length > 0 && (
+              <>
+                <WeatherChart
+                  data={chartData}
+                  type="temperature"
+                  unit={unit}
+                  height={120}
+                />
+                <WeatherChart
+                  data={chartData}
+                  type="wind"
+                  unit={unit}
+                  height={120}
+                />
+                <WeatherChart
+                  data={chartData}
+                  type="humidity"
+                  unit={unit}
+                  height={120}
+                />
+                <WeatherChart
+                  data={chartData}
+                  type="precipitation"
+                  unit={unit}
+                  height={120}
+                />
+              </>
+            )}
+            <View style={{ height: 20 }} />
+            <Text style={styles.muted}>
+              24-hour forecast data. Charts update every 5 minutes.
+            </Text>
+          </ScrollView>
         </BottomSheetView>
       </BottomSheet>
     </View>
@@ -204,7 +297,7 @@ const styles = StyleSheet.create({
   backText: { color: '#fff', fontWeight: '700', fontFamily: 'Roboto_700Bold' },
   title: { fontSize: 26, fontWeight: '700', marginTop: 10, color: colors.text, fontFamily: 'Roboto_700Bold' },
   subtitle: { color: colors.textMuted, marginTop: 4, fontFamily: 'Roboto_400Regular' },
-  actions: { position: 'absolute', right: 16, top: 8, display: 'contents' as any },
+  actions: { position: 'absolute', right: 16, top: 8, flexDirection: 'row', gap: 4 },
   actionBtn: { padding: 8, borderRadius: 10 },
   content: { paddingHorizontal: 16, paddingTop: 8 },
   cardRow: { flexDirection: 'row', gap: 12 },
@@ -216,6 +309,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.divider,
     boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+    marginBottom: 12,
   },
   chartCard: {
     alignItems: 'center',
@@ -227,6 +321,33 @@ const styles = StyleSheet.create({
     borderColor: colors.divider,
     marginBottom: 12,
     boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+  },
+  mapContainer: {
+    alignItems: 'center',
+    marginVertical: 12,
+  },
+  mapNote: {
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'center',
+    fontFamily: 'Roboto_400Regular',
+    marginTop: 8,
+  },
+  chartHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  viewAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  viewAllText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontFamily: 'Roboto_500Medium',
   },
   cardLabel: { color: colors.textMuted, fontFamily: 'Roboto_500Medium' },
   cardValue: { fontSize: 28, color: colors.text, fontWeight: '700', marginTop: 6, fontFamily: 'Roboto_700Bold' },
@@ -243,7 +364,7 @@ const styles = StyleSheet.create({
   dayTemp: { color: colors.textMuted, marginTop: 4, fontFamily: 'Roboto_400Regular' },
   muted: { color: colors.textMuted, fontFamily: 'Roboto_400Regular' },
   error: { color: '#C62828', fontWeight: '600', fontFamily: 'Roboto_500Medium' },
-  sheet: { padding: 16 },
+  sheet: { padding: 16, flex: 1 },
   sheetTitle: { fontSize: 18, fontWeight: '700', color: colors.text, fontFamily: 'Roboto_700Bold' },
   sessionRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   sessionText: { color: colors.text, fontFamily: 'Roboto_400Regular' },
