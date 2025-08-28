@@ -33,7 +33,7 @@ function isNightTime(latitude?: number, longitude?: number): boolean {
   return localHour < 6 || localHour > 19;
 }
 
-// Weather code mapping based on WMO Weather interpretation codes
+// Weather code mapping based on WMO Weather interpretation codes with realistic colors
 // https://open-meteo.com/en/docs
 function getWeatherSymbol(code: number, isNight: boolean = false): { name: keyof typeof Ionicons.glyphMap; color: string } {
   console.log('WeatherSymbol: Getting symbol for code', code, 'isNight:', isNight);
@@ -42,7 +42,7 @@ function getWeatherSymbol(code: number, isNight: boolean = false): { name: keyof
   if (code === 0) {
     return { 
       name: isNight ? 'moon' : 'sunny', 
-      color: isNight ? colors.secondary : colors.warning 
+      color: isNight ? '#E6E6FA' : '#FFD700' // Lavender for moon, Gold for sun
     };
   }
   
@@ -51,23 +51,26 @@ function getWeatherSymbol(code: number, isNight: boolean = false): { name: keyof
     if (code === 1) {
       return { 
         name: isNight ? 'partly-sunny' : 'partly-sunny', 
-        color: isNight ? colors.secondary : colors.warning 
+        color: isNight ? '#B0C4DE' : '#FFA500' // Light steel blue for night, Orange for day
       };
     }
     if (code === 2) {
       return { 
         name: isNight ? 'cloudy-night' : 'cloudy', 
-        color: isNight ? colors.secondary : colors.textMuted 
+        color: isNight ? '#708090' : '#87CEEB' // Slate gray for night clouds, Sky blue for day clouds
       };
     }
-    return { name: 'cloudy', color: colors.textMuted };
+    return { 
+      name: 'cloudy', 
+      color: '#696969' // Dim gray for overcast
+    };
   }
   
   // Fog and depositing rime fog
   if (code >= 45 && code <= 48) {
     return { 
       name: isNight ? 'cloudy-night' : 'cloudy', 
-      color: isNight ? colors.secondary : colors.textMuted 
+      color: isNight ? '#A9A9A9' : '#D3D3D3' // Dark gray for night fog, Light gray for day fog
     };
   }
   
@@ -75,15 +78,17 @@ function getWeatherSymbol(code: number, isNight: boolean = false): { name: keyof
   if (code >= 51 && code <= 57) {
     return { 
       name: isNight ? 'rainy' : 'rainy', 
-      color: colors.precipitation 
+      color: '#4682B4' // Steel blue for drizzle
     };
   }
   
   // Rain: Slight, moderate and heavy intensity
   if (code >= 61 && code <= 67) {
+    const intensity = code <= 63 ? 'light' : code <= 65 ? 'moderate' : 'heavy';
     return { 
       name: isNight ? 'rainy' : 'rainy', 
-      color: colors.precipitation 
+      color: intensity === 'light' ? '#5F9EA0' : 
+             intensity === 'moderate' ? '#4682B4' : '#191970' // Cadet blue to Navy blue based on intensity
     };
   }
   
@@ -91,15 +96,17 @@ function getWeatherSymbol(code: number, isNight: boolean = false): { name: keyof
   if (code >= 71 && code <= 77) {
     return { 
       name: 'snow', 
-      color: colors.precipitation 
+      color: '#F0F8FF' // Alice blue for snow
     };
   }
   
   // Rain showers: Slight, moderate, and violent
   if (code >= 80 && code <= 82) {
+    const intensity = code === 80 ? 'light' : code === 81 ? 'moderate' : 'heavy';
     return { 
       name: isNight ? 'rainy' : 'rainy', 
-      color: colors.precipitation 
+      color: intensity === 'light' ? '#6495ED' : 
+             intensity === 'moderate' ? '#4169E1' : '#0000CD' // Cornflower blue to Medium blue based on intensity
     };
   }
   
@@ -107,7 +114,7 @@ function getWeatherSymbol(code: number, isNight: boolean = false): { name: keyof
   if (code >= 85 && code <= 86) {
     return { 
       name: 'snow', 
-      color: colors.precipitation 
+      color: code === 85 ? '#F5F5F5' : '#E0E0E0' // White smoke for light snow, Light gray for heavy snow
     };
   }
   
@@ -115,7 +122,7 @@ function getWeatherSymbol(code: number, isNight: boolean = false): { name: keyof
   if (code >= 95 && code <= 99) {
     return { 
       name: 'thunderstorm', 
-      color: colors.error 
+      color: code <= 96 ? '#8B008B' : '#4B0082' // Dark magenta for slight, Indigo for severe thunderstorms
     };
   }
   
@@ -123,7 +130,7 @@ function getWeatherSymbol(code: number, isNight: boolean = false): { name: keyof
   console.log('WeatherSymbol: Unknown weather code, using default', code);
   return { 
     name: isNight ? 'moon' : 'partly-sunny', 
-    color: isNight ? colors.secondary : colors.textMuted 
+    color: isNight ? '#C0C0C0' : '#D3D3D3' // Silver for unknown conditions
   };
 }
 
@@ -134,7 +141,7 @@ export default function WeatherSymbol({ weatherCode, size = 24, color, isNight, 
   const symbol = getWeatherSymbol(weatherCode, nightTime);
   const iconColor = color || symbol.color;
   
-  console.log('WeatherSymbol: Rendering', symbol.name, 'for code', weatherCode, 'isNight:', nightTime);
+  console.log('WeatherSymbol: Rendering', symbol.name, 'for code', weatherCode, 'isNight:', nightTime, 'color:', iconColor);
   
   return (
     <View style={styles.container}>
