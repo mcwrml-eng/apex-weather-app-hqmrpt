@@ -114,7 +114,9 @@ function DetailInner() {
                 {schedule.slice(0, 4).map((s) => (
                   <View key={s.key} style={styles.sessionRow}>
                     <View style={styles.sessionDot} />
-                    <Text style={styles.sessionText}>{s.day} • {s.title} — {s.time}</Text>
+                    <Text style={styles.sessionText}>
+                      {s.day} • {s.title} — {s.time}{s.date ? ` • ${new Date(s.date + 'T00:00:00').toLocaleDateString()}` : ''}
+                    </Text>
                   </View>
                 ))}
               </View>
@@ -163,7 +165,9 @@ function DetailInner() {
               <View style={styles.sessionDotLarge} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.sessionTitle}>{s.title}</Text>
-                <Text style={styles.sessionSub}>{s.day} • {s.time}</Text>
+                <Text style={styles.sessionSub}>
+                  {s.day} • {s.time}{s.date ? ` • ${new Date(s.date + 'T00:00:00').toLocaleDateString()}` : ''}
+                </Text>
               </View>
             </View>
           ))}
