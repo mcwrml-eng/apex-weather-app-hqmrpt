@@ -1,3 +1,4 @@
+
 module.exports = function (api) {
   api.cache(true);
   return {
@@ -24,9 +25,13 @@ module.exports = function (api) {
             '@style': './style',
             '@hooks': './hooks',
             '@types': './types',
+            '@data': './data',
+            '@utils': './utils',
+            '@state': './state',
           },
         },
       ],
+      'react-native-reanimated/plugin',
     ],
   };
 };

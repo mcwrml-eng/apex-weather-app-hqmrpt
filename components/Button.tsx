@@ -1,3 +1,4 @@
+
 import { Text, TouchableOpacity, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { colors } from '../styles/commonStyles';
 
@@ -23,8 +24,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 10,
     width: '100%',
-    boxShadow: '0px 2px 3.84px rgba(0, 0, 0, 0.25)',
-    elevation: 5,
+    boxShadow: '0px 2px 6px rgba(16, 24, 40, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -33,5 +33,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
+    fontFamily: 'Roboto_700Bold',
   },
 });

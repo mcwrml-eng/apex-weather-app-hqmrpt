@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Natively",
-    "slug": "Natively",
+    "name": "Meteorological Services",
+    "slug": "Meteorological Services",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/natively-dark.png",
@@ -42,5 +42,6 @@
     "extra": {
       "router": {}
     }
-  }
+  },
+  "scheme": "Meteorological Services"
 }

@@ -1,14 +1,19 @@
-import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
+
+import { StyleSheet } from 'react-native';
 
 export const colors = {
-  primary: '#162456',    // Material Blue
-  secondary: '#193cb8',  // Darker Blue
-  accent: '#64B5F6',     // Light Blue
-  background: '#101824',  // Keeping dark background
-  backgroundAlt: '#162133',  // Keeping dark background
-  text: '#e3e3e3',       // Keeping light text
-  grey: '#90CAF9',       // Light Blue Grey
-  card: '#193cb8',       // Keeping dark card background
+  primary: '#0D47A1',
+  secondary: '#1565C0',
+  accent: '#FF8F00',
+  background: '#F7FAFD',
+  backgroundAlt: '#FFFFFF',
+  text: '#1A1D21',
+  textMuted: '#5F6B7A',
+  divider: '#E6ECF2',
+  card: '#FFFFFF',
+  success: '#2E7D32',
+  warning: '#F9A825',
+  danger: '#C62828',
 };
 
 export const buttonStyles = StyleSheet.create({
@@ -18,7 +23,7 @@ export const buttonStyles = StyleSheet.create({
     width: '100%',
   },
   backButton: {
-    backgroundColor: colors.backgroundAlt,
+    backgroundColor: colors.primary,
     alignSelf: 'center',
     width: '100%',
   },
@@ -42,20 +47,20 @@ export const commonStyles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    maxWidth: 800,
+    maxWidth: 880,
     width: '100%',
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '800',
     textAlign: 'center',
     color: colors.text,
-    marginBottom: 10
+    marginBottom: 10,
   },
   text: {
     fontSize: 16,
     fontWeight: '500',
-    color: colors.text,
+    color: colors.textMuted,
     marginBottom: 8,
     lineHeight: 24,
     textAlign: 'center',
@@ -71,19 +76,17 @@ export const commonStyles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   card: {
-    backgroundColor: colors.backgroundAlt,
-    borderColor: colors.grey,
+    backgroundColor: colors.card,
+    borderColor: colors.divider,
     borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
-    marginVertical: 8,
+    borderRadius: 14,
+    padding: 14,
+    marginVertical: 10,
     width: '100%',
-    boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)',
-    elevation: 2,
+    boxShadow: '0 6px 24px rgba(16, 24, 40, 0.08)',
   },
   icon: {
     width: 60,
     height: 60,
-    tintColor: "white",
   },
 });
