@@ -26,7 +26,7 @@ const defaultF1SprintSchedule: WeekendSession[] = [
   { key: 'race', title: 'Grand Prix', day: 'Sun', time: '15:00' },
 ];
 
-// You can customize specific circuits here
+// Customize for some 2025-style weekends (others fall back to default templates)
 const f1Schedules: ScheduleMap = {
   bahrain: [
     { key: 'fp1', title: 'Free Practice 1', day: 'Fri', time: '13:30' },
@@ -36,6 +36,12 @@ const f1Schedules: ScheduleMap = {
     { key: 'race', title: 'Grand Prix (Night)', day: 'Sun', time: '18:00' },
   ],
   jeddah: defaultF1SprintSchedule,
+  shanghai: defaultF1SprintSchedule,
+  miami: defaultF1SprintSchedule,
+  'red-bull-ring': defaultF1SprintSchedule,
+  cota: defaultF1SprintSchedule,
+  interlagos: defaultF1SprintSchedule,
+  lusail: defaultF1SprintSchedule,
   monaco: [
     { key: 'fp1', title: 'Free Practice 1', day: 'Fri', time: '13:30' },
     { key: 'fp2', title: 'Free Practice 2', day: 'Fri', time: '17:00' },
@@ -66,6 +72,7 @@ const motogpSchedules: ScheduleMap = {
     { key: 'warmup', title: 'Warm Up', day: 'Sun', time: '14:00' },
     { key: 'race', title: 'Grand Prix (Night)', day: 'Sun', time: '19:00' },
   ],
+  // Other MotoGP rounds use defaults; times vary per venue in reality.
 };
 
 export function getWeekendSchedule(slug: string, category: Category): WeekendSession[] {
