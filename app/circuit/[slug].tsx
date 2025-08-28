@@ -11,10 +11,10 @@ import WeatherChart from '../../components/WeatherChart';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
-import { UnitProvider, useUnit } from '../../state/UnitContext';
+import { useUnit } from '../../state/UnitContext';
 import { getWeekendSchedule, WeekendSession } from '../../data/schedules';
 
-function DetailInner() {
+function DetailScreen() {
   const params = useLocalSearchParams<{ slug?: string; category?: 'f1' | 'motogp' }>();
   const slug = params.slug as string;
   const category = (params.category as 'f1' | 'motogp') || 'f1';
@@ -272,13 +272,7 @@ function DetailInner() {
   );
 }
 
-export default function DetailScreen() {
-  return (
-    <UnitProvider>
-      <DetailInner />
-    </UnitProvider>
-  );
-}
+export default DetailScreen;
 
 const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: colors.background },

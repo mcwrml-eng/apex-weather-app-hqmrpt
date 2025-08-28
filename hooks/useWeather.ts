@@ -66,13 +66,16 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
 
   useEffect(() => {
     let cancelled = false;
+    
     async function run() {
       try {
+        console.log('useWeather: Starting fetch for', latitude, longitude, unit);
         setLoading(true);
         setErr(null);
 
         const cached = cache[key];
         if (cached && Date.now() - cached.ts < 5 * 60 * 1000) {
+          console.log('useWeather: Using cached data for', key);
           setCurrent(cached.data.current);
           setDaily(cached.data.daily);
           setHourly(cached.data.hourly);
@@ -89,11 +92,20 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
           `&timezone=auto&forecast_days=7&forecast_hours=48` +
           `&temperature_unit=${unitParams.temperature_unit}&wind_speed_unit=${unitParams.wind_speed_unit}`;
 
-        console.log('Fetching weather', url);
+        console.log('useWeather: Fetching from API', url);
         const res = await fetch(url);
+        
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        
         const json = await res.json();
+        console.log('useWeather: API response received', Object.keys(json));
 
-        if (cancelled) return;
+        if (cancelled) {
+          console.log('useWeather: Request cancelled');
+          return;
+        }
 
         const cur = {
           temperature: json?.current?.temperature_2m ?? 0,
@@ -133,6 +145,8 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
           precipitation: hourlyPrecipitation[idx] ?? 0,
         }));
 
+        console.log('useWeather: Processed data - current temp:', cur.temperature, 'daily days:', days.length, 'hourly points:', hourlyData.length);
+
         setCurrent(cur);
         setDaily(d);
         setHourly(hourlyData);
@@ -147,8 +161,9 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
         
         cache[key] = { ts: Date.now(), data: weatherData };
         setLoading(false);
+        console.log('useWeather: Successfully loaded weather data');
       } catch (e: any) {
-        console.log('Weather fetch failed', e?.message || e);
+        console.log('useWeather: Error fetching weather:', e?.message || e);
         setErr('fetch_failed');
         setLoading(false);
       }

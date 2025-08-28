@@ -7,6 +7,8 @@ import CircuitCard from '../../components/CircuitCard';
 import SearchBar from '../../components/SearchBar';
 
 export default function F1Screen() {
+  console.log('F1Screen: Rendering with', f1Circuits.length, 'circuits');
+  
   const headerOpacity = useMemo(() => new Animated.Value(0), []);
   const [query, setQuery] = useState('');
 

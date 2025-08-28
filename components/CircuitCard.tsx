@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { router } from 'expo-router';
 import { useWeather } from '../hooks/useWeather';
+import { useUnit } from '../state/UnitContext';
 import { colors } from '../styles/commonStyles';
 
 export interface Circuit {
@@ -21,7 +22,8 @@ interface Props {
 }
 
 export default function CircuitCard({ circuit, category }: Props) {
-  const { current, loading } = useWeather(circuit.latitude, circuit.longitude, 'metric');
+  const { unit } = useUnit();
+  const { current, loading } = useWeather(circuit.latitude, circuit.longitude, unit);
 
   const scaleValue = useMemo(() => new Animated.Value(1), []);
 
@@ -39,12 +41,20 @@ export default function CircuitCard({ circuit, category }: Props) {
     }).start();
   };
 
+  const tempUnit = unit === 'metric' ? '°C' : '°F';
+  const windUnit = unit === 'metric' ? 'km/h' : 'mph';
+
+  console.log('CircuitCard: Rendering', circuit.name, 'loading:', loading, 'current:', !!current);
+
   return (
     <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
       <TouchableOpacity
         style={styles.card}
         activeOpacity={0.9}
-        onPress={() => router.push(`/circuit/${circuit.slug}?category=${category}`)}
+        onPress={() => {
+          console.log('CircuitCard: Navigating to', circuit.slug, category);
+          router.push(`/circuit/${circuit.slug}?category=${category}`);
+        }}
         onPressIn={onPressIn}
         onPressOut={onPressOut}
       >
@@ -58,8 +68,8 @@ export default function CircuitCard({ circuit, category }: Props) {
             <Text style={styles.weatherText}>Loading...</Text>
           ) : current ? (
             <>
-              <Text style={styles.temp}>{Math.round(current.temperature)}°C</Text>
-              <Text style={styles.wind}>{Math.round(current.wind_speed)} km/h</Text>
+              <Text style={styles.temp}>{Math.round(current.temperature)}{tempUnit}</Text>
+              <Text style={styles.wind}>{Math.round(current.wind_speed)} {windUnit}</Text>
             </>
           ) : (
             <Text style={styles.weatherText}>No data</Text>

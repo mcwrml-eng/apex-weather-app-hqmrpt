@@ -6,12 +6,14 @@ import { Platform } from 'react-native';
 import React from 'react';
 
 export default function TabsLayout() {
+  console.log('TabsLayout: Rendering tabs');
+  
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.text,
-        tabBarInactiveTintColor: colors.text,
+        tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
           backgroundColor: colors.backgroundAlt,
           borderTopColor: colors.divider,

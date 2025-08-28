@@ -7,6 +7,8 @@ import CircuitCard from '../../components/CircuitCard';
 import SearchBar from '../../components/SearchBar';
 
 export default function MotoGPScreen() {
+  console.log('MotoGPScreen: Rendering with', motogpCircuits.length, 'circuits');
+  
   const headerOpacity = useMemo(() => new Animated.Value(0), []);
   const [query, setQuery] = useState('');
 

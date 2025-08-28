@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { setupErrorLogging } from '../utils/errorLogger';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, Roboto_400Regular, Roboto_500Medium, Roboto_700Bold } from '@expo-google-fonts/roboto';
+import { UnitProvider } from '../state/UnitContext';
 
 const STORAGE_KEY = 'emulated_device';
 
@@ -19,6 +20,7 @@ export default function RootLayout() {
   const [fontsLoaded] = useFonts({ Roboto_400Regular, Roboto_500Medium, Roboto_700Bold });
 
   useEffect(() => {
+    console.log('RootLayout: Setting up error logging');
     setupErrorLogging();
 
     if (Platform.OS === 'web') {
@@ -47,27 +49,32 @@ export default function RootLayout() {
   }
 
   if (!fontsLoaded) {
+    console.log('RootLayout: Fonts not loaded yet');
     return null;
   }
 
+  console.log('RootLayout: Rendering app with insets:', insetsToUse);
+
   return (
     <SafeAreaProvider>
-      <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
-        <SafeAreaView style={[commonStyles.wrapper, {
-            paddingTop: insetsToUse.top,
-            paddingBottom: insetsToUse.bottom,
-            paddingLeft: insetsToUse.left,
-            paddingRight: insetsToUse.right,
-         }]}>
-          <StatusBar style="dark" />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              animation: 'default',
-            }}
-          />
-        </SafeAreaView>
-      </GestureHandlerRootView>
+      <UnitProvider>
+        <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+          <SafeAreaView style={[commonStyles.wrapper, {
+              paddingTop: insetsToUse.top,
+              paddingBottom: insetsToUse.bottom,
+              paddingLeft: insetsToUse.left,
+              paddingRight: insetsToUse.right,
+           }]}>
+            <StatusBar style="auto" />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                animation: 'default',
+              }}
+            />
+          </SafeAreaView>
+        </GestureHandlerRootView>
+      </UnitProvider>
     </SafeAreaProvider>
   );
 }
