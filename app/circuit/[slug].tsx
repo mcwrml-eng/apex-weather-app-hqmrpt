@@ -1,7 +1,7 @@
 
 import React, { useMemo, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
-import { useGlobalSearchParams, useLocalSearchParams, router } from 'expo-router';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { useLocalSearchParams, router } from 'expo-router';
 import { colors, buttonStyles } from '../../styles/commonStyles';
 import { getCircuitBySlug } from '../../data/circuits';
 import { useWeather } from '../../hooks/useWeather';
@@ -10,6 +10,7 @@ import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
 import { UnitProvider, useUnit } from '../../state/UnitContext';
+import { getWeekendSchedule, WeekendSession } from '../../data/schedules';
 
 function DetailInner() {
   const params = useLocalSearchParams<{ slug?: string; category?: 'f1' | 'motogp' }>();
@@ -21,9 +22,14 @@ function DetailInner() {
 
   const { current, daily, loading, error } = useWeather(circuit.latitude, circuit.longitude, unit);
 
-  const sheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => ['32%', '60%'], []);
-  const openSheet = useCallback(() => sheetRef.current?.expand(), []);
+  const settingsRef = useRef<BottomSheet>(null);
+  const scheduleRef = useRef<BottomSheet>(null);
+  const settingsSnap = useMemo(() => ['32%', '60%'], []);
+  const scheduleSnap = useMemo(() => ['40%', '85%'], []);
+  const openSettings = useCallback(() => settingsRef.current?.expand(), []);
+  const openSchedule = useCallback(() => scheduleRef.current?.expand(), []);
+
+  const schedule: WeekendSession[] = useMemo(() => getWeekendSchedule(slug, category), [slug, category]);
 
   return (
     <View style={styles.wrapper}>
@@ -42,7 +48,10 @@ function DetailInner() {
         <Text style={styles.subtitle}>{circuit.country} • {category.toUpperCase()}</Text>
 
         <View style={styles.actions}>
-          <TouchableOpacity onPress={openSheet} style={styles.actionBtn} activeOpacity={0.8}>
+          <TouchableOpacity onPress={openSchedule} style={styles.actionBtn} activeOpacity={0.8}>
+            <Icon name="calendar-outline" size={22} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={openSettings} style={styles.actionBtn} activeOpacity={0.8}>
             <Icon name="settings-outline" size={22} color={colors.text} />
           </TouchableOpacity>
         </View>
@@ -97,6 +106,23 @@ function DetailInner() {
                 ))}
               </ScrollView>
             </View>
+
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Weekend Schedule</Text>
+              <View style={{ height: 8 }} />
+              <View>
+                {schedule.slice(0, 4).map((s) => (
+                  <View key={s.key} style={styles.sessionRow}>
+                    <View style={styles.sessionDot} />
+                    <Text style={styles.sessionText}>{s.day} • {s.title} — {s.time}</Text>
+                  </View>
+                ))}
+              </View>
+              <View style={{ height: 10 }} />
+              <TouchableOpacity onPress={openSchedule} activeOpacity={0.8} style={styles.moreBtn}>
+                <Text style={styles.moreBtnText}>View full schedule</Text>
+              </TouchableOpacity>
+            </View>
           </>
         )}
 
@@ -110,7 +136,7 @@ function DetailInner() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      <BottomSheet ref={sheetRef} index={-1} snapPoints={snapPoints} enablePanDownToClose>
+      <BottomSheet ref={settingsRef} index={-1} snapPoints={settingsSnap} enablePanDownToClose>
         <BottomSheetView style={styles.sheet}>
           <Text style={styles.sheetTitle}>Settings</Text>
           <View style={{ height: 8 }} />
@@ -127,12 +153,29 @@ function DetailInner() {
           </Text>
         </BottomSheetView>
       </BottomSheet>
+
+      <BottomSheet ref={scheduleRef} index={-1} snapPoints={scheduleSnap} enablePanDownToClose>
+        <BottomSheetView style={styles.sheet}>
+          <Text style={styles.sheetTitle}>Weekend Schedule</Text>
+          <View style={{ height: 8 }} />
+          {schedule.map((s) => (
+            <View key={s.key} style={styles.sessionItem}>
+              <View style={styles.sessionDotLarge} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sessionTitle}>{s.title}</Text>
+                <Text style={styles.sessionSub}>{s.day} • {s.time}</Text>
+              </View>
+            </View>
+          ))}
+          <View style={{ height: 8 }} />
+          <Text style={styles.muted}>Local times. Subject to change.</Text>
+        </BottomSheetView>
+      </BottomSheet>
     </View>
   );
 }
 
 export default function DetailScreen() {
-  // Provide unit context per detail page so toggling reflects immediately
   return (
     <UnitProvider>
       <DetailInner />
@@ -198,4 +241,28 @@ const styles = StyleSheet.create({
   error: { color: '#C62828', fontWeight: '600', fontFamily: 'Roboto_500Medium' },
   sheet: { padding: 16 },
   sheetTitle: { fontSize: 18, fontWeight: '700', color: colors.text, fontFamily: 'Roboto_700Bold' },
+  sessionRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  sessionText: { color: colors.text, fontFamily: 'Roboto_400Regular' },
+  moreBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.backgroundAlt,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  moreBtnText: { color: colors.text, fontFamily: 'Roboto_500Medium' },
+  sessionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+  sessionDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent, marginRight: 8 },
+  sessionDotLarge: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent },
+  sessionTitle: { color: colors.text, fontFamily: 'Roboto_700Bold' },
+  sessionSub: { color: colors.textMuted, fontFamily: 'Roboto_400Regular', marginTop: 2 },
 });
