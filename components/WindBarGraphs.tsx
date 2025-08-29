@@ -33,8 +33,6 @@ function getWindDirectionLabel(degrees: number): string {
 
 // Enhanced Wind direction arrow component
 function WindDirectionArrow({ direction, size = 20 }: { direction: number; size?: number }) {
-  console.log('WindDirectionArrow: Rendering arrow with direction:', direction, 'size:', size);
-  
   // Adjust rotation so arrow points in the direction wind is blowing TO
   // Add 180 degrees to convert from "coming from" to "blowing to"
   const rotation = (direction + 180) % 360;
@@ -81,12 +79,7 @@ function WindDirectionArrow({ direction, size = 20 }: { direction: number; size?
 }
 
 function WindBarGraphs({ hourlyData, unit }: Props) {
-  console.log('WindBarGraphs: Starting render with data length:', hourlyData?.length || 0);
-  console.log('WindBarGraphs: Unit:', unit);
-  console.log('WindBarGraphs: Sample data (first 3 items):', hourlyData?.slice(0, 3));
-
   if (!hourlyData || hourlyData.length === 0) {
-    console.log('WindBarGraphs: No data available - returning no data message');
     return (
       <View style={styles.container}>
         <Text style={styles.noDataText}>No wind data available</Text>
@@ -97,10 +90,8 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
   // Use the first 24 hours of data instead of filtering by today's date
   // This ensures we always have data to display
   const displayData = hourlyData.slice(0, 24);
-  console.log('WindBarGraphs: Display data length:', displayData.length);
 
   if (displayData.length === 0) {
-    console.log('WindBarGraphs: No display data after filtering');
     return (
       <View style={styles.container}>
         <Text style={styles.noDataText}>No wind data available for display</Text>
@@ -111,13 +102,11 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
   // Extract and validate wind data with proper fallbacks
   const windSpeedData = displayData.map((hour, index) => {
     const speed = Number(hour.windSpeed) || 0;
-    console.log(`WindBarGraphs: Hour ${index} ${hour.time} - windSpeed: ${hour.windSpeed} -> ${speed}`);
     return { value: speed, index };
   });
   
   const windGustData = displayData.map((hour, index) => {
     const gusts = Number(hour.windGusts) || 0;
-    console.log(`WindBarGraphs: Hour ${index} ${hour.time} - windGusts: ${hour.windGusts} -> ${gusts}`);
     return { value: gusts, index };
   });
   
@@ -126,18 +115,12 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
     return { value: direction, index };
   });
   
-  console.log('WindBarGraphs: Processed wind speed data:', windSpeedData.slice(0, 5));
-  console.log('WindBarGraphs: Processed wind gust data:', windGustData.slice(0, 5));
-  console.log('WindBarGraphs: Processed wind direction data:', windDirectionData.slice(0, 5));
-  
   // Calculate scales with proper minimums to ensure visibility
   const maxWindSpeed = Math.max(...windSpeedData.map(d => d.value), 5); // Minimum scale of 5
   const maxWindGust = Math.max(...windGustData.map(d => d.value), 5);
   const maxWind = Math.max(maxWindSpeed, maxWindGust, 10); // Ensure minimum scale of 10
   const minWindSpeed = Math.min(...windSpeedData.map(d => d.value));
   const speedUnit = unit === 'metric' ? 'km/h' : 'mph';
-
-  console.log('WindBarGraphs: Scale calculations - maxWindSpeed:', maxWindSpeed, 'maxWindGust:', maxWindGust, 'maxWind:', maxWind);
 
   // Generate Y-axis labels for wind speed (including gusts)
   const speedYAxisLabels = [];
@@ -146,14 +129,10 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
     speedYAxisLabels.push(i);
   }
 
-  console.log('WindBarGraphs: Y-axis labels:', speedYAxisLabels);
-
   // Prepare data for BarChart - it expects simple number arrays
   const windSpeedValues = windSpeedData.map(d => d.value);
   const windGustValues = windGustData.map(d => d.value);
   const windDirectionValues = windDirectionData.map(d => d.value);
-
-  console.log('WindBarGraphs: Final chart data - speeds:', windSpeedValues.slice(0, 5), 'gusts:', windGustValues.slice(0, 5));
 
   return (
     <View style={styles.container}>
@@ -273,7 +252,6 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
             <Text style={styles.arrowSectionSubtitle}>Arrows point in the direction wind is blowing TO</Text>
             <View style={styles.arrowContainer}>
               {displayData.map((hour, index) => {
-                console.log(`Arrow ${index}: direction=${hour.windDirection}°, time=${hour.time}`);
                 return (
                   <View key={index} style={styles.arrowItem}>
                     <WindDirectionArrow direction={hour.windDirection} size={24} />
