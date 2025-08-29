@@ -83,8 +83,21 @@ function toUnitParams(unit: Unit) {
   return {
     temperature_unit: unit === 'metric' ? 'celsius' : 'fahrenheit',
     wind_speed_unit: unit === 'metric' ? 'kmh' : 'mph',
-    precipitation_unit: 'mm',
+    precipitation_unit: 'mm', // Always use mm from API, we'll convert for display
   };
+}
+
+// Convert precipitation from mm to inches if needed
+function convertPrecipitation(value: number, unit: Unit): number {
+  if (unit === 'imperial') {
+    return value / 25.4; // Convert mm to inches
+  }
+  return value; // Keep mm for metric
+}
+
+// Get precipitation unit label
+function getPrecipitationUnit(unit: Unit): string {
+  return unit === 'metric' ? 'mm' : 'in';
 }
 
 // Calculate sunrise and sunset times for better day/night detection
@@ -117,30 +130,37 @@ function getSunTimes(latitude: number, longitude: number, date: Date) {
 }
 
 // Analyze weather conditions for potential racing alerts
-function analyzeWeatherAlerts(current: Current | null, hourly: HourlyData[]): WeatherAlert[] {
+function analyzeWeatherAlerts(current: Current | null, hourly: HourlyData[], unit: Unit): WeatherAlert[] {
   const alerts: WeatherAlert[] = [];
   
   if (!current || hourly.length === 0) return alerts;
   
   // High wind alert (including gusts)
   const maxWind = Math.max(current.wind_speed, current.wind_gusts);
-  if (maxWind > 50) { // 50+ km/h or mph depending on unit
+  const windUnit = unit === 'metric' ? 'km/h' : 'mph';
+  const windThreshold = unit === 'metric' ? 50 : 31; // 50 km/h = ~31 mph
+  const severeWindThreshold = unit === 'metric' ? 70 : 43; // 70 km/h = ~43 mph
+  
+  if (maxWind > windThreshold) {
     alerts.push({
       title: 'High Wind Warning',
-      description: `Strong winds of ${Math.round(current.wind_speed)} with gusts up to ${Math.round(current.wind_gusts)} detected. May affect vehicle handling and safety.`,
-      severity: maxWind > 70 ? 'severe' : 'moderate',
+      description: `Strong winds of ${Math.round(current.wind_speed)} ${windUnit} with gusts up to ${Math.round(current.wind_gusts)} ${windUnit} detected. May affect vehicle handling and safety.`,
+      severity: maxWind > severeWindThreshold ? 'severe' : 'moderate',
       start: new Date().toISOString(),
       end: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(), // 3 hours
     });
   }
   
-  // Rain alert for next 6 hours
+  // Rain alert for next 6 hours - convert precipitation for alert threshold
   const nextSixHours = hourly.slice(0, 6);
-  const heavyRainHours = nextSixHours.filter(h => h.precipitation > 5).length;
+  const precipitationThreshold = unit === 'metric' ? 5 : 0.2; // 5mm = ~0.2 inches
+  const heavyRainHours = nextSixHours.filter(h => convertPrecipitation(h.precipitation, unit) > precipitationThreshold).length;
+  
   if (heavyRainHours > 2) {
+    const precipUnit = getPrecipitationUnit(unit);
     alerts.push({
       title: 'Heavy Rain Expected',
-      description: `Significant rainfall expected in the next 6 hours. Track conditions may be severely affected.`,
+      description: `Significant rainfall (>${precipitationThreshold}${precipUnit}/hour) expected in the next 6 hours. Track conditions may be severely affected.`,
       severity: 'severe',
       start: new Date().toISOString(),
       end: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
@@ -159,12 +179,18 @@ function analyzeWeatherAlerts(current: Current | null, hourly: HourlyData[]): We
     });
   }
   
-  // Low visibility alert
-  if (current.visibility < 5000) { // Less than 5km visibility
+  // Low visibility alert - convert visibility for imperial units
+  const visibilityThreshold = unit === 'metric' ? 5000 : 3.1; // 5km = ~3.1 miles
+  const severeVisibilityThreshold = unit === 'metric' ? 1000 : 0.6; // 1km = ~0.6 miles
+  const visibilityValue = unit === 'metric' ? current.visibility : current.visibility / 1609.34; // Convert to miles
+  const visibilityUnit = unit === 'metric' ? 'km' : 'miles';
+  
+  if (visibilityValue < visibilityThreshold) {
+    const displayVisibility = unit === 'metric' ? Math.round(current.visibility / 1000) : Math.round(visibilityValue * 10) / 10;
     alerts.push({
       title: 'Low Visibility Warning',
-      description: `Visibility reduced to ${Math.round(current.visibility / 1000)}km. Driving conditions may be hazardous.`,
-      severity: current.visibility < 1000 ? 'severe' : 'moderate',
+      description: `Visibility reduced to ${displayVisibility}${visibilityUnit}. Driving conditions may be hazardous.`,
+      severity: visibilityValue < severeVisibilityThreshold ? 'severe' : 'moderate',
       start: new Date().toISOString(),
       end: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
     });
@@ -247,7 +273,7 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
           cloud_cover: json?.current?.cloud_cover ?? 0,
         } as Current;
 
-        // Enhanced daily forecast data
+        // Enhanced daily forecast data - convert precipitation for display
         const days: DayInfo[] = (json?.daily?.time || []).map((t: string, idx: number) => ({
           date: t,
           weekday: weekdayFromDate(t),
@@ -255,7 +281,7 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
           max: json?.daily?.temperature_2m_max?.[idx] ?? 0,
           weather_code: json?.daily?.weather_code?.[idx] ?? 0,
           precipitation_probability: json?.daily?.precipitation_probability_max?.[idx] ?? 0,
-          precipitation_sum: json?.daily?.precipitation_sum?.[idx] ?? 0,
+          precipitation_sum: convertPrecipitation(json?.daily?.precipitation_sum?.[idx] ?? 0, unit),
           wind_speed_max: json?.daily?.wind_speed_10m_max?.[idx] ?? 0,
           wind_direction_dominant: json?.daily?.wind_direction_10m_dominant?.[idx] ?? 0,
           wind_gusts_max: json?.daily?.wind_gusts_10m_max?.[idx] ?? json?.daily?.wind_speed_10m_max?.[idx] ?? 0,
@@ -269,7 +295,7 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
           days,
         };
 
-        // Enhanced hourly data for the next 72 hours (3 days)
+        // Enhanced hourly data for the next 72 hours (3 days) - convert precipitation for display
         const hourlyTimes = json?.hourly?.time || [];
         const hourlyTemps = json?.hourly?.temperature_2m || [];
         const hourlyWindSpeeds = json?.hourly?.wind_speed_10m || [];
@@ -292,7 +318,7 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
           windDirection: hourlyWindDirections[idx] ?? 0,
           windGusts: hourlyWindGusts[idx] ?? hourlyWindSpeeds[idx] ?? 0,
           humidity: hourlyHumidity[idx] ?? 0,
-          precipitation: hourlyPrecipitation[idx] ?? 0,
+          precipitation: convertPrecipitation(hourlyPrecipitation[idx] ?? 0, unit),
           precipitationProbability: hourlyPrecipitationProb[idx] ?? 0,
           weatherCode: hourlyWeatherCodes[idx] ?? 0,
           pressure: hourlyPressure[idx] ?? 1013,
@@ -303,9 +329,10 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
         }));
 
         // Analyze weather for alerts
-        const weatherAlerts = analyzeWeatherAlerts(cur, hourlyData);
+        const weatherAlerts = analyzeWeatherAlerts(cur, hourlyData, unit);
 
         console.log('useWeather: Enhanced data processed - current temp:', cur.temperature, 'daily days:', days.length, 'hourly points:', hourlyData.length, 'alerts:', weatherAlerts.length);
+        console.log('useWeather: Precipitation unit for', unit, 'is', getPrecipitationUnit(unit));
 
         const now = new Date();
         setCurrent(cur);
@@ -342,3 +369,6 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
 
   return { current, daily, hourly, alerts, loading, error, lastUpdated };
 }
+
+// Export utility functions for use in components
+export { convertPrecipitation, getPrecipitationUnit };

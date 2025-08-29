@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { LineChart, AreaChart, YAxis } from 'react-native-svg-charts';
 import { colors } from '../styles/commonStyles';
+import { getPrecipitationUnit } from '../hooks/useWeather';
 import * as shape from 'd3-shape';
 
 interface WeatherDataPoint {
@@ -21,6 +22,8 @@ interface Props {
 }
 
 export default function WeatherChart({ data, type, unit, height = 120 }: Props) {
+  console.log('WeatherChart: Rendering', type, 'chart with', data.length, 'data points, unit:', unit);
+
   if (!data || data.length === 0) {
     return (
       <View style={[styles.container, { height }]}>
@@ -68,7 +71,7 @@ export default function WeatherChart({ data, type, unit, height = 120 }: Props) 
       case 'humidity':
         return '%';
       case 'precipitation':
-        return 'mm';
+        return getPrecipitationUnit(unit);
       default:
         return '';
     }
@@ -87,6 +90,14 @@ export default function WeatherChart({ data, type, unit, height = 120 }: Props) 
       default:
         return '';
     }
+  };
+
+  const formatValue = (value: number) => {
+    if (type === 'precipitation' && unit === 'imperial') {
+      // For imperial precipitation, show more decimal places for small values
+      return value < 0.1 ? Math.round(value * 100) / 100 : Math.round(value * 10) / 10;
+    }
+    return Math.round(value * 10) / 10;
   };
 
   const chartData = getChartData();
@@ -111,7 +122,7 @@ export default function WeatherChart({ data, type, unit, height = 120 }: Props) 
     
     return Array.from({ length: stepCount }, (_, i) => {
       const value = yAxisMin + (step * i);
-      return Math.round(value * 10) / 10; // Round to 1 decimal place
+      return formatValue(value);
     });
   };
 
@@ -123,10 +134,10 @@ export default function WeatherChart({ data, type, unit, height = 120 }: Props) 
         <Text style={styles.title}>{title}</Text>
         <View style={styles.stats}>
           <Text style={styles.statText}>
-            Avg: {Math.round(avgValue * 10) / 10}{unitLabel}
+            Avg: {formatValue(avgValue)}{unitLabel}
           </Text>
           <Text style={styles.statText}>
-            Range: {Math.round(minValue * 10) / 10}-{Math.round(maxValue * 10) / 10}{unitLabel}
+            Range: {formatValue(minValue)}-{formatValue(maxValue)}{unitLabel}
           </Text>
         </View>
       </View>
@@ -144,7 +155,7 @@ export default function WeatherChart({ data, type, unit, height = 120 }: Props) 
                 fontFamily: 'Roboto_400Regular',
               }}
               numberOfTicks={5}
-              formatLabel={(value) => `${Math.round(value * 10) / 10}`}
+              formatLabel={(value) => `${formatValue(value)}`}
               style={styles.yAxis}
             />
             <Text style={styles.yAxisUnit}>{unitLabel}</Text>

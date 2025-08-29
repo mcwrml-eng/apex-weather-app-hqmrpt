@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { colors } from '../styles/commonStyles';
 import WeatherSymbol from './WeatherSymbol';
+import { getPrecipitationUnit } from '../hooks/useWeather';
 
 interface HourlyData {
   time: string;
@@ -53,8 +54,17 @@ function isNightTime(timeString: string, latitude: number, longitude: number): b
   return localHour < sunriseHour || localHour > sunsetHour;
 }
 
+function formatPrecipitation(value: number, unit: 'metric' | 'imperial'): string {
+  const precipUnit = getPrecipitationUnit(unit);
+  if (unit === 'imperial') {
+    // For imperial, show more decimal places for inches since they're smaller values
+    return value < 0.1 ? `${Math.round(value * 100) / 100}${precipUnit}` : `${Math.round(value * 10) / 10}${precipUnit}`;
+  }
+  return `${Math.round(value)}${precipUnit}`;
+}
+
 export default function HourlyWeatherForecast({ hourlyData, unit, latitude, longitude }: Props) {
-  console.log('HourlyWeatherForecast: Rendering with', hourlyData.length, 'hours of enhanced data');
+  console.log('HourlyWeatherForecast: Rendering with', hourlyData.length, 'hours of enhanced data, unit:', unit);
 
   if (!hourlyData || hourlyData.length === 0) {
     return (
@@ -100,7 +110,7 @@ export default function HourlyWeatherForecast({ hourlyData, unit, latitude, long
               {hour.precipitation > 0 && (
                 <View style={styles.precipitationContainer}>
                   <Text style={styles.precipitation}>
-                    {Math.round(hour.precipitation)}mm
+                    {formatPrecipitation(hour.precipitation, unit)}
                   </Text>
                   {hour.precipitationProbability !== undefined && (
                     <Text style={styles.precipitationProb}>
