@@ -82,9 +82,10 @@ function WindDirectionArrow({ direction, size = 20 }: { direction: number; size?
 
 export default function WindBarGraphs({ hourlyData, unit }: Props) {
   console.log('WindBarGraphs: Rendering with', hourlyData.length, 'hours of wind data');
-  console.log('WindBarGraphs: Sample wind direction data:', hourlyData.slice(0, 3).map(h => ({ time: h.time, direction: h.windDirection })));
+  console.log('WindBarGraphs: First 3 data points:', hourlyData.slice(0, 3));
 
   if (!hourlyData || hourlyData.length === 0) {
+    console.log('WindBarGraphs: No data available');
     return (
       <View style={styles.container}>
         <Text style={styles.noDataText}>No wind data available</Text>
@@ -92,37 +93,39 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
     );
   }
 
-  // Get current day's data (24 hours)
-  const today = new Date();
-  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+  // Use the first 24 hours of data instead of filtering by today's date
+  // This ensures we always have data to display
+  const displayData = hourlyData.slice(0, 24);
+  console.log('WindBarGraphs: Using', displayData.length, 'hours of data for display');
 
-  const todayData = hourlyData.filter(hour => {
-    const hourDate = new Date(hour.time);
-    return hourDate >= todayStart && hourDate < todayEnd;
-  }).slice(0, 24); // Ensure we only get 24 hours
-
-  if (todayData.length === 0) {
+  if (displayData.length === 0) {
+    console.log('WindBarGraphs: No display data after filtering');
     return (
       <View style={styles.container}>
-        <Text style={styles.noDataText}>No wind data available for today</Text>
+        <Text style={styles.noDataText}>No wind data available for display</Text>
       </View>
     );
   }
 
-  const windSpeedData = todayData.map(hour => hour.windSpeed);
-  const windGustData = todayData.map(hour => hour.windGusts);
-  const windDirectionData = todayData.map(hour => hour.windDirection);
+  const windSpeedData = displayData.map(hour => hour.windSpeed || 0);
+  const windGustData = displayData.map(hour => hour.windGusts || 0);
+  const windDirectionData = displayData.map(hour => hour.windDirection || 0);
   
-  const maxWindSpeed = Math.max(...windSpeedData);
-  const maxWindGust = Math.max(...windGustData);
-  const maxWind = Math.max(maxWindSpeed, maxWindGust);
+  console.log('WindBarGraphs: Wind speed data:', windSpeedData.slice(0, 5));
+  console.log('WindBarGraphs: Wind gust data:', windGustData.slice(0, 5));
+  console.log('WindBarGraphs: Wind direction data:', windDirectionData.slice(0, 5));
+  
+  const maxWindSpeed = Math.max(...windSpeedData, 1); // Ensure minimum of 1
+  const maxWindGust = Math.max(...windGustData, 1);
+  const maxWind = Math.max(maxWindSpeed, maxWindGust, 10); // Ensure minimum scale of 10
   const minWindSpeed = Math.min(...windSpeedData);
   const speedUnit = unit === 'metric' ? 'km/h' : 'mph';
 
+  console.log('WindBarGraphs: Max wind speed:', maxWindSpeed, 'Max gust:', maxWindGust, 'Scale max:', maxWind);
+
   // Generate Y-axis labels for wind speed (including gusts)
   const speedYAxisLabels = [];
-  const speedStep = Math.ceil(maxWind / 5);
+  const speedStep = Math.max(Math.ceil(maxWind / 5), 1);
   for (let i = 0; i <= maxWind + speedStep; i += speedStep) {
     speedYAxisLabels.push(i);
   }
@@ -130,17 +133,10 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
   // Generate Y-axis labels for wind direction (0-360 degrees)
   const directionYAxisLabels = [0, 90, 180, 270, 360];
 
-  // Combine wind speed and gust data for layered chart
-  const combinedWindData = todayData.map((hour, index) => ({
-    windSpeed: hour.windSpeed,
-    windGusts: hour.windGusts,
-    index
-  }));
-
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Today's Wind Conditions</Text>
-      <Text style={styles.subtitle}>Hourly wind speed, gusts, and direction for {today.toLocaleDateString()}</Text>
+      <Text style={styles.title}>Wind Conditions</Text>
+      <Text style={styles.subtitle}>Next 24 hours of wind speed, gusts, and direction</Text>
       
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Wind Speed and Gusts Chart */}
@@ -168,6 +164,7 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
                 spacingInner={0.2}
                 spacingOuter={0.1}
                 yMax={maxWind}
+                yMin={0}
               />
               {/* Wind Gust Bars (overlay) */}
               <BarChart
@@ -178,9 +175,10 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
                 spacingInner={0.2}
                 spacingOuter={0.1}
                 yMax={maxWind}
+                yMin={0}
               />
               <View style={styles.xAxisLabels}>
-                {todayData.map((hour, index) => (
+                {displayData.map((hour, index) => (
                   <Text key={index} style={styles.xAxisLabel}>
                     {formatHour(hour.time)}
                   </Text>
@@ -238,7 +236,7 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
                 yMin={0}
               />
               <View style={styles.xAxisLabels}>
-                {todayData.map((hour, index) => (
+                {displayData.map((hour, index) => (
                   <Text key={index} style={styles.xAxisLabel}>
                     {formatHour(hour.time)}
                   </Text>
@@ -252,7 +250,7 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
             <Text style={styles.arrowSectionTitle}>Wind Direction Arrows</Text>
             <Text style={styles.arrowSectionSubtitle}>Arrows point in the direction wind is blowing TO</Text>
             <View style={styles.arrowContainer}>
-              {todayData.map((hour, index) => {
+              {displayData.map((hour, index) => {
                 console.log(`Arrow ${index}: direction=${hour.windDirection}°, time=${hour.time}`);
                 return (
                   <View key={index} style={styles.arrowItem}>
@@ -265,7 +263,7 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
           
           {/* Compass Direction Labels */}
           <View style={styles.directionLabels}>
-            {todayData.map((hour, index) => (
+            {displayData.map((hour, index) => (
               <View key={index} style={styles.directionLabelContainer}>
                 <Text style={styles.directionLabel}>
                   {getWindDirectionLabel(hour.windDirection)}
@@ -288,7 +286,7 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
                 {Math.round(maxWindSpeed)} {speedUnit}
               </Text>
               <Text style={styles.summaryTime}>
-                at {formatHour(todayData[windSpeedData.indexOf(maxWindSpeed)].time)}
+                at {formatHour(displayData[windSpeedData.indexOf(maxWindSpeed)].time)}
               </Text>
             </View>
             <View style={styles.summaryItem}>
@@ -297,7 +295,7 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
                 {Math.round(maxWindGust)} {speedUnit}
               </Text>
               <Text style={styles.summaryTime}>
-                at {formatHour(todayData[windGustData.indexOf(maxWindGust)].time)}
+                at {formatHour(displayData[windGustData.indexOf(maxWindGust)].time)}
               </Text>
             </View>
           </View>
@@ -308,13 +306,14 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
                 {Math.round(minWindSpeed)} {speedUnit}
               </Text>
               <Text style={styles.summaryTime}>
-                at {formatHour(todayData[windSpeedData.indexOf(minWindSpeed)].time)}
+                at {formatHour(displayData[windSpeedData.indexOf(minWindSpeed)].time)}
               </Text>
             </View>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Avg Gust Factor</Text>
               <Text style={styles.summaryValue}>
-                {(windGustData.reduce((a, b) => a + b, 0) / windSpeedData.reduce((a, b) => a + b, 0)).toFixed(1)}x
+                {windSpeedData.reduce((a, b) => a + b, 0) > 0 ? 
+                  (windGustData.reduce((a, b) => a + b, 0) / windSpeedData.reduce((a, b) => a + b, 0)).toFixed(1) : '0.0'}x
               </Text>
               <Text style={styles.summaryTime}>
                 gusts vs wind speed
