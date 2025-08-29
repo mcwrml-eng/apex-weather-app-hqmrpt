@@ -98,7 +98,11 @@ const startFinishPositions: Record<string, { x1: number; y1: number; x2: number;
 // Wind direction arrow component
 function WindArrow({ x, y, direction, speed, size = 20 }: { x: number; y: number; direction: number; speed: number; size?: number }) {
   const arrowLength = Math.min(size, speed * 2); // Scale arrow by wind speed
-  const radians = (direction - 90) * (Math.PI / 180); // Convert to radians, adjust for SVG coordinate system
+  
+  // Convert wind direction to show where wind is blowing TO
+  // Add 180 degrees to convert from "coming from" to "blowing to"
+  const adjustedDirection = (direction + 180) % 360;
+  const radians = (adjustedDirection - 90) * (Math.PI / 180); // Convert to radians, adjust for SVG coordinate system
   
   const endX = x + Math.cos(radians) * arrowLength;
   const endY = y + Math.sin(radians) * arrowLength;
@@ -136,7 +140,7 @@ export default function TrackMap({ circuitSlug, windDirection = 0, windSpeed = 0
   const trackPath = trackLayouts[circuitSlug] || trackLayouts.default;
   const startFinish = startFinishPositions[circuitSlug] || startFinishPositions.default;
   
-  console.log(`Rendering track map for ${circuitSlug} with wind: ${windSpeed}km/h at ${windDirection}°`);
+  console.log(`Rendering track map for ${circuitSlug} with wind: ${windSpeed}km/h at ${windDirection}° (showing direction TO)`);
   
   // Generate wind arrows at strategic points around the track
   const windArrows = [];

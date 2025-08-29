@@ -35,8 +35,9 @@ function getWindDirectionLabel(degrees: number): string {
 function WindDirectionArrow({ direction, size = 20 }: { direction: number; size?: number }) {
   console.log('WindDirectionArrow: Rendering arrow with direction:', direction, 'size:', size);
   
-  // Adjust rotation so arrow points in the direction wind is coming FROM
-  const rotation = direction;
+  // Adjust rotation so arrow points in the direction wind is blowing TO
+  // Add 180 degrees to convert from "coming from" to "blowing to"
+  const rotation = (direction + 180) % 360;
   const arrowSize = size;
   const center = arrowSize / 2;
   
@@ -249,7 +250,7 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
           {/* Enhanced Wind Direction Arrows */}
           <View style={styles.arrowSection}>
             <Text style={styles.arrowSectionTitle}>Wind Direction Arrows</Text>
-            <Text style={styles.arrowSectionSubtitle}>Arrows point in the direction wind is coming FROM</Text>
+            <Text style={styles.arrowSectionSubtitle}>Arrows point in the direction wind is blowing TO</Text>
             <View style={styles.arrowContainer}>
               {todayData.map((hour, index) => {
                 console.log(`Arrow ${index}: direction=${hour.windDirection}°, time=${hour.time}`);
@@ -321,7 +322,7 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
             </View>
           </View>
           <Text style={styles.summaryNote}>
-            Wind direction arrows show where wind is coming FROM. 0°=North, 90°=East, 180°=South, 270°=West. 
+            Wind direction arrows show where wind is blowing TO. 0°=North, 90°=East, 180°=South, 270°=West. 
             Red arrows indicate wind direction, with larger arrows for stronger winds.
           </Text>
         </View>
