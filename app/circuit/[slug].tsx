@@ -6,7 +6,7 @@ import { colors, buttonStyles } from '../../styles/commonStyles';
 import { getCircuitBySlug } from '../../data/circuits';
 import { useWeather } from '../../hooks/useWeather';
 import ChartDoughnut from '../../components/ChartDoughnut';
-import TrackMap from '../../components/TrackMap';
+import WindBarGraphs from '../../components/WindBarGraphs';
 import WeatherChart from '../../components/WeatherChart';
 import WeatherSymbol from '../../components/WeatherSymbol';
 import EnhancedWeatherForecast from '../../components/EnhancedWeatherForecast';
@@ -50,6 +50,15 @@ function DetailScreen() {
       windSpeed: h.windSpeed,
       humidity: h.humidity,
       precipitation: h.precipitation,
+    }));
+  }, [hourly]);
+
+  // Convert hourly data for wind graphs
+  const windData = useMemo(() => {
+    return hourly.map(h => ({
+      time: h.time,
+      windSpeed: h.windSpeed,
+      windDirection: h.windDirection,
     }));
   }, [hourly]);
 
@@ -132,29 +141,13 @@ function DetailScreen() {
           </View>
         )}
 
-        {/* Track Map with Enhanced Wind Data */}
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Track Layout & Wind Conditions</Text>
-          <View style={styles.mapContainer}>
-            <TrackMap
-              circuitSlug={circuit.slug}
-              windDirection={current?.wind_direction || 0}
-              windSpeed={current?.wind_speed || 0}
-              size={200}
-            />
-          </View>
-          {current && (
-            <View style={styles.windInfo}>
-              <Text style={styles.windText}>
-                Wind: {Math.round(current.wind_speed)} {unit === 'metric' ? 'km/h' : 'mph'} 
-                from {Math.round(current.wind_direction)}°
-              </Text>
-              <Text style={styles.mapNote}>
-                Wind arrows show current direction and speed across the track
-              </Text>
-            </View>
-          )}
-        </View>
+        {/* Wind Speed and Direction Bar Graphs */}
+        {!loading && windData.length > 0 && (
+          <WindBarGraphs
+            hourlyData={windData}
+            unit={unit}
+          />
+        )}
 
         {/* Enhanced Current Weather Display */}
         {!loading && current && (
@@ -535,26 +528,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: 'Roboto_500Medium',
     marginBottom: 8,
-  },
-  mapContainer: {
-    alignItems: 'center',
-    marginVertical: 12,
-  },
-  windInfo: {
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  windText: {
-    fontSize: 14,
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    marginBottom: 4,
-  },
-  mapNote: {
-    fontSize: 12,
-    color: colors.textMuted,
-    textAlign: 'center',
-    fontFamily: 'Roboto_400Regular',
   },
   currentWeatherContainer: {
     flexDirection: 'row',
