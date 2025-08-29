@@ -321,9 +321,9 @@ function DetailScreen() {
               </View>
             )}
 
-            {/* Quick Hourly Preview */}
+            {/* Quick Hourly Preview - Next 12 Hours */}
             {hourly.length > 0 && (
-              <View style={styles.card}>
+              <View style={styles.hourlyForecastCard}>
                 <View style={styles.chartHeader}>
                   <Text style={styles.cardLabel}>Next 12 Hours</Text>
                   <TouchableOpacity onPress={openForecast} style={styles.viewAllBtn}>
@@ -340,7 +340,8 @@ function DetailScreen() {
               </View>
             )}
 
-            <View style={styles.card}>
+            {/* Weekend Schedule - with proper spacing */}
+            <View style={styles.scheduleCard}>
               <Text style={styles.cardLabel}>Weekend Schedule</Text>
               <View style={{ height: 8 }} />
               <View>
@@ -522,6 +523,29 @@ const styles = StyleSheet.create({
     borderColor: colors.divider,
     marginBottom: 12,
     boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+  },
+  // New style for hourly forecast card with extra spacing
+  hourlyForecastCard: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+    marginBottom: 24, // Increased margin for better separation
+  },
+  // New style for schedule card with proper spacing
+  scheduleCard: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+    marginBottom: 12,
+    marginTop: 8, // Added top margin for additional separation
   },
   metricsGrid: {
     flexDirection: 'row',
