@@ -132,14 +132,16 @@ export default function ChartDoughnut({
         ))}
       </Svg>
       
-      {/* Center text - properly centered using absolute positioning */}
+      {/* Center text - properly centered using absolute positioning with transform-like behavior */}
       {centerText && (
         <View style={[styles.centerTextContainer, {
-          left: containerSize / 2,
-          top: containerSize / 2,
+          width: containerSize,
+          height: containerSize,
         }]}>
-          <Text style={styles.centerText}>{centerText}</Text>
-          {subText ? <Text style={styles.subText}>{subText}</Text> : null}
+          <View style={styles.textWrapper}>
+            <Text style={styles.centerText}>{centerText}</Text>
+            {subText ? <Text style={styles.subText}>{subText}</Text> : null}
+          </View>
         </View>
       )}
     </View>
@@ -154,12 +156,14 @@ const styles = StyleSheet.create({
   },
   centerTextContainer: {
     position: 'absolute',
+    top: 0,
+    left: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    // Use marginLeft and marginTop to properly center the text
-    // This is equivalent to transform: translate(-50%, -50%) but works in RN
-    marginLeft: -50, // Approximate half width of text container
-    marginTop: -15,  // Approximate half height of text container
+  },
+  textWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   centerText: { 
     fontSize: 18, 
