@@ -33,6 +33,7 @@ export default function ChartDoughnut({
   const circumference = 2 * Math.PI * radius;
   const progressLength = Math.min(Math.max(progress, 0), 1) * circumference;
   const center = size / 2;
+  const containerSize = size + 40;
 
   // Generate scale marks
   const generateScaleMarks = () => {
@@ -77,13 +78,13 @@ export default function ChartDoughnut({
   const scaleMarks = generateScaleMarks();
 
   return (
-    <View style={{ width: size + 40, height: size + 40, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={size + 40} height={size + 40}>
+    <View style={[styles.container, { width: containerSize, height: containerSize }]}>
+      <Svg width={containerSize} height={containerSize}>
         {/* Background circle */}
         <Circle
           stroke={backgroundColor}
-          cx={(size + 40) / 2}
-          cy={(size + 40) / 2}
+          cx={containerSize / 2}
+          cy={containerSize / 2}
           r={radius}
           strokeWidth={strokeWidth}
           fill="none"
@@ -92,14 +93,14 @@ export default function ChartDoughnut({
         {/* Progress circle */}
         <Circle
           stroke={color}
-          cx={(size + 40) / 2}
-          cy={(size + 40) / 2}
+          cx={containerSize / 2}
+          cy={containerSize / 2}
           r={radius}
           strokeWidth={strokeWidth}
           strokeDasharray={`${progressLength}, ${circumference}`}
           strokeLinecap="round"
           fill="none"
-          transform={`rotate(-135 ${(size + 40) / 2} ${(size + 40) / 2})`}
+          transform={`rotate(-135 ${containerSize / 2} ${containerSize / 2})`}
         />
         
         {/* Scale marks and labels */}
@@ -131,9 +132,12 @@ export default function ChartDoughnut({
         ))}
       </Svg>
       
-      {/* Center text */}
+      {/* Center text - properly centered using absolute positioning */}
       {centerText && (
-        <View style={styles.center}>
+        <View style={[styles.centerTextContainer, {
+          left: containerSize / 2,
+          top: containerSize / 2,
+        }]}>
           <Text style={styles.centerText}>{centerText}</Text>
           {subText ? <Text style={styles.subText}>{subText}</Text> : null}
         </View>
@@ -143,24 +147,32 @@ export default function ChartDoughnut({
 }
 
 const styles = StyleSheet.create({
-  center: { 
-    position: 'absolute', 
-    alignItems: 'center', 
+  container: {
+    alignItems: 'center',
     justifyContent: 'center',
-    top: '50%',
-    left: '50%',
-    transform: [{ translateX: -50 }, { translateY: -50 }],
+    position: 'relative',
+  },
+  centerTextContainer: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    // Use marginLeft and marginTop to properly center the text
+    // This is equivalent to transform: translate(-50%, -50%) but works in RN
+    marginLeft: -50, // Approximate half width of text container
+    marginTop: -15,  // Approximate half height of text container
   },
   centerText: { 
     fontSize: 18, 
     fontWeight: '700', 
     color: colors.text, 
-    fontFamily: 'Roboto_700Bold' 
+    fontFamily: 'Roboto_700Bold',
+    textAlign: 'center',
   },
   subText: { 
     fontSize: 12, 
     color: colors.textMuted, 
     fontFamily: 'Roboto_400Regular',
     marginTop: 2,
+    textAlign: 'center',
   },
 });
