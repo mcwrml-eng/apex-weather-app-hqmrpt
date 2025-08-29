@@ -2,12 +2,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { BarChart, YAxis } from 'react-native-svg-charts';
+import Svg, { Polygon, Line } from 'react-native-svg';
 import { colors } from '../styles/commonStyles';
 
 interface HourlyData {
   time: string;
   windSpeed: number;
   windDirection: number;
+  windGusts: number;
 }
 
 interface Props {
@@ -27,6 +29,32 @@ function getWindDirectionLabel(degrees: number): string {
   const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
   const index = Math.round(degrees / 22.5) % 16;
   return directions[index];
+}
+
+// Wind direction arrow component
+function WindDirectionArrow({ direction, size = 12 }: { direction: number; size?: number }) {
+  const rotation = direction - 180; // Adjust so arrow points in wind direction
+  const arrowSize = size;
+  const halfSize = arrowSize / 2;
+  
+  return (
+    <Svg width={arrowSize} height={arrowSize} style={{ transform: [{ rotate: `${rotation}deg` }] }}>
+      <Polygon
+        points={`${halfSize},2 ${arrowSize - 2},${arrowSize - 2} ${halfSize},${arrowSize - 4} 2,${arrowSize - 2}`}
+        fill={colors.accent}
+        stroke={colors.accent}
+        strokeWidth="1"
+      />
+      <Line
+        x1={halfSize}
+        y1={2}
+        x2={halfSize}
+        y2={arrowSize - 2}
+        stroke={colors.accent}
+        strokeWidth="1.5"
+      />
+    </Svg>
+  );
 }
 
 export default function WindBarGraphs({ hourlyData, unit }: Props) {
@@ -59,34 +87,44 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
   }
 
   const windSpeedData = todayData.map(hour => hour.windSpeed);
+  const windGustData = todayData.map(hour => hour.windGusts);
   const windDirectionData = todayData.map(hour => hour.windDirection);
   
   const maxWindSpeed = Math.max(...windSpeedData);
+  const maxWindGust = Math.max(...windGustData);
+  const maxWind = Math.max(maxWindSpeed, maxWindGust);
   const minWindSpeed = Math.min(...windSpeedData);
   const speedUnit = unit === 'metric' ? 'km/h' : 'mph';
 
-  // Generate Y-axis labels for wind speed
+  // Generate Y-axis labels for wind speed (including gusts)
   const speedYAxisLabels = [];
-  const speedStep = Math.ceil(maxWindSpeed / 5);
-  for (let i = 0; i <= maxWindSpeed + speedStep; i += speedStep) {
+  const speedStep = Math.ceil(maxWind / 5);
+  for (let i = 0; i <= maxWind + speedStep; i += speedStep) {
     speedYAxisLabels.push(i);
   }
 
   // Generate Y-axis labels for wind direction (0-360 degrees)
   const directionYAxisLabels = [0, 90, 180, 270, 360];
 
+  // Combine wind speed and gust data for layered chart
+  const combinedWindData = todayData.map((hour, index) => ({
+    windSpeed: hour.windSpeed,
+    windGusts: hour.windGusts,
+    index
+  }));
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Today's Wind Conditions</Text>
-      <Text style={styles.subtitle}>Hourly wind speed and direction for {today.toLocaleDateString()}</Text>
+      <Text style={styles.subtitle}>Hourly wind speed, gusts, and direction for {today.toLocaleDateString()}</Text>
       
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Wind Speed Chart */}
+        {/* Wind Speed and Gusts Chart */}
         <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>Wind Speed ({speedUnit})</Text>
+          <Text style={styles.chartTitle}>Wind Speed & Gusts ({speedUnit})</Text>
           <View style={styles.chartWrapper}>
             <YAxis
-              data={windSpeedData}
+              data={[0, maxWind]}
               contentInset={{ top: 20, bottom: 20 }}
               svg={{
                 fill: colors.textMuted,
@@ -97,13 +135,25 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
               style={styles.yAxis}
             />
             <View style={styles.chartContent}>
+              {/* Wind Speed Bars */}
               <BarChart
-                style={styles.chart}
+                style={[styles.chart, { position: 'absolute' }]}
                 data={windSpeedData}
-                svg={{ fill: colors.wind }}
+                svg={{ fill: colors.wind, fillOpacity: 0.8 }}
                 contentInset={{ top: 20, bottom: 20 }}
                 spacingInner={0.2}
                 spacingOuter={0.1}
+                yMax={maxWind}
+              />
+              {/* Wind Gust Bars (overlay) */}
+              <BarChart
+                style={[styles.chart, { position: 'absolute' }]}
+                data={windGustData}
+                svg={{ fill: colors.accent, fillOpacity: 0.6 }}
+                contentInset={{ top: 20, bottom: 20 }}
+                spacingInner={0.2}
+                spacingOuter={0.1}
+                yMax={maxWind}
               />
               <View style={styles.xAxisLabels}>
                 {todayData.map((hour, index) => (
@@ -114,22 +164,32 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
               </View>
             </View>
           </View>
+          <View style={styles.legendContainer}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendColor, { backgroundColor: colors.wind }]} />
+              <Text style={styles.legendText}>Wind Speed</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendColor, { backgroundColor: colors.accent }]} />
+              <Text style={styles.legendText}>Wind Gusts</Text>
+            </View>
+          </View>
           <View style={styles.chartStats}>
             <Text style={styles.statText}>
-              Max: {Math.round(maxWindSpeed)} {speedUnit}
+              Max Speed: {Math.round(maxWindSpeed)} {speedUnit}
             </Text>
             <Text style={styles.statText}>
-              Min: {Math.round(minWindSpeed)} {speedUnit}
+              Max Gust: {Math.round(maxWindGust)} {speedUnit}
             </Text>
             <Text style={styles.statText}>
-              Avg: {Math.round(windSpeedData.reduce((a, b) => a + b, 0) / windSpeedData.length)} {speedUnit}
+              Avg Speed: {Math.round(windSpeedData.reduce((a, b) => a + b, 0) / windSpeedData.length)} {speedUnit}
             </Text>
           </View>
         </View>
 
-        {/* Wind Direction Chart */}
+        {/* Wind Direction Chart with Arrows */}
         <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>Wind Direction (degrees)</Text>
+          <Text style={styles.chartTitle}>Wind Direction with Arrows</Text>
           <View style={styles.chartWrapper}>
             <YAxis
               data={[0, 90, 180, 270, 360]}
@@ -146,7 +206,7 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
               <BarChart
                 style={styles.chart}
                 data={windDirectionData}
-                svg={{ fill: colors.accent }}
+                svg={{ fill: colors.accent, fillOpacity: 0.7 }}
                 contentInset={{ top: 20, bottom: 20 }}
                 spacingInner={0.2}
                 spacingOuter={0.1}
@@ -162,11 +222,25 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
               </View>
             </View>
           </View>
+          
+          {/* Wind Direction Arrows */}
+          <View style={styles.arrowContainer}>
+            {todayData.map((hour, index) => (
+              <View key={index} style={styles.arrowItem}>
+                <WindDirectionArrow direction={hour.windDirection} size={16} />
+              </View>
+            ))}
+          </View>
+          
+          {/* Compass Direction Labels */}
           <View style={styles.directionLabels}>
             {todayData.map((hour, index) => (
               <View key={index} style={styles.directionLabelContainer}>
                 <Text style={styles.directionLabel}>
                   {getWindDirectionLabel(hour.windDirection)}
+                </Text>
+                <Text style={styles.directionDegrees}>
+                  {Math.round(hour.windDirection)}°
                 </Text>
               </View>
             ))}
@@ -187,6 +261,17 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
               </Text>
             </View>
             <View style={styles.summaryItem}>
+              <Text style={styles.summaryLabel}>Strongest Gust</Text>
+              <Text style={styles.summaryValue}>
+                {Math.round(maxWindGust)} {speedUnit}
+              </Text>
+              <Text style={styles.summaryTime}>
+                at {formatHour(todayData[windGustData.indexOf(maxWindGust)].time)}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.summaryGrid}>
+            <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Calmest Period</Text>
               <Text style={styles.summaryValue}>
                 {Math.round(minWindSpeed)} {speedUnit}
@@ -195,9 +280,18 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
                 at {formatHour(todayData[windSpeedData.indexOf(minWindSpeed)].time)}
               </Text>
             </View>
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryLabel}>Avg Gust Factor</Text>
+              <Text style={styles.summaryValue}>
+                {(windGustData.reduce((a, b) => a + b, 0) / windSpeedData.reduce((a, b) => a + b, 0)).toFixed(1)}x
+              </Text>
+              <Text style={styles.summaryTime}>
+                gusts vs wind speed
+              </Text>
+            </View>
           </View>
           <Text style={styles.summaryNote}>
-            Wind direction shown as degrees from North (0°=N, 90°=E, 180°=S, 270°=W)
+            Arrows show wind direction (where wind is coming from). Wind direction shown as degrees from North (0°=N, 90°=E, 180°=S, 270°=W)
           </Text>
         </View>
       </ScrollView>
@@ -248,6 +342,7 @@ const styles = StyleSheet.create({
   },
   chartContent: {
     flex: 1,
+    position: 'relative',
   },
   chart: {
     flex: 1,
@@ -265,6 +360,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     flex: 1,
   },
+  legendContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
+    marginBottom: 8,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 2,
+  },
+  legendText: {
+    fontSize: 12,
+    color: colors.text,
+    fontFamily: 'Roboto_400Regular',
+  },
   chartStats: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -277,6 +393,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.text,
     fontFamily: 'Roboto_500Medium',
+  },
+  arrowContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 48,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  arrowItem: {
+    flex: 1,
+    alignItems: 'center',
   },
   directionLabels: {
     flexDirection: 'row',
@@ -292,6 +419,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.accent,
     fontFamily: 'Roboto_500Medium',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  directionDegrees: {
+    fontSize: 8,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
     textAlign: 'center',
   },
   summaryContainer: {
@@ -321,6 +455,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
     marginBottom: 4,
+    textAlign: 'center',
   },
   summaryValue: {
     fontSize: 18,
@@ -333,6 +468,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
+    textAlign: 'center',
   },
   summaryNote: {
     fontSize: 11,

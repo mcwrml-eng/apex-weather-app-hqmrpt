@@ -8,6 +8,7 @@ interface Current {
   apparent_temperature: number;
   wind_speed: number;
   wind_direction: number;
+  wind_gusts: number;
   humidity: number;
   weather_code: number;
   pressure: number;
@@ -27,6 +28,7 @@ interface DayInfo {
   precipitation_sum: number;
   wind_speed_max: number;
   wind_direction_dominant: number;
+  wind_gusts_max: number;
   uv_index_max: number;
   sunrise: string;
   sunset: string;
@@ -37,6 +39,7 @@ interface HourlyData {
   temperature: number;
   windSpeed: number;
   windDirection: number;
+  windGusts: number;
   humidity: number;
   precipitation: number;
   weatherCode: number;
@@ -119,12 +122,13 @@ function analyzeWeatherAlerts(current: Current | null, hourly: HourlyData[]): We
   
   if (!current || hourly.length === 0) return alerts;
   
-  // High wind alert
-  if (current.wind_speed > 50) { // 50+ km/h or mph depending on unit
+  // High wind alert (including gusts)
+  const maxWind = Math.max(current.wind_speed, current.wind_gusts);
+  if (maxWind > 50) { // 50+ km/h or mph depending on unit
     alerts.push({
       title: 'High Wind Warning',
-      description: `Strong winds of ${Math.round(current.wind_speed)} detected. May affect vehicle handling and safety.`,
-      severity: current.wind_speed > 70 ? 'severe' : 'moderate',
+      description: `Strong winds of ${Math.round(current.wind_speed)} with gusts up to ${Math.round(current.wind_gusts)} detected. May affect vehicle handling and safety.`,
+      severity: maxWind > 70 ? 'severe' : 'moderate',
       start: new Date().toISOString(),
       end: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(), // 3 hours
     });
@@ -206,9 +210,9 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
         const unitParams = toUnitParams(unit);
         const url =
           `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}` +
-          `&current=temperature_2m,apparent_temperature,wind_speed_10m,wind_direction_10m,relative_humidity_2m,weather_code,surface_pressure,visibility,uv_index,dew_point_2m,cloud_cover` +
-          `&hourly=temperature_2m,wind_speed_10m,wind_direction_10m,relative_humidity_2m,precipitation,precipitation_probability,weather_code,surface_pressure,visibility,uv_index,dew_point_2m,cloud_cover` +
-          `&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,wind_direction_10m_dominant,uv_index_max,sunrise,sunset` +
+          `&current=temperature_2m,apparent_temperature,wind_speed_10m,wind_direction_10m,wind_gusts_10m,relative_humidity_2m,weather_code,surface_pressure,visibility,uv_index,dew_point_2m,cloud_cover` +
+          `&hourly=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,relative_humidity_2m,precipitation,precipitation_probability,weather_code,surface_pressure,visibility,uv_index,dew_point_2m,cloud_cover` +
+          `&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,wind_direction_10m_dominant,wind_gusts_10m_max,uv_index_max,sunrise,sunset` +
           `&timezone=auto&forecast_days=7&forecast_hours=168` + // 7 days of hourly data
           `&temperature_unit=${unitParams.temperature_unit}&wind_speed_unit=${unitParams.wind_speed_unit}&precipitation_unit=${unitParams.precipitation_unit}`;
 
@@ -233,6 +237,7 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
           apparent_temperature: json?.current?.apparent_temperature ?? json?.current?.temperature_2m ?? 0,
           wind_speed: json?.current?.wind_speed_10m ?? 0,
           wind_direction: json?.current?.wind_direction_10m ?? 0,
+          wind_gusts: json?.current?.wind_gusts_10m ?? json?.current?.wind_speed_10m ?? 0,
           humidity: json?.current?.relative_humidity_2m ?? 0,
           weather_code: json?.current?.weather_code ?? 0,
           pressure: json?.current?.surface_pressure ?? 1013,
@@ -253,6 +258,7 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
           precipitation_sum: json?.daily?.precipitation_sum?.[idx] ?? 0,
           wind_speed_max: json?.daily?.wind_speed_10m_max?.[idx] ?? 0,
           wind_direction_dominant: json?.daily?.wind_direction_10m_dominant?.[idx] ?? 0,
+          wind_gusts_max: json?.daily?.wind_gusts_10m_max?.[idx] ?? json?.daily?.wind_speed_10m_max?.[idx] ?? 0,
           uv_index_max: json?.daily?.uv_index_max?.[idx] ?? 0,
           sunrise: json?.daily?.sunrise?.[idx] ?? '06:00',
           sunset: json?.daily?.sunset?.[idx] ?? '18:00',
@@ -268,6 +274,7 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
         const hourlyTemps = json?.hourly?.temperature_2m || [];
         const hourlyWindSpeeds = json?.hourly?.wind_speed_10m || [];
         const hourlyWindDirections = json?.hourly?.wind_direction_10m || [];
+        const hourlyWindGusts = json?.hourly?.wind_gusts_10m || [];
         const hourlyHumidity = json?.hourly?.relative_humidity_2m || [];
         const hourlyPrecipitation = json?.hourly?.precipitation || [];
         const hourlyPrecipitationProb = json?.hourly?.precipitation_probability || [];
@@ -283,6 +290,7 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
           temperature: hourlyTemps[idx] ?? 0,
           windSpeed: hourlyWindSpeeds[idx] ?? 0,
           windDirection: hourlyWindDirections[idx] ?? 0,
+          windGusts: hourlyWindGusts[idx] ?? hourlyWindSpeeds[idx] ?? 0,
           humidity: hourlyHumidity[idx] ?? 0,
           precipitation: hourlyPrecipitation[idx] ?? 0,
           precipitationProbability: hourlyPrecipitationProb[idx] ?? 0,

@@ -9,6 +9,7 @@ interface HourlyData {
   temperature: number;
   windSpeed: number;
   windDirection: number;
+  windGusts: number;
   humidity: number;
   precipitation: number;
   precipitationProbability: number;
