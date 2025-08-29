@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 import { colors } from '../styles/commonStyles';
 
 interface Props {
@@ -12,6 +12,9 @@ interface Props {
   backgroundColor?: string;
   centerText?: string;
   subText?: string;
+  showScale?: boolean;
+  maxValue?: number;
+  unit?: string;
 }
 
 export default function ChartDoughnut({
@@ -22,34 +25,113 @@ export default function ChartDoughnut({
   backgroundColor = colors.divider,
   centerText,
   subText,
+  showScale = true,
+  maxValue = 100,
+  unit = '%',
 }: Props) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const progressLength = Math.min(Math.max(progress, 0), 1) * circumference;
+  const center = size / 2;
+
+  // Generate scale marks
+  const generateScaleMarks = () => {
+    if (!showScale) return [];
+    
+    const marks = [];
+    const numberOfMarks = 8; // 0%, 12.5%, 25%, 37.5%, 50%, 62.5%, 75%, 87.5%, 100%
+    
+    for (let i = 0; i <= numberOfMarks; i++) {
+      const angle = (i / numberOfMarks) * 270 - 135; // Start from -135° (bottom left), go 270° clockwise
+      const value = (i / numberOfMarks) * maxValue;
+      const radian = (angle * Math.PI) / 180;
+      
+      // Position for scale text (slightly outside the circle)
+      const textRadius = radius + strokeWidth / 2 + 16;
+      const x = center + textRadius * Math.cos(radian);
+      const y = center + textRadius * Math.sin(radian);
+      
+      // Position for scale tick marks
+      const tickOuterRadius = radius + strokeWidth / 2 + 8;
+      const tickInnerRadius = radius + strokeWidth / 2 + 4;
+      const tickX1 = center + tickInnerRadius * Math.cos(radian);
+      const tickY1 = center + tickInnerRadius * Math.sin(radian);
+      const tickX2 = center + tickOuterRadius * Math.cos(radian);
+      const tickY2 = center + tickOuterRadius * Math.sin(radian);
+      
+      marks.push({
+        value: Math.round(value),
+        x,
+        y,
+        tickX1,
+        tickY1,
+        tickX2,
+        tickY2,
+        angle,
+      });
+    }
+    
+    return marks;
+  };
+
+  const scaleMarks = generateScaleMarks();
 
   return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={size} height={size}>
+    <View style={{ width: size + 40, height: size + 40, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size + 40} height={size + 40}>
+        {/* Background circle */}
         <Circle
           stroke={backgroundColor}
-          cx={size / 2}
-          cy={size / 2}
+          cx={(size + 40) / 2}
+          cy={(size + 40) / 2}
           r={radius}
           strokeWidth={strokeWidth}
           fill="none"
         />
+        
+        {/* Progress circle */}
         <Circle
           stroke={color}
-          cx={size / 2}
-          cy={size / 2}
+          cx={(size + 40) / 2}
+          cy={(size + 40) / 2}
           r={radius}
           strokeWidth={strokeWidth}
           strokeDasharray={`${progressLength}, ${circumference}`}
           strokeLinecap="round"
           fill="none"
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          transform={`rotate(-135 ${(size + 40) / 2} ${(size + 40) / 2})`}
         />
+        
+        {/* Scale marks and labels */}
+        {showScale && scaleMarks.map((mark, index) => (
+          <React.Fragment key={index}>
+            {/* Tick mark */}
+            <Circle
+              cx={mark.tickX2 + 20}
+              cy={mark.tickY2 + 20}
+              r={1.5}
+              fill={colors.textMuted}
+            />
+            
+            {/* Scale label - only show every other mark to avoid crowding */}
+            {index % 2 === 0 && (
+              <SvgText
+                x={mark.x + 20}
+                y={mark.y + 20}
+                fontSize="10"
+                fill={colors.textMuted}
+                textAnchor="middle"
+                alignmentBaseline="middle"
+                fontFamily="Roboto_400Regular"
+              >
+                {mark.value}{unit}
+              </SvgText>
+            )}
+          </React.Fragment>
+        ))}
       </Svg>
+      
+      {/* Center text */}
       {centerText && (
         <View style={styles.center}>
           <Text style={styles.centerText}>{centerText}</Text>
@@ -61,7 +143,24 @@ export default function ChartDoughnut({
 }
 
 const styles = StyleSheet.create({
-  center: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
-  centerText: { fontSize: 18, fontWeight: '700', color: colors.text, fontFamily: 'Roboto_700Bold' },
-  subText: { fontSize: 12, color: colors.textMuted, fontFamily: 'Roboto_400Regular' },
+  center: { 
+    position: 'absolute', 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -50 }, { translateY: -50 }],
+  },
+  centerText: { 
+    fontSize: 18, 
+    fontWeight: '700', 
+    color: colors.text, 
+    fontFamily: 'Roboto_700Bold' 
+  },
+  subText: { 
+    fontSize: 12, 
+    color: colors.textMuted, 
+    fontFamily: 'Roboto_400Regular',
+    marginTop: 2,
+  },
 });

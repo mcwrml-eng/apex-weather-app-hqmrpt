@@ -229,8 +229,42 @@ function DetailScreen() {
                 backgroundColor={colors.divider}
                 centerText={`${daily.precipitation_probability_max ?? 0}%`}
                 subText="chance today"
+                showScale={true}
+                maxValue={100}
+                unit="%"
               />
             </View>
+
+            {/* Additional Weather Metrics with Doughnut Charts */}
+            {current && (
+              <View style={styles.metricsGrid}>
+                <View style={styles.metricCard}>
+                  <Text style={styles.metricLabel}>Humidity</Text>
+                  <ChartDoughnut
+                    size={100}
+                    strokeWidth={12}
+                    progress={current.humidity / 100}
+                    color={colors.humidity}
+                    backgroundColor={colors.divider}
+                    centerText={`${current.humidity}%`}
+                    showScale={false}
+                  />
+                </View>
+
+                <View style={styles.metricCard}>
+                  <Text style={styles.metricLabel}>Cloud Cover</Text>
+                  <ChartDoughnut
+                    size={100}
+                    strokeWidth={12}
+                    progress={current.cloud_cover / 100}
+                    color={colors.textMuted}
+                    backgroundColor={colors.divider}
+                    centerText={`${current.cloud_cover}%`}
+                    showScale={false}
+                  />
+                </View>
+              </View>
+            )}
 
             <View style={styles.card}>
               <Text style={styles.cardLabel}>7-Day Forecast</Text>
@@ -399,7 +433,7 @@ function DetailScreen() {
             )}
             <View style={{ height: 20 }} />
             <Text style={styles.muted}>
-              72-hour enhanced forecast data. Charts update every 10 minutes with detailed atmospheric conditions.
+              72-hour enhanced forecast data with number scales for precise readings. Charts update every 10 minutes with detailed atmospheric conditions.
             </Text>
           </ScrollView>
         </BottomSheetView>
@@ -480,6 +514,27 @@ const styles = StyleSheet.create({
     borderColor: colors.divider,
     marginBottom: 12,
     boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  metricCard: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    alignItems: 'center',
+    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+  },
+  metricLabel: {
+    fontSize: 14,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_500Medium',
+    marginBottom: 8,
   },
   mapContainer: {
     alignItems: 'center',
