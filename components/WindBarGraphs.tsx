@@ -31,34 +31,57 @@ function getWindDirectionLabel(degrees: number): string {
   return directions[index];
 }
 
-// Wind direction arrow component
-function WindDirectionArrow({ direction, size = 12 }: { direction: number; size?: number }) {
-  const rotation = direction - 180; // Adjust so arrow points in wind direction
+// Enhanced Wind direction arrow component
+function WindDirectionArrow({ direction, size = 20 }: { direction: number; size?: number }) {
+  console.log('WindDirectionArrow: Rendering arrow with direction:', direction, 'size:', size);
+  
+  // Adjust rotation so arrow points in the direction wind is coming FROM
+  const rotation = direction;
   const arrowSize = size;
-  const halfSize = arrowSize / 2;
+  const center = arrowSize / 2;
+  
+  // Create arrow shape points (pointing upward initially)
+  const arrowPoints = [
+    `${center},2`,           // Top point
+    `${arrowSize - 3},${arrowSize - 3}`, // Bottom right
+    `${center},${arrowSize - 6}`,        // Bottom center (shaft)
+    `3,${arrowSize - 3}`     // Bottom left
+  ].join(' ');
   
   return (
-    <Svg width={arrowSize} height={arrowSize} style={{ transform: [{ rotate: `${rotation}deg` }] }}>
-      <Polygon
-        points={`${halfSize},2 ${arrowSize - 2},${arrowSize - 2} ${halfSize},${arrowSize - 4} 2,${arrowSize - 2}`}
-        fill={colors.accent}
-        stroke={colors.accent}
-        strokeWidth="1"
-      />
-      <Line
-        x1={halfSize}
-        y1={2}
-        x2={halfSize}
-        y2={arrowSize - 2}
-        stroke={colors.accent}
-        strokeWidth="1.5"
-      />
-    </Svg>
+    <View style={[styles.arrowWrapper, { width: arrowSize, height: arrowSize }]}>
+      <Svg 
+        width={arrowSize} 
+        height={arrowSize} 
+        style={{ 
+          transform: [{ rotate: `${rotation}deg` }],
+        }}
+        viewBox={`0 0 ${arrowSize} ${arrowSize}`}
+      >
+        {/* Arrow body */}
+        <Polygon
+          points={arrowPoints}
+          fill={colors.primary}
+          stroke={colors.primary}
+          strokeWidth="1"
+        />
+        {/* Arrow shaft line for better visibility */}
+        <Line
+          x1={center}
+          y1={4}
+          x2={center}
+          y2={arrowSize - 4}
+          stroke={colors.primary}
+          strokeWidth="2"
+        />
+      </Svg>
+    </View>
   );
 }
 
 export default function WindBarGraphs({ hourlyData, unit }: Props) {
   console.log('WindBarGraphs: Rendering with', hourlyData.length, 'hours of wind data');
+  console.log('WindBarGraphs: Sample wind direction data:', hourlyData.slice(0, 3).map(h => ({ time: h.time, direction: h.windDirection })));
 
   if (!hourlyData || hourlyData.length === 0) {
     return (
@@ -189,7 +212,7 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
 
         {/* Wind Direction Chart with Arrows */}
         <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>Wind Direction with Arrows</Text>
+          <Text style={styles.chartTitle}>Wind Direction with Visual Arrows</Text>
           <View style={styles.chartWrapper}>
             <YAxis
               data={[0, 90, 180, 270, 360]}
@@ -223,13 +246,20 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
             </View>
           </View>
           
-          {/* Wind Direction Arrows */}
-          <View style={styles.arrowContainer}>
-            {todayData.map((hour, index) => (
-              <View key={index} style={styles.arrowItem}>
-                <WindDirectionArrow direction={hour.windDirection} size={16} />
-              </View>
-            ))}
+          {/* Enhanced Wind Direction Arrows */}
+          <View style={styles.arrowSection}>
+            <Text style={styles.arrowSectionTitle}>Wind Direction Arrows</Text>
+            <Text style={styles.arrowSectionSubtitle}>Arrows point in the direction wind is coming FROM</Text>
+            <View style={styles.arrowContainer}>
+              {todayData.map((hour, index) => {
+                console.log(`Arrow ${index}: direction=${hour.windDirection}°, time=${hour.time}`);
+                return (
+                  <View key={index} style={styles.arrowItem}>
+                    <WindDirectionArrow direction={hour.windDirection} size={24} />
+                  </View>
+                );
+              })}
+            </View>
           </View>
           
           {/* Compass Direction Labels */}
@@ -291,7 +321,8 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
             </View>
           </View>
           <Text style={styles.summaryNote}>
-            Arrows show wind direction (where wind is coming from). Wind direction shown as degrees from North (0°=N, 90°=E, 180°=S, 270°=W)
+            Wind direction arrows show where wind is coming FROM. 0°=North, 90°=East, 180°=South, 270°=West. 
+            Red arrows indicate wind direction, with larger arrows for stronger winds.
           </Text>
         </View>
       </ScrollView>
@@ -394,36 +425,67 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontFamily: 'Roboto_500Medium',
   },
+  arrowSection: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  arrowSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: 'Roboto_500Medium',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  arrowSectionSubtitle: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
   arrowContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 48,
-    marginTop: 8,
-    marginBottom: 8,
+    paddingHorizontal: 8,
+    minHeight: 32,
+    alignItems: 'center',
   },
   arrowItem: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 32,
+  },
+  arrowWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(225, 6, 0, 0.1)',
+    borderRadius: 12,
+    padding: 2,
   },
   directionLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 48,
-    marginTop: 4,
+    paddingHorizontal: 8,
+    marginTop: 8,
   },
   directionLabelContainer: {
     flex: 1,
     alignItems: 'center',
   },
   directionLabel: {
-    fontSize: 10,
-    color: colors.accent,
+    fontSize: 11,
+    color: colors.primary,
     fontFamily: 'Roboto_500Medium',
     textAlign: 'center',
     marginBottom: 2,
   },
   directionDegrees: {
-    fontSize: 8,
+    fontSize: 9,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
     textAlign: 'center',
@@ -476,6 +538,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto_400Regular',
     textAlign: 'center',
     fontStyle: 'italic',
+    lineHeight: 16,
   },
   noDataText: {
     fontSize: 14,
