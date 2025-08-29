@@ -101,6 +101,7 @@ function DetailScreen() {
   };
 
   console.log('DetailScreen: Render state - loading:', loading, 'error:', error, 'windData length:', windData.length);
+  console.log('DetailScreen: Current wind data sample:', windData.slice(0, 2));
 
   return (
     <View style={styles.wrapper}>
@@ -153,17 +154,23 @@ function DetailScreen() {
           </View>
         )}
 
-        {/* Wind Speed, Gusts and Direction Bar Graphs */}
+        {/* Wind Speed, Gusts and Direction Bar Graphs - Always show if we have data */}
         {!loading && windData.length > 0 && (
-          <>
+          <View>
             <Text style={styles.debugText}>
               Debug: Rendering WindBarGraphs with {windData.length} data points
+            </Text>
+            <Text style={styles.debugText}>
+              Sample wind speeds: {windData.slice(0, 3).map(d => d.windSpeed).join(', ')}
+            </Text>
+            <Text style={styles.debugText}>
+              Sample wind gusts: {windData.slice(0, 3).map(d => d.windGusts).join(', ')}
             </Text>
             <WindBarGraphs
               hourlyData={windData}
               unit={unit}
             />
-          </>
+          </View>
         )}
 
         {/* Debug info when no wind data */}

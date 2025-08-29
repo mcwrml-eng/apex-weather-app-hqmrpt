@@ -109,21 +109,21 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
   }
 
   // Extract and validate wind data with proper fallbacks
-  const windSpeedData = displayData.map(hour => {
+  const windSpeedData = displayData.map((hour, index) => {
     const speed = Number(hour.windSpeed) || 0;
-    console.log(`WindBarGraphs: Hour ${hour.time} - windSpeed: ${hour.windSpeed} -> ${speed}`);
-    return speed;
+    console.log(`WindBarGraphs: Hour ${index} ${hour.time} - windSpeed: ${hour.windSpeed} -> ${speed}`);
+    return { value: speed, index };
   });
   
-  const windGustData = displayData.map(hour => {
+  const windGustData = displayData.map((hour, index) => {
     const gusts = Number(hour.windGusts) || 0;
-    console.log(`WindBarGraphs: Hour ${hour.time} - windGusts: ${hour.windGusts} -> ${gusts}`);
-    return gusts;
+    console.log(`WindBarGraphs: Hour ${index} ${hour.time} - windGusts: ${hour.windGusts} -> ${gusts}`);
+    return { value: gusts, index };
   });
   
-  const windDirectionData = displayData.map(hour => {
+  const windDirectionData = displayData.map((hour, index) => {
     const direction = Number(hour.windDirection) || 0;
-    return direction;
+    return { value: direction, index };
   });
   
   console.log('WindBarGraphs: Processed wind speed data:', windSpeedData.slice(0, 5));
@@ -131,10 +131,10 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
   console.log('WindBarGraphs: Processed wind direction data:', windDirectionData.slice(0, 5));
   
   // Calculate scales with proper minimums to ensure visibility
-  const maxWindSpeed = Math.max(...windSpeedData, 5); // Minimum scale of 5
-  const maxWindGust = Math.max(...windGustData, 5);
+  const maxWindSpeed = Math.max(...windSpeedData.map(d => d.value), 5); // Minimum scale of 5
+  const maxWindGust = Math.max(...windGustData.map(d => d.value), 5);
   const maxWind = Math.max(maxWindSpeed, maxWindGust, 10); // Ensure minimum scale of 10
-  const minWindSpeed = Math.min(...windSpeedData);
+  const minWindSpeed = Math.min(...windSpeedData.map(d => d.value));
   const speedUnit = unit === 'metric' ? 'km/h' : 'mph';
 
   console.log('WindBarGraphs: Scale calculations - maxWindSpeed:', maxWindSpeed, 'maxWindGust:', maxWindGust, 'maxWind:', maxWind);
@@ -147,6 +147,13 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
   }
 
   console.log('WindBarGraphs: Y-axis labels:', speedYAxisLabels);
+
+  // Prepare data for BarChart - it expects simple number arrays
+  const windSpeedValues = windSpeedData.map(d => d.value);
+  const windGustValues = windGustData.map(d => d.value);
+  const windDirectionValues = windDirectionData.map(d => d.value);
+
+  console.log('WindBarGraphs: Final chart data - speeds:', windSpeedValues.slice(0, 5), 'gusts:', windGustValues.slice(0, 5));
 
   return (
     <View style={styles.container}>
@@ -172,8 +179,8 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
             <View style={styles.chartContent}>
               {/* Wind Speed Bars */}
               <BarChart
-                style={[styles.chart, { position: 'absolute' }]}
-                data={windSpeedData}
+                style={[styles.chart]}
+                data={windSpeedValues}
                 svg={{ fill: colors.wind, fillOpacity: 0.8 }}
                 contentInset={{ top: 20, bottom: 20 }}
                 spacingInner={0.2}
@@ -183,8 +190,8 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
               />
               {/* Wind Gust Bars (overlay) */}
               <BarChart
-                style={[styles.chart, { position: 'absolute' }]}
-                data={windGustData}
+                style={[styles.chart, { position: 'absolute', top: 0 }]}
+                data={windGustValues}
                 svg={{ fill: colors.accent, fillOpacity: 0.6 }}
                 contentInset={{ top: 20, bottom: 20 }}
                 spacingInner={0.2}
@@ -219,7 +226,7 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
               Max Gust: {Math.round(maxWindGust)} {speedUnit}
             </Text>
             <Text style={styles.statText}>
-              Avg Speed: {Math.round(windSpeedData.reduce((a, b) => a + b, 0) / windSpeedData.length)} {speedUnit}
+              Avg Speed: {Math.round(windSpeedValues.reduce((a, b) => a + b, 0) / windSpeedValues.length)} {speedUnit}
             </Text>
           </View>
         </View>
@@ -242,7 +249,7 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
             <View style={styles.chartContent}>
               <BarChart
                 style={styles.chart}
-                data={windDirectionData}
+                data={windDirectionValues}
                 svg={{ fill: colors.accent, fillOpacity: 0.7 }}
                 contentInset={{ top: 20, bottom: 20 }}
                 spacingInner={0.2}
@@ -301,7 +308,7 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
                 {Math.round(maxWindSpeed)} {speedUnit}
               </Text>
               <Text style={styles.summaryTime}>
-                at {formatHour(displayData[windSpeedData.indexOf(maxWindSpeed)].time)}
+                at {formatHour(displayData[windSpeedValues.indexOf(maxWindSpeed)].time)}
               </Text>
             </View>
             <View style={styles.summaryItem}>
@@ -310,7 +317,7 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
                 {Math.round(maxWindGust)} {speedUnit}
               </Text>
               <Text style={styles.summaryTime}>
-                at {formatHour(displayData[windGustData.indexOf(maxWindGust)].time)}
+                at {formatHour(displayData[windGustValues.indexOf(maxWindGust)].time)}
               </Text>
             </View>
           </View>
@@ -321,14 +328,14 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
                 {Math.round(minWindSpeed)} {speedUnit}
               </Text>
               <Text style={styles.summaryTime}>
-                at {formatHour(displayData[windSpeedData.indexOf(minWindSpeed)].time)}
+                at {formatHour(displayData[windSpeedValues.indexOf(minWindSpeed)].time)}
               </Text>
             </View>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Avg Gust Factor</Text>
               <Text style={styles.summaryValue}>
-                {windSpeedData.reduce((a, b) => a + b, 0) > 0 ? 
-                  (windGustData.reduce((a, b) => a + b, 0) / windSpeedData.reduce((a, b) => a + b, 0)).toFixed(1) : '0.0'}x
+                {windSpeedValues.reduce((a, b) => a + b, 0) > 0 ? 
+                  (windGustValues.reduce((a, b) => a + b, 0) / windSpeedValues.reduce((a, b) => a + b, 0)).toFixed(1) : '0.0'}x
               </Text>
               <Text style={styles.summaryTime}>
                 gusts vs wind speed
