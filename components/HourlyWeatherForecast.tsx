@@ -11,7 +11,13 @@ interface HourlyData {
   windDirection: number;
   humidity: number;
   precipitation: number;
+  precipitationProbability?: number;
   weatherCode: number;
+  pressure?: number;
+  visibility?: number;
+  uvIndex?: number;
+  dewPoint?: number;
+  cloudCover?: number;
 }
 
 interface Props {
@@ -33,16 +39,21 @@ function isNightTime(timeString: string, latitude: number, longitude: number): b
   const date = new Date(timeString);
   const hour = date.getHours();
   
-  // Rough approximation: adjust for longitude (each 15 degrees = 1 hour)
+  // Enhanced calculation with seasonal adjustment
+  const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000);
+  const seasonalOffset = Math.sin((dayOfYear - 81) * 2 * Math.PI / 365) * 2;
+  
   const timeZoneOffset = longitude / 15;
   const localHour = (hour + timeZoneOffset + 24) % 24;
   
-  // Consider it night between 7 PM and 6 AM
-  return localHour < 6 || localHour > 19;
+  const sunriseHour = 6 - seasonalOffset;
+  const sunsetHour = 18 + seasonalOffset;
+  
+  return localHour < sunriseHour || localHour > sunsetHour;
 }
 
 export default function HourlyWeatherForecast({ hourlyData, unit, latitude, longitude }: Props) {
-  console.log('HourlyWeatherForecast: Rendering with', hourlyData.length, 'hours of data');
+  console.log('HourlyWeatherForecast: Rendering with', hourlyData.length, 'hours of enhanced data');
 
   if (!hourlyData || hourlyData.length === 0) {
     return (
@@ -54,7 +65,7 @@ export default function HourlyWeatherForecast({ hourlyData, unit, latitude, long
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>24-Hour Forecast</Text>
+      <Text style={styles.title}>24-Hour Enhanced Forecast</Text>
       <ScrollView 
         horizontal 
         showsHorizontalScrollIndicator={false}
@@ -77,6 +88,7 @@ export default function HourlyWeatherForecast({ hourlyData, unit, latitude, long
                   isNight={isNight}
                   latitude={latitude}
                   longitude={longitude}
+                  time={hour.time}
                 />
               </View>
               
@@ -85,14 +97,31 @@ export default function HourlyWeatherForecast({ hourlyData, unit, latitude, long
               </Text>
               
               {hour.precipitation > 0 && (
-                <Text style={styles.precipitation}>
-                  {Math.round(hour.precipitation)}mm
-                </Text>
+                <View style={styles.precipitationContainer}>
+                  <Text style={styles.precipitation}>
+                    {Math.round(hour.precipitation)}mm
+                  </Text>
+                  {hour.precipitationProbability !== undefined && (
+                    <Text style={styles.precipitationProb}>
+                      {Math.round(hour.precipitationProbability)}%
+                    </Text>
+                  )}
+                </View>
               )}
               
               <Text style={styles.windSpeed}>
                 {Math.round(hour.windSpeed)} {unit === 'metric' ? 'km/h' : 'mph'}
               </Text>
+              
+              <Text style={styles.humidity}>
+                {Math.round(hour.humidity)}%
+              </Text>
+              
+              {hour.uvIndex !== undefined && hour.uvIndex > 0 && (
+                <Text style={styles.uvIndex}>
+                  UV {Math.round(hour.uvIndex)}
+                </Text>
+              )}
             </View>
           );
         })}
@@ -127,7 +156,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundAlt,
     borderRadius: 12,
     padding: 12,
-    minWidth: 80,
+    minWidth: 85,
     borderWidth: 1,
     borderColor: colors.divider,
   },
@@ -150,15 +179,35 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto_700Bold',
     marginBottom: 4,
   },
+  precipitationContainer: {
+    alignItems: 'center',
+    marginBottom: 3,
+  },
   precipitation: {
     fontSize: 11,
     color: colors.precipitation,
+    fontFamily: 'Roboto_500Medium',
+  },
+  precipitationProb: {
+    fontSize: 9,
+    color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
-    marginBottom: 2,
   },
   windSpeed: {
     fontSize: 10,
-    color: colors.textMuted,
+    color: colors.wind,
+    fontFamily: 'Roboto_400Regular',
+    marginBottom: 2,
+  },
+  humidity: {
+    fontSize: 10,
+    color: colors.humidity,
+    fontFamily: 'Roboto_400Regular',
+    marginBottom: 2,
+  },
+  uvIndex: {
+    fontSize: 9,
+    color: colors.warning,
     fontFamily: 'Roboto_400Regular',
   },
   noDataText: {

@@ -9,6 +9,8 @@ import ChartDoughnut from '../../components/ChartDoughnut';
 import TrackMap from '../../components/TrackMap';
 import WeatherChart from '../../components/WeatherChart';
 import WeatherSymbol from '../../components/WeatherSymbol';
+import EnhancedWeatherForecast from '../../components/EnhancedWeatherForecast';
+import WeatherAlerts from '../../components/WeatherAlerts';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
@@ -23,17 +25,20 @@ function DetailScreen() {
   const circuit = getCircuitBySlug(slug, category);
   const { unit, toggleUnit } = useUnit();
 
-  const { current, daily, hourly, loading, error } = useWeather(circuit.latitude, circuit.longitude, unit);
+  const { current, daily, hourly, alerts, loading, error, lastUpdated } = useWeather(circuit.latitude, circuit.longitude, unit);
 
   const settingsRef = useRef<BottomSheet>(null);
   const scheduleRef = useRef<BottomSheet>(null);
   const chartsRef = useRef<BottomSheet>(null);
+  const forecastRef = useRef<BottomSheet>(null);
   const settingsSnap = useMemo(() => ['32%', '60%'], []);
   const scheduleSnap = useMemo(() => ['40%', '85%'], []);
   const chartsSnap = useMemo(() => ['50%', '90%'], []);
+  const forecastSnap = useMemo(() => ['60%', '95%'], []);
   const openSettings = useCallback(() => settingsRef.current?.expand(), []);
   const openSchedule = useCallback(() => scheduleRef.current?.expand(), []);
   const openCharts = useCallback(() => chartsRef.current?.expand(), []);
+  const openForecast = useCallback(() => forecastRef.current?.expand(), []);
 
   const schedule: WeekendSession[] = useMemo(() => getWeekendSchedule(slug, category), [slug, category]);
 
@@ -47,6 +52,34 @@ function DetailScreen() {
       precipitation: h.precipitation,
     }));
   }, [hourly]);
+
+  // Get weather condition description
+  const getWeatherDescription = (code: number): string => {
+    const descriptions: { [key: number]: string } = {
+      0: 'Clear sky',
+      1: 'Mainly clear',
+      2: 'Partly cloudy',
+      3: 'Overcast',
+      45: 'Fog',
+      48: 'Depositing rime fog',
+      51: 'Light drizzle',
+      53: 'Moderate drizzle',
+      55: 'Dense drizzle',
+      61: 'Slight rain',
+      63: 'Moderate rain',
+      65: 'Heavy rain',
+      71: 'Slight snow',
+      73: 'Moderate snow',
+      75: 'Heavy snow',
+      80: 'Slight rain showers',
+      81: 'Moderate rain showers',
+      82: 'Violent rain showers',
+      95: 'Thunderstorm',
+      96: 'Thunderstorm with hail',
+      99: 'Thunderstorm with heavy hail',
+    };
+    return descriptions[code] || 'Unknown conditions';
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -65,6 +98,9 @@ function DetailScreen() {
         <Text style={styles.subtitle}>{circuit.country} • {category.toUpperCase()}</Text>
 
         <View style={styles.actions}>
+          <TouchableOpacity onPress={openForecast} style={styles.actionBtn} activeOpacity={0.8}>
+            <Icon name="time-outline" size={22} color={colors.text} />
+          </TouchableOpacity>
           <TouchableOpacity onPress={openCharts} style={styles.actionBtn} activeOpacity={0.8}>
             <Icon name="analytics-outline" size={22} color={colors.text} />
           </TouchableOpacity>
@@ -78,12 +114,27 @@ function DetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {loading && <Text style={styles.muted}>Loading weather…</Text>}
-        {error && <Text style={styles.error}>Failed to load. Please try again.</Text>}
+        {loading && <Text style={styles.muted}>Loading enhanced weather data…</Text>}
+        {error && <Text style={styles.error}>Failed to load weather data. Please try again.</Text>}
 
-        {/* Track Map with Wind Direction */}
+        {/* Weather Alerts */}
+        {!loading && alerts && alerts.length > 0 && (
+          <WeatherAlerts alerts={alerts} />
+        )}
+
+        {/* Last Updated Info */}
+        {!loading && lastUpdated && (
+          <View style={styles.updateInfo}>
+            <Icon name="refresh" size={14} color={colors.textMuted} />
+            <Text style={styles.updateText}>
+              Updated {lastUpdated.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+            </Text>
+          </View>
+        )}
+
+        {/* Track Map with Enhanced Wind Data */}
         <View style={styles.card}>
-          <Text style={styles.cardLabel}>Track Layout & Wind</Text>
+          <Text style={styles.cardLabel}>Track Layout & Wind Conditions</Text>
           <View style={styles.mapContainer}>
             <TrackMap
               circuitSlug={circuit.slug}
@@ -92,83 +143,128 @@ function DetailScreen() {
               size={200}
             />
           </View>
-          <Text style={styles.mapNote}>
-            Wind arrows show current direction and speed across the track
-          </Text>
+          {current && (
+            <View style={styles.windInfo}>
+              <Text style={styles.windText}>
+                Wind: {Math.round(current.wind_speed)} {unit === 'metric' ? 'km/h' : 'mph'} 
+                from {Math.round(current.wind_direction)}°
+              </Text>
+              <Text style={styles.mapNote}>
+                Wind arrows show current direction and speed across the track
+              </Text>
+            </View>
+          )}
         </View>
 
-        {/* Current Weather Display with Symbol */}
+        {/* Enhanced Current Weather Display */}
         {!loading && current && (
           <View style={styles.card}>
-            <Text style={styles.cardLabel}>Current Weather</Text>
+            <Text style={styles.cardLabel}>Current Conditions</Text>
             <View style={styles.currentWeatherContainer}>
               <WeatherSymbol 
                 weatherCode={current.weather_code} 
-                size={48}
+                size={56}
                 latitude={circuit.latitude}
                 longitude={circuit.longitude}
               />
               <View style={styles.currentWeatherText}>
                 <Text style={styles.cardValue}>{Math.round(current.temperature)}°{unit === 'metric' ? 'C' : 'F'}</Text>
-                <Text style={styles.muted}>Feels {Math.round(current.apparent_temperature)}°</Text>
+                <Text style={styles.feelsLike}>Feels {Math.round(current.apparent_temperature)}°</Text>
+                <Text style={styles.weatherDescription}>
+                  {getWeatherDescription(current.weather_code)}
+                </Text>
               </View>
             </View>
           </View>
         )}
 
+        {/* Enhanced Weather Details Grid */}
         {!loading && current && (
-          <View style={styles.cardRow}>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Current Temp</Text>
-              <Text style={styles.cardValue}>{Math.round(current.temperature)}°{unit === 'metric' ? 'C' : 'F'}</Text>
-              <Text style={styles.muted}>Feels {Math.round(current.apparent_temperature)}°</Text>
+          <View style={styles.detailsGrid}>
+            <View style={styles.detailCard}>
+              <Icon name="thermometer" size={20} color={colors.temperature} />
+              <Text style={styles.detailLabel}>Temperature</Text>
+              <Text style={styles.detailValue}>{Math.round(current.temperature)}°{unit === 'metric' ? 'C' : 'F'}</Text>
+              <Text style={styles.detailSub}>Dew point: {Math.round(current.dew_point)}°</Text>
             </View>
 
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Wind</Text>
-              <Text style={styles.cardValue}>{Math.round(current.wind_speed)} {unit === 'metric' ? 'km/h' : 'mph'}</Text>
-              <Text style={styles.muted}>
-                {Math.round(current.wind_direction)}° • {current.humidity}% humidity
-              </Text>
+            <View style={styles.detailCard}>
+              <Icon name="eye" size={20} color={colors.wind} />
+              <Text style={styles.detailLabel}>Visibility</Text>
+              <Text style={styles.detailValue}>{Math.round(current.visibility / 1000)}km</Text>
+              <Text style={styles.detailSub}>Cloud cover: {current.cloud_cover}%</Text>
             </View>
+
+            <View style={styles.detailCard}>
+              <Icon name="speedometer" size={20} color={colors.textMuted} />
+              <Text style={styles.detailLabel}>Pressure</Text>
+              <Text style={styles.detailValue}>{Math.round(current.pressure)} hPa</Text>
+              <Text style={styles.detailSub}>Sea level</Text>
+            </View>
+
+            {current.uv_index > 0 && (
+              <View style={styles.detailCard}>
+                <Icon name="sunny" size={20} color={colors.warning} />
+                <Text style={styles.detailLabel}>UV Index</Text>
+                <Text style={styles.detailValue}>{Math.round(current.uv_index)}</Text>
+                <Text style={styles.detailSub}>
+                  {current.uv_index <= 2 ? 'Low' : 
+                   current.uv_index <= 5 ? 'Moderate' : 
+                   current.uv_index <= 7 ? 'High' : 'Very High'}
+                </Text>
+              </View>
+            )}
           </View>
         )}
 
         {!loading && daily && (
           <>
             <View style={styles.chartCard}>
-              <Text style={styles.cardLabel}>Chance of Rain</Text>
+              <Text style={styles.cardLabel}>Precipitation Forecast</Text>
               <ChartDoughnut
                 size={140}
                 strokeWidth={18}
                 progress={(daily.precipitation_probability_max ?? 0) / 100}
-                color={colors.secondary}
+                color={colors.precipitation}
                 backgroundColor={colors.divider}
                 centerText={`${daily.precipitation_probability_max ?? 0}%`}
-                subText="today"
+                subText="chance today"
               />
             </View>
 
             <View style={styles.card}>
-              <Text style={styles.cardLabel}>This Week</Text>
+              <Text style={styles.cardLabel}>7-Day Forecast</Text>
               <View style={{ height: 8 }} />
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
                 {daily.days.map((d) => (
                   <View key={d.date} style={styles.dayPill}>
                     <Text style={styles.dayText}>{d.weekday}</Text>
+                    <View style={styles.daySymbolContainer}>
+                      <WeatherSymbol 
+                        weatherCode={d.weather_code} 
+                        size={24}
+                        latitude={circuit.latitude}
+                        longitude={circuit.longitude}
+                      />
+                    </View>
                     <Text style={styles.dayTemp}>
-                      {Math.round(d.min)}° / {Math.round(d.max)}°
+                      {Math.round(d.max)}° / {Math.round(d.min)}°
                     </Text>
+                    {d.precipitation_probability > 0 && (
+                      <Text style={styles.dayRain}>
+                        {d.precipitation_probability}%
+                      </Text>
+                    )}
                   </View>
                 ))}
               </ScrollView>
             </View>
 
-            {/* Weather Charts Preview */}
+            {/* Enhanced Weather Charts Preview */}
             {chartData.length > 0 && (
               <View style={styles.card}>
                 <View style={styles.chartHeader}>
-                  <Text style={styles.cardLabel}>24-Hour Forecast</Text>
+                  <Text style={styles.cardLabel}>72-Hour Forecast</Text>
                   <TouchableOpacity onPress={openCharts} style={styles.viewAllBtn}>
                     <Text style={styles.viewAllText}>View All Charts</Text>
                     <Icon name="chevron-forward" size={16} color={colors.primary} />
@@ -179,6 +275,25 @@ function DetailScreen() {
                   type="temperature"
                   unit={unit}
                   height={100}
+                />
+              </View>
+            )}
+
+            {/* Quick Hourly Preview */}
+            {hourly.length > 0 && (
+              <View style={styles.card}>
+                <View style={styles.chartHeader}>
+                  <Text style={styles.cardLabel}>Next 12 Hours</Text>
+                  <TouchableOpacity onPress={openForecast} style={styles.viewAllBtn}>
+                    <Text style={styles.viewAllText}>View Detailed Forecast</Text>
+                    <Icon name="chevron-forward" size={16} color={colors.primary} />
+                  </TouchableOpacity>
+                </View>
+                <EnhancedWeatherForecast
+                  hourlyData={hourly.slice(0, 12)}
+                  unit={unit}
+                  latitude={circuit.latitude}
+                  longitude={circuit.longitude}
                 />
               </View>
             )}
@@ -217,11 +332,12 @@ function DetailScreen() {
           <Button
             text={`Switch to ${unit === 'metric' ? 'Imperial' : 'Metric'}`}
             onPress={toggleUnit}
-            style={buttonStyles.instructionsButton}
+            style={buttonStyles.secondary}
           />
           <View style={{ height: 18 }} />
           <Text style={styles.muted}>
-            Data from Open-Meteo. Minimalistic UI designed for clarity on race weekends.
+            Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, and detailed forecasts.
+            Data updates every 10 minutes for accuracy.
           </Text>
         </BottomSheetView>
       </BottomSheet>
@@ -247,7 +363,7 @@ function DetailScreen() {
         </BottomSheetView>
       </BottomSheet>
 
-      {/* Weather Charts Bottom Sheet */}
+      {/* Enhanced Weather Charts Bottom Sheet */}
       <BottomSheet ref={chartsRef} index={-1} snapPoints={chartsSnap} enablePanDownToClose>
         <BottomSheetView style={styles.sheet}>
           <Text style={styles.sheetTitle}>Weather Analysis</Text>
@@ -283,9 +399,24 @@ function DetailScreen() {
             )}
             <View style={{ height: 20 }} />
             <Text style={styles.muted}>
-              24-hour forecast data. Charts update every 5 minutes.
+              72-hour enhanced forecast data. Charts update every 10 minutes with detailed atmospheric conditions.
             </Text>
           </ScrollView>
+        </BottomSheetView>
+      </BottomSheet>
+
+      {/* Enhanced Forecast Bottom Sheet */}
+      <BottomSheet ref={forecastRef} index={-1} snapPoints={forecastSnap} enablePanDownToClose>
+        <BottomSheetView style={styles.sheet}>
+          <Text style={styles.sheetTitle}>Detailed Forecast</Text>
+          <View style={{ height: 8 }} />
+          <EnhancedWeatherForecast
+            hourlyData={hourly}
+            unit={unit}
+            latitude={circuit.latitude}
+            longitude={circuit.longitude}
+            showExtended={true}
+          />
         </BottomSheetView>
       </BottomSheet>
     </View>
@@ -314,7 +445,21 @@ const styles = StyleSheet.create({
   actions: { position: 'absolute', right: 16, top: 8, flexDirection: 'row', gap: 4 },
   actionBtn: { padding: 8, borderRadius: 10 },
   content: { paddingHorizontal: 16, paddingTop: 8 },
-  cardRow: { flexDirection: 'row', gap: 12 },
+  updateInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.backgroundAlt,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  updateText: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+  },
   card: {
     flex: 1,
     backgroundColor: colors.card,
@@ -340,12 +485,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 12,
   },
+  windInfo: {
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  windText: {
+    fontSize: 14,
+    color: colors.text,
+    fontFamily: 'Roboto_500Medium',
+    marginBottom: 4,
+  },
   mapNote: {
     fontSize: 12,
     color: colors.textMuted,
     textAlign: 'center',
     fontFamily: 'Roboto_400Regular',
-    marginTop: 8,
   },
   currentWeatherContainer: {
     flexDirection: 'row',
@@ -355,6 +509,55 @@ const styles = StyleSheet.create({
   },
   currentWeatherText: {
     flex: 1,
+  },
+  feelsLike: {
+    fontSize: 14,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginTop: 2,
+  },
+  weatherDescription: {
+    fontSize: 13,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  detailsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 12,
+  },
+  detailCard: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    alignItems: 'center',
+    boxShadow: '0 4px 16px rgba(16,24,40,0.04)',
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  detailValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    fontFamily: 'Roboto_700Bold',
+  },
+  detailSub: {
+    fontSize: 10,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginTop: 2,
   },
   chartHeader: {
     flexDirection: 'row',
@@ -376,15 +579,37 @@ const styles = StyleSheet.create({
   cardValue: { fontSize: 28, color: colors.text, fontWeight: '700', marginTop: 6, fontFamily: 'Roboto_700Bold' },
   dayPill: {
     backgroundColor: colors.backgroundAlt,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.divider,
-    minWidth: 90,
+    minWidth: 100,
+    alignItems: 'center',
   },
-  dayText: { color: colors.text, fontFamily: 'Roboto_500Medium' },
-  dayTemp: { color: colors.textMuted, marginTop: 4, fontFamily: 'Roboto_400Regular' },
+  dayText: { 
+    color: colors.text, 
+    fontFamily: 'Roboto_500Medium',
+    fontSize: 13,
+    marginBottom: 6,
+  },
+  daySymbolContainer: {
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  dayTemp: { 
+    color: colors.textMuted, 
+    fontFamily: 'Roboto_400Regular',
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  dayRain: {
+    color: colors.precipitation,
+    fontFamily: 'Roboto_400Regular',
+    fontSize: 11,
+  },
   muted: { color: colors.textMuted, fontFamily: 'Roboto_400Regular' },
   error: { color: '#C62828', fontWeight: '600', fontFamily: 'Roboto_500Medium' },
   sheet: { padding: 16, flex: 1 },
