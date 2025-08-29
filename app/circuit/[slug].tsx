@@ -53,12 +53,14 @@ function DetailScreen() {
     }));
   }, [hourly]);
 
-  // Convert hourly data for wind graphs
+  // Convert hourly data for wind graphs - now includes wind gusts
   const windData = useMemo(() => {
+    console.log('DetailScreen: Converting hourly data for wind graphs, sample data:', hourly[0]);
     return hourly.map(h => ({
       time: h.time,
       windSpeed: h.windSpeed,
       windDirection: h.windDirection,
+      windGusts: h.windGusts, // Added wind gusts
     }));
   }, [hourly]);
 
@@ -141,7 +143,7 @@ function DetailScreen() {
           </View>
         )}
 
-        {/* Wind Speed and Direction Bar Graphs */}
+        {/* Wind Speed, Gusts and Direction Bar Graphs */}
         {!loading && windData.length > 0 && (
           <WindBarGraphs
             hourlyData={windData}
@@ -179,6 +181,13 @@ function DetailScreen() {
               <Text style={styles.detailLabel}>Temperature</Text>
               <Text style={styles.detailValue}>{Math.round(current.temperature)}°{unit === 'metric' ? 'C' : 'F'}</Text>
               <Text style={styles.detailSub}>Dew point: {Math.round(current.dew_point)}°</Text>
+            </View>
+
+            <View style={styles.detailCard}>
+              <Icon name="flag" size={20} color={colors.wind} />
+              <Text style={styles.detailLabel}>Wind & Gusts</Text>
+              <Text style={styles.detailValue}>{Math.round(current.wind_speed)} / {Math.round(current.wind_gusts)}</Text>
+              <Text style={styles.detailSub}>{unit === 'metric' ? 'km/h' : 'mph'} • {Math.round(current.wind_direction)}°</Text>
             </View>
 
             <View style={styles.detailCard}>
@@ -363,7 +372,7 @@ function DetailScreen() {
           />
           <View style={{ height: 18 }} />
           <Text style={styles.muted}>
-            Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, and detailed forecasts.
+            Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, and detailed forecasts.
             Data updates every 10 minutes for accuracy.
           </Text>
         </BottomSheetView>
