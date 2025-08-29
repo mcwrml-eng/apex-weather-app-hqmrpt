@@ -292,8 +292,18 @@ function DetailScreen() {
                     <Text style={styles.dayTemp}>
                       {Math.round(d.max)}° / {Math.round(d.min)}°
                     </Text>
+                    {/* Always show precipitation totals */}
+                    <Text style={[styles.dayRain, { 
+                      color: d.precipitation_sum > 0 ? colors.precipitation : colors.textMuted 
+                    }]}>
+                      {d.precipitation_sum === 0 ? '0' : 
+                       unit === 'imperial' ? 
+                         (d.precipitation_sum < 0.01 ? '<0.01' : Math.round(d.precipitation_sum * 100) / 100) :
+                         (d.precipitation_sum < 0.1 ? '<0.1' : Math.round(d.precipitation_sum * 10) / 10)
+                      }{unit === 'metric' ? 'mm' : 'in'}
+                    </Text>
                     {d.precipitation_probability > 0 && (
-                      <Text style={styles.dayRain}>
+                      <Text style={styles.dayRainProb}>
                         {d.precipitation_probability}%
                       </Text>
                     )}
@@ -651,7 +661,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.divider,
-    minWidth: 100,
+    minWidth: 110,
     alignItems: 'center',
   },
   dayText: { 
@@ -674,8 +684,15 @@ const styles = StyleSheet.create({
   },
   dayRain: {
     color: colors.precipitation,
-    fontFamily: 'Roboto_400Regular',
+    fontFamily: 'Roboto_500Medium',
     fontSize: 11,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  dayRainProb: {
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    fontSize: 10,
   },
   muted: { color: colors.textMuted, fontFamily: 'Roboto_400Regular' },
   error: { color: '#C62828', fontWeight: '600', fontFamily: 'Roboto_500Medium' },

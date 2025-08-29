@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { colors } from '../styles/commonStyles';
 import WeatherSymbol from './WeatherSymbol';
+import { getPrecipitationUnit } from '../hooks/useWeather';
 
 interface HourlyData {
   time: string;
@@ -57,6 +58,20 @@ function isNightTime(timeString: string, latitude: number, longitude: number): b
   return localHour < 6 || localHour > 19;
 }
 
+function formatPrecipitation(value: number, unit: 'metric' | 'imperial'): string {
+  const precipUnit = getPrecipitationUnit(unit);
+  if (unit === 'imperial') {
+    // For imperial, show more decimal places for inches since they're smaller values
+    if (value === 0) return `0${precipUnit}`;
+    return value < 0.01 ? `<0.01${precipUnit}` : 
+           value < 0.1 ? `${Math.round(value * 100) / 100}${precipUnit}` : 
+           `${Math.round(value * 10) / 10}${precipUnit}`;
+  }
+  // For metric (mm)
+  if (value === 0) return `0${precipUnit}`;
+  return value < 0.1 ? `<0.1${precipUnit}` : `${Math.round(value * 10) / 10}${precipUnit}`;
+}
+
 function groupHourlyDataByDay(hourlyData: HourlyData[]): DayForecast[] {
   const dayGroups: { [key: string]: HourlyData[] } = {};
   
@@ -78,7 +93,7 @@ function groupHourlyDataByDay(hourlyData: HourlyData[]): DayForecast[] {
 }
 
 export default function DailyHourlyForecast({ hourlyData, unit, latitude, longitude }: Props) {
-  console.log('DailyHourlyForecast: Rendering with', hourlyData.length, 'hours of data');
+  console.log('DailyHourlyForecast: Rendering with', hourlyData.length, 'hours of data, unit:', unit);
 
   if (!hourlyData || hourlyData.length === 0) {
     return (
@@ -94,7 +109,9 @@ export default function DailyHourlyForecast({ hourlyData, unit, latitude, longit
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Hourly Weather Forecast</Text>
-      <Text style={styles.subtitle}>Weather symbols for each hour by day</Text>
+      <Text style={styles.subtitle}>
+        Weather symbols for each hour by day with rain totals in {getPrecipitationUnit(unit)}
+      </Text>
       
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollContainer}>
         {dailyForecasts.map((dayForecast, dayIndex) => (
@@ -130,11 +147,12 @@ export default function DailyHourlyForecast({ hourlyData, unit, latitude, longit
                       {temperature}{tempUnit}
                     </Text>
                     
-                    {hour.precipitation > 0 && (
-                      <Text style={styles.precipitation}>
-                        {Math.round(hour.precipitation)}mm
-                      </Text>
-                    )}
+                    {/* Always show precipitation totals */}
+                    <Text style={[styles.precipitation, { 
+                      color: hour.precipitation > 0 ? colors.precipitation : colors.textMuted 
+                    }]}>
+                      {formatPrecipitation(hour.precipitation, unit)}
+                    </Text>
                     
                     <Text style={styles.windSpeed}>
                       {Math.round(hour.windSpeed)} {unit === 'metric' ? 'km/h' : 'mph'}
@@ -200,7 +218,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundAlt,
     borderRadius: 10,
     padding: 10,
-    minWidth: 70,
+    minWidth: 75,
     borderWidth: 1,
     borderColor: colors.divider,
   },
@@ -225,9 +243,9 @@ const styles = StyleSheet.create({
   },
   precipitation: {
     fontSize: 10,
-    color: colors.precipitation,
-    fontFamily: 'Roboto_400Regular',
+    fontFamily: 'Roboto_500Medium',
     marginBottom: 2,
+    fontWeight: '600',
   },
   windSpeed: {
     fontSize: 9,

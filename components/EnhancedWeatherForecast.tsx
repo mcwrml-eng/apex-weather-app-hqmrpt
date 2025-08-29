@@ -108,9 +108,14 @@ function formatPrecipitation(value: number, unit: 'metric' | 'imperial'): string
   const precipUnit = getPrecipitationUnit(unit);
   if (unit === 'imperial') {
     // For imperial, show more decimal places for inches since they're smaller values
-    return value < 0.1 ? `${Math.round(value * 100) / 100}${precipUnit}` : `${Math.round(value * 10) / 10}${precipUnit}`;
+    if (value === 0) return `0${precipUnit}`;
+    return value < 0.01 ? `<0.01${precipUnit}` : 
+           value < 0.1 ? `${Math.round(value * 100) / 100}${precipUnit}` : 
+           `${Math.round(value * 10) / 10}${precipUnit}`;
   }
-  return `${Math.round(value)}${precipUnit}`;
+  // For metric (mm)
+  if (value === 0) return `0${precipUnit}`;
+  return value < 0.1 ? `<0.1${precipUnit}` : `${Math.round(value * 10) / 10}${precipUnit}`;
 }
 
 export default function EnhancedWeatherForecast({ hourlyData, unit, latitude, longitude, showExtended = false }: Props) {
@@ -133,7 +138,7 @@ export default function EnhancedWeatherForecast({ hourlyData, unit, latitude, lo
         {showExtended ? 'Extended Weather Forecast' : '24-Hour Enhanced Forecast'}
       </Text>
       <Text style={styles.subtitle}>
-        Detailed conditions including UV index, visibility, and pressure
+        Detailed conditions including rain totals in {getPrecipitationUnit(unit)}, UV index, visibility, and pressure
       </Text>
       
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollContainer}>
@@ -174,20 +179,21 @@ export default function EnhancedWeatherForecast({ hourlyData, unit, latitude, lo
                       {temperature}{tempUnit}
                     </Text>
                     
-                    {hour.precipitation > 0 && (
-                      <View style={styles.precipitationContainer}>
-                        <Text style={styles.precipitation}>
-                          {formatPrecipitation(hour.precipitation, unit)}
-                        </Text>
-                        <Text style={styles.precipitationProb}>
-                          {Math.round(hour.precipitationProbability)}%
-                        </Text>
-                      </View>
-                    )}
+                    {/* Always show precipitation section with rain totals */}
+                    <View style={styles.precipitationContainer}>
+                      <Text style={[styles.precipitation, { 
+                        color: hour.precipitation > 0 ? colors.precipitation : colors.textMuted 
+                      }]}>
+                        🌧️ {formatPrecipitation(hour.precipitation, unit)}
+                      </Text>
+                      <Text style={styles.precipitationProb}>
+                        {Math.round(hour.precipitationProbability)}% chance
+                      </Text>
+                    </View>
                     
                     <View style={styles.windContainer}>
                       <Text style={styles.windSpeed}>
-                        {Math.round(hour.windSpeed)} {unit === 'metric' ? 'km/h' : 'mph'}
+                        💨 {Math.round(hour.windSpeed)} {unit === 'metric' ? 'km/h' : 'mph'}
                       </Text>
                       <Text style={styles.windDirection}>{windDir}</Text>
                     </View>
@@ -199,19 +205,19 @@ export default function EnhancedWeatherForecast({ hourlyData, unit, latitude, lo
                     {hour.uvIndex > 0 && (
                       <View style={styles.uvContainer}>
                         <Text style={[styles.uvIndex, { color: uvLevel.color }]}>
-                          UV {Math.round(hour.uvIndex)}
+                          ☀️ UV {Math.round(hour.uvIndex)}
                         </Text>
                         <Text style={styles.uvLevel}>{uvLevel.level}</Text>
                       </View>
                     )}
                     
                     <Text style={styles.pressure}>
-                      {Math.round(hour.pressure)} hPa
+                      🌡️ {Math.round(hour.pressure)} hPa
                     </Text>
                     
                     {visibilityKm < 10 && (
                       <Text style={styles.visibility}>
-                        👁 {visibilityKm}km
+                        👁️ {visibilityKm}km
                       </Text>
                     )}
                     
@@ -275,7 +281,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundAlt,
     borderRadius: 12,
     padding: 12,
-    minWidth: 90,
+    minWidth: 100,
     borderWidth: 1,
     borderColor: colors.divider,
   },
@@ -300,17 +306,20 @@ const styles = StyleSheet.create({
   },
   precipitationContainer: {
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
+    minHeight: 32,
+    justifyContent: 'center',
   },
   precipitation: {
-    fontSize: 11,
-    color: colors.precipitation,
+    fontSize: 12,
     fontFamily: 'Roboto_500Medium',
+    fontWeight: '600',
   },
   precipitationProb: {
     fontSize: 9,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
+    marginTop: 2,
   },
   windContainer: {
     alignItems: 'center',

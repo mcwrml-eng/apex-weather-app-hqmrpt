@@ -58,9 +58,14 @@ function formatPrecipitation(value: number, unit: 'metric' | 'imperial'): string
   const precipUnit = getPrecipitationUnit(unit);
   if (unit === 'imperial') {
     // For imperial, show more decimal places for inches since they're smaller values
-    return value < 0.1 ? `${Math.round(value * 100) / 100}${precipUnit}` : `${Math.round(value * 10) / 10}${precipUnit}`;
+    if (value === 0) return `0${precipUnit}`;
+    return value < 0.01 ? `<0.01${precipUnit}` : 
+           value < 0.1 ? `${Math.round(value * 100) / 100}${precipUnit}` : 
+           `${Math.round(value * 10) / 10}${precipUnit}`;
   }
-  return `${Math.round(value)}${precipUnit}`;
+  // For metric (mm)
+  if (value === 0) return `0${precipUnit}`;
+  return value < 0.1 ? `<0.1${precipUnit}` : `${Math.round(value * 10) / 10}${precipUnit}`;
 }
 
 export default function HourlyWeatherForecast({ hourlyData, unit, latitude, longitude }: Props) {
@@ -77,6 +82,9 @@ export default function HourlyWeatherForecast({ hourlyData, unit, latitude, long
   return (
     <View style={styles.container}>
       <Text style={styles.title}>24-Hour Enhanced Forecast</Text>
+      <Text style={styles.subtitle}>
+        Including rain totals in {getPrecipitationUnit(unit)}
+      </Text>
       <ScrollView 
         horizontal 
         showsHorizontalScrollIndicator={false}
@@ -107,18 +115,19 @@ export default function HourlyWeatherForecast({ hourlyData, unit, latitude, long
                 {temperature}{tempUnit}
               </Text>
               
-              {hour.precipitation > 0 && (
-                <View style={styles.precipitationContainer}>
-                  <Text style={styles.precipitation}>
-                    {formatPrecipitation(hour.precipitation, unit)}
+              {/* Always show precipitation totals */}
+              <View style={styles.precipitationContainer}>
+                <Text style={[styles.precipitation, { 
+                  color: hour.precipitation > 0 ? colors.precipitation : colors.textMuted 
+                }]}>
+                  {formatPrecipitation(hour.precipitation, unit)}
+                </Text>
+                {hour.precipitationProbability !== undefined && (
+                  <Text style={styles.precipitationProb}>
+                    {Math.round(hour.precipitationProbability)}%
                   </Text>
-                  {hour.precipitationProbability !== undefined && (
-                    <Text style={styles.precipitationProb}>
-                      {Math.round(hour.precipitationProbability)}%
-                    </Text>
-                  )}
-                </View>
-              )}
+                )}
+              </View>
               
               <Text style={styles.windSpeed}>
                 {Math.round(hour.windSpeed)} {unit === 'metric' ? 'km/h' : 'mph'}
@@ -156,6 +165,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
     fontFamily: 'Roboto_500Medium',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
     marginBottom: 12,
   },
   scrollContent: {
@@ -167,7 +182,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundAlt,
     borderRadius: 12,
     padding: 12,
-    minWidth: 85,
+    minWidth: 90,
     borderWidth: 1,
     borderColor: colors.divider,
   },
@@ -192,17 +207,20 @@ const styles = StyleSheet.create({
   },
   precipitationContainer: {
     alignItems: 'center',
-    marginBottom: 3,
+    marginBottom: 4,
+    minHeight: 28,
+    justifyContent: 'center',
   },
   precipitation: {
     fontSize: 11,
-    color: colors.precipitation,
     fontFamily: 'Roboto_500Medium',
+    fontWeight: '600',
   },
   precipitationProb: {
     fontSize: 9,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
+    marginTop: 1,
   },
   windSpeed: {
     fontSize: 10,
