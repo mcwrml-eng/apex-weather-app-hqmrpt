@@ -330,7 +330,7 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
     return () => {
       cancelled = true;
     };
-  }, [key]);
+  }, [latitude, longitude, unit, key]);
 
   return { current, daily, hourly, alerts, loading, error, lastUpdated };
 }

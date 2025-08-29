@@ -132,7 +132,7 @@ function getWeatherSymbol(code: number, isNight: boolean = false): { name: keyof
   // Snow fall: Slight (71), moderate (73), heavy (75)
   if (code >= 71 && code <= 75) {
     const intensity = code === 71 ? 'Light' : code === 73 ? 'Moderate' : 'Heavy';
-    const colorMap = { 71: '#F0F8FF', 73: '#E0E0E0', 75: '#D3D3D3 }; // Alice blue to Light gray
+    const colorMap = { 71: '#F0F8FF', 73: '#E0E0E0', 75: '#D3D3D3' }; // Alice blue to Light gray
     return { 
       name: 'snow', 
       color: colorMap[code as keyof typeof colorMap],
@@ -152,7 +152,7 @@ function getWeatherSymbol(code: number, isNight: boolean = false): { name: keyof
   // Rain showers: Slight (80), moderate (81), violent (82)
   if (code >= 80 && code <= 82) {
     const intensity = code === 80 ? 'Light' : code === 81 ? 'Moderate' : 'Heavy';
-    const colorMap = { 80: '#6495ED', 81: '#4169E1', 82: '#0000CD }; // Cornflower blue to Medium blue
+    const colorMap = { 80: '#6495ED', 81: '#4169E1', 82: '#0000CD' }; // Cornflower blue to Medium blue
     return { 
       name: 'rainy', 
       color: colorMap[code as keyof typeof colorMap],
