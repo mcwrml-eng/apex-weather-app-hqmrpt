@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { BarChart, YAxis } from 'react-native-svg-charts';
 import Svg, { Polygon, Line } from 'react-native-svg';
@@ -80,12 +80,13 @@ function WindDirectionArrow({ direction, size = 20 }: { direction: number; size?
   );
 }
 
-export default function WindBarGraphs({ hourlyData, unit }: Props) {
-  console.log('WindBarGraphs: Rendering with', hourlyData.length, 'hours of wind data');
-  console.log('WindBarGraphs: First 3 data points:', hourlyData.slice(0, 3));
+function WindBarGraphs({ hourlyData, unit }: Props) {
+  console.log('WindBarGraphs: Starting render with data length:', hourlyData?.length || 0);
+  console.log('WindBarGraphs: Unit:', unit);
+  console.log('WindBarGraphs: Sample data (first 3 items):', hourlyData?.slice(0, 3));
 
   if (!hourlyData || hourlyData.length === 0) {
-    console.log('WindBarGraphs: No data available');
+    console.log('WindBarGraphs: No data available - returning no data message');
     return (
       <View style={styles.container}>
         <Text style={styles.noDataText}>No wind data available</Text>
@@ -96,7 +97,7 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
   // Use the first 24 hours of data instead of filtering by today's date
   // This ensures we always have data to display
   const displayData = hourlyData.slice(0, 24);
-  console.log('WindBarGraphs: Using', displayData.length, 'hours of data for display');
+  console.log('WindBarGraphs: Display data length:', displayData.length);
 
   if (displayData.length === 0) {
     console.log('WindBarGraphs: No display data after filtering');
@@ -107,31 +108,45 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
     );
   }
 
-  const windSpeedData = displayData.map(hour => hour.windSpeed || 0);
-  const windGustData = displayData.map(hour => hour.windGusts || 0);
-  const windDirectionData = displayData.map(hour => hour.windDirection || 0);
+  // Extract and validate wind data with proper fallbacks
+  const windSpeedData = displayData.map(hour => {
+    const speed = Number(hour.windSpeed) || 0;
+    console.log(`WindBarGraphs: Hour ${hour.time} - windSpeed: ${hour.windSpeed} -> ${speed}`);
+    return speed;
+  });
   
-  console.log('WindBarGraphs: Wind speed data:', windSpeedData.slice(0, 5));
-  console.log('WindBarGraphs: Wind gust data:', windGustData.slice(0, 5));
-  console.log('WindBarGraphs: Wind direction data:', windDirectionData.slice(0, 5));
+  const windGustData = displayData.map(hour => {
+    const gusts = Number(hour.windGusts) || 0;
+    console.log(`WindBarGraphs: Hour ${hour.time} - windGusts: ${hour.windGusts} -> ${gusts}`);
+    return gusts;
+  });
   
-  const maxWindSpeed = Math.max(...windSpeedData, 1); // Ensure minimum of 1
-  const maxWindGust = Math.max(...windGustData, 1);
+  const windDirectionData = displayData.map(hour => {
+    const direction = Number(hour.windDirection) || 0;
+    return direction;
+  });
+  
+  console.log('WindBarGraphs: Processed wind speed data:', windSpeedData.slice(0, 5));
+  console.log('WindBarGraphs: Processed wind gust data:', windGustData.slice(0, 5));
+  console.log('WindBarGraphs: Processed wind direction data:', windDirectionData.slice(0, 5));
+  
+  // Calculate scales with proper minimums to ensure visibility
+  const maxWindSpeed = Math.max(...windSpeedData, 5); // Minimum scale of 5
+  const maxWindGust = Math.max(...windGustData, 5);
   const maxWind = Math.max(maxWindSpeed, maxWindGust, 10); // Ensure minimum scale of 10
   const minWindSpeed = Math.min(...windSpeedData);
   const speedUnit = unit === 'metric' ? 'km/h' : 'mph';
 
-  console.log('WindBarGraphs: Max wind speed:', maxWindSpeed, 'Max gust:', maxWindGust, 'Scale max:', maxWind);
+  console.log('WindBarGraphs: Scale calculations - maxWindSpeed:', maxWindSpeed, 'maxWindGust:', maxWindGust, 'maxWind:', maxWind);
 
   // Generate Y-axis labels for wind speed (including gusts)
   const speedYAxisLabels = [];
-  const speedStep = Math.max(Math.ceil(maxWind / 5), 1);
+  const speedStep = Math.max(Math.ceil(maxWind / 5), 2); // Minimum step of 2
   for (let i = 0; i <= maxWind + speedStep; i += speedStep) {
     speedYAxisLabels.push(i);
   }
 
-  // Generate Y-axis labels for wind direction (0-360 degrees)
-  const directionYAxisLabels = [0, 90, 180, 270, 360];
+  console.log('WindBarGraphs: Y-axis labels:', speedYAxisLabels);
 
   return (
     <View style={styles.container}>
@@ -144,7 +159,7 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
           <Text style={styles.chartTitle}>Wind Speed & Gusts ({speedUnit})</Text>
           <View style={styles.chartWrapper}>
             <YAxis
-              data={[0, maxWind]}
+              data={speedYAxisLabels}
               contentInset={{ top: 20, bottom: 20 }}
               svg={{
                 fill: colors.textMuted,
@@ -329,6 +344,8 @@ export default function WindBarGraphs({ hourlyData, unit }: Props) {
     </View>
   );
 }
+
+export default memo(WindBarGraphs);
 
 const styles = StyleSheet.create({
   container: {
