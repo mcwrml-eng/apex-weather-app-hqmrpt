@@ -55,21 +55,12 @@ function DetailScreen() {
 
   // Convert hourly data for wind graphs - now includes wind gusts
   const windData = useMemo(() => {
-    console.log('DetailScreen: Converting hourly data for wind graphs');
-    console.log('DetailScreen: Hourly data length:', hourly.length);
-    console.log('DetailScreen: Sample hourly data (first 3):', hourly.slice(0, 3));
-    
-    const converted = hourly.map(h => ({
+    return hourly.map(h => ({
       time: h.time,
       windSpeed: h.windSpeed,
       windDirection: h.windDirection,
       windGusts: h.windGusts,
     }));
-    
-    console.log('DetailScreen: Converted wind data length:', converted.length);
-    console.log('DetailScreen: Sample converted wind data (first 3):', converted.slice(0, 3));
-    
-    return converted;
   }, [hourly]);
 
   // Get weather condition description
@@ -99,9 +90,6 @@ function DetailScreen() {
     };
     return descriptions[code] || 'Unknown conditions';
   };
-
-  console.log('DetailScreen: Render state - loading:', loading, 'error:', error, 'windData length:', windData.length);
-  console.log('DetailScreen: Current wind data sample:', windData.slice(0, 2));
 
   return (
     <View style={styles.wrapper}>
@@ -156,34 +144,16 @@ function DetailScreen() {
 
         {/* Wind Speed, Gusts and Direction Bar Graphs - Always show if we have data */}
         {!loading && windData.length > 0 && (
-          <View>
-            <Text style={styles.debugText}>
-              Debug: Rendering WindBarGraphs with {windData.length} data points
-            </Text>
-            <Text style={styles.debugText}>
-              Sample wind speeds: {windData.slice(0, 3).map(d => d.windSpeed).join(', ')}
-            </Text>
-            <Text style={styles.debugText}>
-              Sample wind gusts: {windData.slice(0, 3).map(d => d.windGusts).join(', ')}
-            </Text>
-            <WindBarGraphs
-              hourlyData={windData}
-              unit={unit}
-            />
-          </View>
+          <WindBarGraphs
+            hourlyData={windData}
+            unit={unit}
+          />
         )}
 
         {/* Debug info when no wind data */}
         {!loading && windData.length === 0 && (
-          <View style={styles.debugContainer}>
-            <Text style={styles.debugText}>
-              Debug: No wind data available. Hourly length: {hourly.length}
-            </Text>
-            {hourly.length > 0 && (
-              <Text style={styles.debugText}>
-                Sample hourly item: {JSON.stringify(hourly[0], null, 2)}
-              </Text>
-            )}
+          <View style={styles.card}>
+            <Text style={styles.muted}>No wind data available</Text>
           </View>
         )}
 
@@ -531,20 +501,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
-  },
-  debugContainer: {
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.warning,
-  },
-  debugText: {
-    fontSize: 12,
-    color: colors.warning,
-    fontFamily: 'Roboto_400Regular',
-    marginBottom: 4,
   },
   card: {
     flex: 1,
