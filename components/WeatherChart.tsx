@@ -138,79 +138,29 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
     return value.toFixed(1);
   };
 
-  // Enhanced time formatting with improved spacing logic
+  // Enhanced time formatting for 3-hour intervals on 24-hour day
   const formatTimeLabel = (timeString: string, index: number, totalPoints: number) => {
     const date = new Date(timeString);
     const hour = date.getHours();
-    const minute = date.getMinutes();
-    const day = date.getDate();
-    const month = date.getMonth() + 1;
     
-    // Improved spacing logic based on data density and screen space
-    if (totalPoints <= 6) {
-      // Very short periods - show full time with minutes
-      return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-    } else if (totalPoints <= 12) {
-      // Short periods - show hour with selective minutes
-      if (minute === 0) {
-        return `${hour.toString().padStart(2, '0')}:00`;
-      } else {
-        return `${hour.toString().padStart(2, '0')}h`;
-      }
-    } else if (totalPoints <= 24) {
-      // 24 hours - show every few hours
-      return `${hour.toString().padStart(2, '0')}h`;
-    } else if (totalPoints <= 48) {
-      // 2 days - show day and hour
-      return `${day}/${hour}h`;
-    } else {
-      // Longer periods - show date and selective hours
-      if (hour === 0 || hour === 12) {
-        return `${month}/${day} ${hour}h`;
-      } else {
-        return `${hour}h`;
-      }
-    }
+    // For 24-hour display with 3-hour intervals, show: 0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h
+    return `${hour.toString().padStart(2, '0')}h`;
   };
 
-  // Improved time label generation with better spacing algorithm
+  // Generate time labels at 3-hour intervals for 24-hour day
   const generateTimeLabels = () => {
     const totalPoints = validData.length;
-    let labelIndices: number[] = [];
+    console.log('WeatherChart: Generating 3-hour interval labels for', totalPoints, 'data points');
     
-    // Calculate optimal number of labels based on available space
-    // Assume each label needs about 40-50 pixels of space
-    const maxLabels = Math.floor(300 / 45); // Approximate chart width / label space
-    
-    if (totalPoints <= maxLabels) {
-      // Show all points if we have space
-      labelIndices = Array.from({ length: totalPoints }, (_, i) => i);
-    } else {
-      // Calculate optimal spacing for better distribution
-      const idealSpacing = totalPoints / (maxLabels - 1);
-      
-      // Always include first and last points
-      labelIndices.push(0);
-      
-      // Add intermediate points with calculated spacing
-      for (let i = 1; i < maxLabels - 1; i++) {
-        const index = Math.round(i * idealSpacing);
-        if (index < totalPoints - 1) {
-          labelIndices.push(index);
-        }
-      }
-      
-      // Always include last point
-      if (totalPoints > 1) {
-        labelIndices.push(totalPoints - 1);
-      }
-    }
-    
-    // Remove duplicates and sort
-    labelIndices = [...new Set(labelIndices)].sort((a, b) => a - b);
+    // For 24-hour period, we want labels at 3-hour intervals: 0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h
+    const targetHours = [0, 3, 6, 9, 12, 15, 18, 21];
     
     return validData.map((point, index) => {
-      if (labelIndices.includes(index)) {
+      const date = new Date(point.time);
+      const hour = date.getHours();
+      
+      // Show label if this hour matches one of our target 3-hour intervals
+      if (targetHours.includes(hour)) {
         return formatTimeLabel(point.time, index, totalPoints);
       }
       return '';
@@ -363,7 +313,7 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
         </View>
       </View>
       
-      {/* Enhanced X-axis with improved time scale spacing */}
+      {/* Enhanced X-axis with 3-hour interval time scales */}
       <View style={styles.xAxisContainer}>
         <View style={styles.xAxisLabelsContainer}>
           {timeLabels.map((label, index) => (
@@ -375,7 +325,8 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
                 styles.xAxisLabel,
                 { 
                   opacity: label ? 1 : 0,
-                  fontSize: timeLabels.filter(l => l).length > 8 ? 9 : 10
+                  fontSize: 10,
+                  fontWeight: label ? '500' : '400'
                 }
               ]}>
                 {label}
@@ -383,7 +334,7 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
             </View>
           ))}
         </View>
-        <Text style={styles.xAxisTitle}>Time Scale</Text>
+        <Text style={styles.xAxisTitle}>Time Scale (3-hour intervals)</Text>
       </View>
 
       {/* Enhanced statistics panel */}
