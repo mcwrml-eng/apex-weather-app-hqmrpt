@@ -11,6 +11,7 @@ import WeatherChart from '../../components/WeatherChart';
 import WeatherSymbol from '../../components/WeatherSymbol';
 import EnhancedWeatherForecast from '../../components/EnhancedWeatherForecast';
 import WeatherAlerts from '../../components/WeatherAlerts';
+import RainfallRadar from '../../components/RainfallRadar';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
@@ -146,6 +147,13 @@ function DetailScreen() {
             </Text>
           </View>
         )}
+
+        {/* Rainfall Radar Component */}
+        <RainfallRadar
+          latitude={circuit.latitude}
+          longitude={circuit.longitude}
+          circuitName={circuit.name}
+        />
 
         {/* Wind Speed, Gusts and Direction Bar Graphs - Always show if we have data */}
         {!loading && windData.length > 0 && (
@@ -464,7 +472,7 @@ function DetailScreen() {
           <View style={{ height: 18 }} />
           <Text style={styles.muted}>
             Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, and detailed forecasts.
-            Data updates every 10 minutes for accuracy.
+            Data updates every 10 minutes for accuracy. Rainfall radar powered by RainViewer.
           </Text>
         </BottomSheetView>
       </BottomSheet>
