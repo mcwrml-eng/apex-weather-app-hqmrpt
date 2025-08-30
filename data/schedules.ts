@@ -61,7 +61,7 @@ const f1Schedules: ScheduleMap = {
   ],
 };
 
-const f1RaceDates: DateMap = {
+export const f1RaceDates: DateMap = {
   bahrain: '2025-03-16',
   jeddah: '2025-03-23',
   'albert-park': '2025-03-30',
@@ -112,7 +112,7 @@ const motogpSchedules: ScheduleMap = {
   // Other MotoGP rounds use defaults; times vary per venue in reality.
 };
 
-const motogpRaceDates: DateMap = {
+export const motogpRaceDates: DateMap = {
   losail: '2025-03-09',
   portimao: '2025-03-23',
   'cota-mgp': '2025-04-06',

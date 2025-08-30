@@ -6,6 +6,7 @@ export const colors = {
   background: '#0F1419',
   backgroundAlt: '#1A1F26',
   card: '#1E2328',
+  cardHighlight: '#252A30',
   text: '#E8EAED',
   textMuted: '#9AA0A6',
   
