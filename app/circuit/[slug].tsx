@@ -63,6 +63,11 @@ function DetailScreen() {
     }));
   }, [hourly]);
 
+  // Get 72-hour forecast data (3 days)
+  const forecast72Hours = useMemo(() => {
+    return hourly.slice(0, 72);
+  }, [hourly]);
+
   // Get weather condition description
   const getWeatherDescription = (code: number): string => {
     const descriptions: { [key: number]: string } = {
@@ -312,41 +317,103 @@ function DetailScreen() {
               </ScrollView>
             </View>
 
-            {/* Enhanced Weather Charts Preview */}
-            {chartData.length > 0 && (
-              <View style={styles.card}>
-                <View style={styles.chartHeader}>
-                  <Text style={styles.cardLabel}>72-Hour Forecast</Text>
-                  <TouchableOpacity onPress={openCharts} style={styles.viewAllBtn}>
-                    <Text style={styles.viewAllText}>View All Charts</Text>
+            {/* NEW: 72-Hour Forecast Section - Properly Structured */}
+            {forecast72Hours.length > 0 && (
+              <View style={styles.forecast72Card}>
+                <View style={styles.forecast72Header}>
+                  <View style={styles.forecast72TitleContainer}>
+                    <Icon name="time" size={20} color={colors.primary} />
+                    <Text style={styles.forecast72Title}>72-Hour Forecast</Text>
+                  </View>
+                  <TouchableOpacity onPress={openForecast} style={styles.viewDetailedBtn}>
+                    <Text style={styles.viewDetailedText}>View Detailed</Text>
                     <Icon name="chevron-forward" size={16} color={colors.primary} />
                   </TouchableOpacity>
                 </View>
-                <WeatherChart
-                  data={chartData}
-                  type="temperature"
-                  unit={unit}
-                  height={100}
-                />
-              </View>
-            )}
+                
+                <Text style={styles.forecast72Subtitle}>
+                  Next 3 days • {forecast72Hours.length} hours of data
+                </Text>
 
-            {/* Quick Hourly Preview - Next 12 Hours */}
-            {hourly.length > 0 && (
-              <View style={styles.hourlyForecastCard}>
-                <View style={styles.chartHeader}>
-                  <Text style={styles.cardLabel}>Next 12 Hours</Text>
-                  <TouchableOpacity onPress={openForecast} style={styles.viewAllBtn}>
-                    <Text style={styles.viewAllText}>View Detailed Forecast</Text>
-                    <Icon name="chevron-forward" size={16} color={colors.primary} />
-                  </TouchableOpacity>
+                {/* Temperature Chart Preview */}
+                <View style={styles.chartPreviewContainer}>
+                  <Text style={styles.chartPreviewLabel}>Temperature Trend</Text>
+                  <WeatherChart
+                    data={chartData.slice(0, 72)}
+                    type="temperature"
+                    unit={unit}
+                    height={120}
+                  />
                 </View>
-                <EnhancedWeatherForecast
-                  hourlyData={hourly.slice(0, 12)}
-                  unit={unit}
-                  latitude={circuit.latitude}
-                  longitude={circuit.longitude}
-                />
+
+                {/* Key Highlights from 72-hour data */}
+                <View style={styles.forecast72Highlights}>
+                  <Text style={styles.highlightsTitle}>Key Highlights</Text>
+                  <View style={styles.highlightsGrid}>
+                    <View style={styles.highlightItem}>
+                      <Icon name="thermometer" size={16} color={colors.temperature} />
+                      <Text style={styles.highlightLabel}>Temp Range</Text>
+                      <Text style={styles.highlightValue}>
+                        {Math.round(Math.min(...forecast72Hours.map(h => h.temperature)))}° - {Math.round(Math.max(...forecast72Hours.map(h => h.temperature)))}°
+                      </Text>
+                    </View>
+                    
+                    <View style={styles.highlightItem}>
+                      <Icon name="rainy" size={16} color={colors.precipitation} />
+                      <Text style={styles.highlightLabel}>Max Rain</Text>
+                      <Text style={styles.highlightValue}>
+                        {Math.round(Math.max(...forecast72Hours.map(h => h.precipitationProbability)))}%
+                      </Text>
+                    </View>
+                    
+                    <View style={styles.highlightItem}>
+                      <Icon name="flag" size={16} color={colors.wind} />
+                      <Text style={styles.highlightLabel}>Max Wind</Text>
+                      <Text style={styles.highlightValue}>
+                        {Math.round(Math.max(...forecast72Hours.map(h => h.windSpeed)))} {unit === 'metric' ? 'km/h' : 'mph'}
+                      </Text>
+                    </View>
+                    
+                    <View style={styles.highlightItem}>
+                      <Icon name="water" size={16} color={colors.humidity} />
+                      <Text style={styles.highlightLabel}>Humidity</Text>
+                      <Text style={styles.highlightValue}>
+                        {Math.round(forecast72Hours.reduce((sum, h) => sum + h.humidity, 0) / forecast72Hours.length)}%
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Quick hourly preview for next 12 hours */}
+                <View style={styles.quickHourlyPreview}>
+                  <Text style={styles.quickHourlyTitle}>Next 12 Hours</Text>
+                  <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.quickHourlyScroll}
+                  >
+                    {forecast72Hours.slice(0, 12).map((hour, index) => (
+                      <View key={hour.time} style={styles.quickHourCard}>
+                        <Text style={styles.quickHourTime}>
+                          {new Date(hour.time).toLocaleTimeString([], { hour: 'numeric' })}
+                        </Text>
+                        <WeatherSymbol 
+                          weatherCode={hour.weatherCode}
+                          size={24}
+                          latitude={circuit.latitude}
+                          longitude={circuit.longitude}
+                          time={hour.time}
+                        />
+                        <Text style={styles.quickHourTemp}>
+                          {Math.round(hour.temperature)}°
+                        </Text>
+                        <Text style={styles.quickHourRain}>
+                          {Math.round(hour.precipitationProbability)}%
+                        </Text>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
               </View>
             )}
 
@@ -562,16 +629,142 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
   },
-  // New style for hourly forecast card with extra spacing
-  hourlyForecastCard: {
-    flex: 1,
+  // New styles for the 72-Hour Forecast section
+  forecast72Card: {
     backgroundColor: colors.card,
     borderRadius: 14,
-    padding: 14,
+    padding: 16,
     borderWidth: 1,
     borderColor: colors.divider,
     boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
-    marginBottom: 24, // Increased margin for better separation
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  forecast72Header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  forecast72TitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  forecast72Title: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    fontFamily: 'Roboto_700Bold',
+  },
+  forecast72Subtitle: {
+    fontSize: 14,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginBottom: 16,
+  },
+  viewDetailedBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.backgroundAlt,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  viewDetailedText: {
+    fontSize: 13,
+    color: colors.primary,
+    fontFamily: 'Roboto_500Medium',
+  },
+  chartPreviewContainer: {
+    marginBottom: 16,
+  },
+  chartPreviewLabel: {
+    fontSize: 14,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_500Medium',
+    marginBottom: 8,
+  },
+  forecast72Highlights: {
+    marginBottom: 16,
+  },
+  highlightsTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: 'Roboto_500Medium',
+    marginBottom: 12,
+  },
+  highlightsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  highlightItem: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 10,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  highlightLabel: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginTop: 4,
+    marginBottom: 2,
+  },
+  highlightValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: 'Roboto_500Medium',
+  },
+  quickHourlyPreview: {
+    marginTop: 4,
+  },
+  quickHourlyTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: 'Roboto_500Medium',
+    marginBottom: 12,
+  },
+  quickHourlyScroll: {
+    paddingHorizontal: 4,
+    gap: 8,
+  },
+  quickHourCard: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 10,
+    padding: 10,
+    alignItems: 'center',
+    minWidth: 70,
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  quickHourTime: {
+    fontSize: 10,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginBottom: 6,
+  },
+  quickHourTemp: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: 'Roboto_500Medium',
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  quickHourRain: {
+    fontSize: 10,
+    color: colors.precipitation,
+    fontFamily: 'Roboto_400Regular',
   },
   // New style for schedule card with proper spacing
   scheduleCard: {
@@ -663,22 +856,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
     marginTop: 2,
-  },
-  chartHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  viewAllBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  viewAllText: {
-    fontSize: 14,
-    color: colors.primary,
-    fontFamily: 'Roboto_500Medium',
   },
   cardLabel: { color: colors.textMuted, fontFamily: 'Roboto_500Medium' },
   cardValue: { fontSize: 28, color: colors.text, fontWeight: '700', marginTop: 6, fontFamily: 'Roboto_700Bold' },
