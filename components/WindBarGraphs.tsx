@@ -1,7 +1,7 @@
 
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { BarChart, YAxis } from 'react-native-svg-charts';
+import { BarChart, YAxis, XAxis } from 'react-native-svg-charts';
 import Svg, { Polygon, Line } from 'react-native-svg';
 import { colors } from '../styles/commonStyles';
 import { validateWindSpeed, validateWindDirection } from '../hooks/useWeather';
@@ -24,6 +24,25 @@ function formatHour(timeString: string): string {
     hour: 'numeric', 
     hour12: false 
   });
+}
+
+function formatTimeLabel(timeString: string, index: number, totalPoints: number): string {
+  const date = new Date(timeString);
+  const hour = date.getHours();
+  const minute = date.getMinutes();
+  
+  // Show different formats based on data density
+  if (totalPoints <= 12) {
+    // For shorter periods, show hour:minute
+    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+  } else if (totalPoints <= 24) {
+    // For 24 hours, show hour only
+    return `${hour.toString().padStart(2, '0')}h`;
+  } else {
+    // For longer periods, show day/hour
+    const day = date.getDate();
+    return index % 6 === 0 ? `${day}/${hour}h` : `${hour}h`;
+  }
 }
 
 function getWindDirectionLabel(degrees: number): string {
@@ -158,6 +177,26 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
 
   const speedYAxisLabels = generateSpeedYAxisLabels();
 
+  // Generate intelligent time labels
+  const generateTimeLabels = () => {
+    const totalPoints = displayData.length;
+    let showEvery = 1;
+    
+    // Adjust label frequency based on data length
+    if (totalPoints > 24) showEvery = 4;
+    else if (totalPoints > 12) showEvery = 3;
+    else if (totalPoints > 6) showEvery = 2;
+    
+    return displayData.map((hour, index) => {
+      if (index % showEvery === 0 || index === totalPoints - 1) {
+        return formatTimeLabel(hour.time, index, totalPoints);
+      }
+      return '';
+    });
+  };
+
+  const timeLabels = generateTimeLabels();
+
   // Prepare data for BarChart - it expects simple number arrays
   const windSpeedValues = windSpeedData.map(d => d.value);
   const windGustValues = windGustData.map(d => d.value);
@@ -177,7 +216,7 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Enhanced Wind Analysis</Text>
-      <Text style={styles.subtitle}>Accurate 24-hour wind speed, gusts, and direction analysis</Text>
+      <Text style={styles.subtitle}>Accurate 24-hour wind speed, gusts, and direction analysis with time scales</Text>
       
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Enhanced Wind Speed and Gusts Chart */}
@@ -224,15 +263,26 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
                 yMax={chartMax}
                 yMin={chartMin}
               />
-              <View style={styles.xAxisLabels}>
-                {displayData.map((hour, index) => (
-                  <Text key={index} style={styles.xAxisLabel}>
-                    {formatHour(hour.time)}
-                  </Text>
-                ))}
-              </View>
             </View>
           </View>
+          
+          {/* Enhanced X-axis with proper time scale */}
+          <View style={styles.xAxisContainer}>
+            <View style={styles.xAxisLabelsContainer}>
+              {timeLabels.map((label, index) => (
+                <View key={index} style={styles.xAxisLabelWrapper}>
+                  <Text style={[
+                    styles.xAxisLabel,
+                    { opacity: label ? 1 : 0 }
+                  ]}>
+                    {label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            <Text style={styles.xAxisTitle}>Time</Text>
+          </View>
+          
           <View style={styles.legendContainer}>
             <View style={styles.legendItem}>
               <View style={[styles.legendColor, { backgroundColor: colors.wind }]} />
@@ -288,14 +338,24 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
                 yMax={360}
                 yMin={0}
               />
-              <View style={styles.xAxisLabels}>
-                {displayData.map((hour, index) => (
-                  <Text key={index} style={styles.xAxisLabel}>
-                    {formatHour(hour.time)}
-                  </Text>
-                ))}
-              </View>
             </View>
+          </View>
+          
+          {/* Enhanced X-axis with proper time scale for direction */}
+          <View style={styles.xAxisContainer}>
+            <View style={styles.xAxisLabelsContainer}>
+              {timeLabels.map((label, index) => (
+                <View key={index} style={styles.xAxisLabelWrapper}>
+                  <Text style={[
+                    styles.xAxisLabel,
+                    { opacity: label ? 1 : 0 }
+                  ]}>
+                    {label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            <Text style={styles.xAxisTitle}>Time</Text>
           </View>
           
           {/* Enhanced Wind Direction Arrows with accuracy indicators */}
@@ -304,9 +364,11 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
             <Text style={styles.arrowSectionSubtitle}>Arrows point in the direction wind is blowing TO</Text>
             <View style={styles.arrowContainer}>
               {displayData.map((hour, index) => {
+                // Show arrows with same frequency as time labels
+                const shouldShow = timeLabels[index] !== '';
                 return (
                   <View key={index} style={styles.arrowItem}>
-                    <WindDirectionArrow direction={hour.windDirection} size={24} />
+                    {shouldShow && <WindDirectionArrow direction={hour.windDirection} size={24} />}
                   </View>
                 );
               })}
@@ -315,16 +377,23 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
           
           {/* Enhanced Compass Direction Labels with degrees */}
           <View style={styles.directionLabels}>
-            {displayData.map((hour, index) => (
-              <View key={index} style={styles.directionLabelContainer}>
-                <Text style={styles.directionLabel}>
-                  {getWindDirectionLabel(hour.windDirection)}
-                </Text>
-                <Text style={styles.directionDegrees}>
-                  {Math.round(hour.windDirection)}°
-                </Text>
-              </View>
-            ))}
+            {displayData.map((hour, index) => {
+              const shouldShow = timeLabels[index] !== '';
+              return (
+                <View key={index} style={styles.directionLabelContainer}>
+                  {shouldShow && (
+                    <>
+                      <Text style={styles.directionLabel}>
+                        {getWindDirectionLabel(hour.windDirection)}
+                      </Text>
+                      <Text style={styles.directionDegrees}>
+                        {Math.round(hour.windDirection)}°
+                      </Text>
+                    </>
+                  )}
+                </View>
+              );
+            })}
           </View>
         </View>
 
@@ -395,6 +464,7 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
             Enhanced accuracy: Wind direction arrows show precise direction wind is blowing TO. 
             All measurements validated and normalized for motorsport analysis. 
             Gust factor indicates wind turbulence level - higher values mean more gusty conditions.
+            Time scales provide precise temporal context for racing strategy.
           </Text>
         </View>
       </ScrollView>
@@ -459,18 +529,33 @@ const styles = StyleSheet.create({
   chart: {
     flex: 1,
   },
-  xAxisLabels: {
+  xAxisContainer: {
+    marginTop: 8,
+    paddingLeft: 45, // Account for Y-axis width
+  },
+  xAxisLabelsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    marginTop: 8,
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  xAxisLabelWrapper: {
+    flex: 1,
+    alignItems: 'center',
   },
   xAxisLabel: {
     fontSize: 10,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
     textAlign: 'center',
-    flex: 1,
+  },
+  xAxisTitle: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_500Medium',
+    textAlign: 'center',
+    marginTop: 4,
+    fontWeight: '500',
   },
   legendContainer: {
     flexDirection: 'row',
