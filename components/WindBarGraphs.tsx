@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { BarChart, YAxis } from 'react-native-svg-charts';
 import Svg, { Polygon, Line } from 'react-native-svg';
 import { colors } from '../styles/commonStyles';
+import { validateWindSpeed, validateWindDirection } from '../hooks/useWeather';
 
 interface HourlyData {
   time: string;
@@ -27,19 +28,23 @@ function formatHour(timeString: string): string {
 
 function getWindDirectionLabel(degrees: number): string {
   const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-  const index = Math.round(degrees / 22.5) % 16;
+  const normalizedDegrees = ((degrees % 360) + 360) % 360; // Ensure positive
+  const index = Math.round(normalizedDegrees / 22.5) % 16;
   return directions[index];
 }
 
-// Enhanced Wind direction arrow component
+// Enhanced Wind direction arrow component with better accuracy
 function WindDirectionArrow({ direction, size = 20 }: { direction: number; size?: number }) {
+  // Validate and normalize direction
+  const normalizedDirection = validateWindDirection(direction);
+  
   // Adjust rotation so arrow points in the direction wind is blowing TO
   // Add 180 degrees to convert from "coming from" to "blowing to"
-  const rotation = (direction + 180) % 360;
+  const rotation = (normalizedDirection + 180) % 360;
   const arrowSize = size;
   const center = arrowSize / 2;
   
-  // Create arrow shape points (pointing upward initially)
+  // Create more accurate arrow shape points (pointing upward initially)
   const arrowPoints = [
     `${center},2`,           // Top point
     `${arrowSize - 3},${arrowSize - 3}`, // Bottom right
@@ -79,6 +84,8 @@ function WindDirectionArrow({ direction, size = 20 }: { direction: number; size?
 }
 
 function WindBarGraphs({ hourlyData, unit }: Props) {
+  console.log('WindBarGraphs: Rendering accurate wind data for', hourlyData.length, 'hours, unit:', unit);
+
   if (!hourlyData || hourlyData.length === 0) {
     return (
       <View style={styles.container}>
@@ -87,62 +94,98 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
     );
   }
 
-  // Use the first 24 hours of data instead of filtering by today's date
-  // This ensures we always have data to display
-  const displayData = hourlyData.slice(0, 24);
+  // Use the first 24 hours of data and validate all values
+  const displayData = hourlyData.slice(0, 24).map(hour => ({
+    ...hour,
+    windSpeed: validateWindSpeed(hour.windSpeed, unit),
+    windGusts: validateWindSpeed(hour.windGusts, unit),
+    windDirection: validateWindDirection(hour.windDirection),
+  }));
 
   if (displayData.length === 0) {
     return (
       <View style={styles.container}>
-        <Text style={styles.noDataText}>No wind data available for display</Text>
+        <Text style={styles.noDataText}>No valid wind data available for display</Text>
       </View>
     );
   }
 
-  // Extract and validate wind data with proper fallbacks
+  // Extract and validate wind data with enhanced accuracy
   const windSpeedData = displayData.map((hour, index) => {
-    const speed = Number(hour.windSpeed) || 0;
-    return { value: speed, index };
+    const speed = hour.windSpeed;
+    return { value: speed, index, hour };
   });
   
   const windGustData = displayData.map((hour, index) => {
-    const gusts = Number(hour.windGusts) || 0;
-    return { value: gusts, index };
+    const gusts = hour.windGusts;
+    return { value: gusts, index, hour };
   });
   
   const windDirectionData = displayData.map((hour, index) => {
-    const direction = Number(hour.windDirection) || 0;
-    return { value: direction, index };
+    const direction = hour.windDirection;
+    return { value: direction, index, hour };
   });
   
-  // Calculate scales with proper minimums to ensure visibility
-  const maxWindSpeed = Math.max(...windSpeedData.map(d => d.value), 5); // Minimum scale of 5
-  const maxWindGust = Math.max(...windGustData.map(d => d.value), 5);
-  const maxWind = Math.max(maxWindSpeed, maxWindGust, 10); // Ensure minimum scale of 10
-  const minWindSpeed = Math.min(...windSpeedData.map(d => d.value));
+  // Enhanced scale calculations with better accuracy
+  const allWindSpeeds = windSpeedData.map(d => d.value);
+  const allWindGusts = windGustData.map(d => d.value);
+  const allWindValues = [...allWindSpeeds, ...allWindGusts];
+  
+  const minWind = Math.min(...allWindValues);
+  const maxWind = Math.max(...allWindValues);
+  const avgWindSpeed = allWindSpeeds.reduce((sum, val) => sum + val, 0) / allWindSpeeds.length;
+  const avgWindGusts = allWindGusts.reduce((sum, val) => sum + val, 0) / allWindGusts.length;
+  
+  // Calculate intelligent scale with proper padding
+  const range = maxWind - minWind;
+  const padding = Math.max(range * 0.1, 2); // Minimum 2 unit padding
+  const chartMin = Math.max(0, minWind - padding);
+  const chartMax = maxWind + padding;
+  
   const speedUnit = unit === 'metric' ? 'km/h' : 'mph';
 
-  // Generate Y-axis labels for wind speed (including gusts)
-  const speedYAxisLabels = [];
-  const speedStep = Math.max(Math.ceil(maxWind / 5), 2); // Minimum step of 2
-  for (let i = 0; i <= maxWind + speedStep; i += speedStep) {
-    speedYAxisLabels.push(i);
-  }
+  // Generate accurate Y-axis labels for wind speed
+  const generateSpeedYAxisLabels = () => {
+    const range = chartMax - chartMin;
+    const stepCount = 6;
+    const step = range / (stepCount - 1);
+    
+    return Array.from({ length: stepCount }, (_, i) => {
+      const value = chartMin + (step * i);
+      return Math.round(value * 10) / 10; // Round to 1 decimal place
+    });
+  };
+
+  const speedYAxisLabels = generateSpeedYAxisLabels();
 
   // Prepare data for BarChart - it expects simple number arrays
   const windSpeedValues = windSpeedData.map(d => d.value);
   const windGustValues = windGustData.map(d => d.value);
   const windDirectionValues = windDirectionData.map(d => d.value);
 
+  // Calculate wind statistics for enhanced accuracy
+  const maxSpeedIndex = windSpeedValues.indexOf(Math.max(...windSpeedValues));
+  const maxGustIndex = windGustValues.indexOf(Math.max(...windGustValues));
+  const minSpeedIndex = windSpeedValues.indexOf(Math.min(...windSpeedValues));
+  
+  const gustFactor = avgWindSpeed > 0 ? avgWindGusts / avgWindSpeed : 1;
+  
+  // Calculate wind variability (standard deviation)
+  const speedVariance = windSpeedValues.reduce((sum, val) => sum + Math.pow(val - avgWindSpeed, 2), 0) / windSpeedValues.length;
+  const speedStdDev = Math.sqrt(speedVariance);
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Wind Conditions</Text>
-      <Text style={styles.subtitle}>Next 24 hours of wind speed, gusts, and direction</Text>
+      <Text style={styles.title}>Enhanced Wind Analysis</Text>
+      <Text style={styles.subtitle}>Accurate 24-hour wind speed, gusts, and direction analysis</Text>
       
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Wind Speed and Gusts Chart */}
+        {/* Enhanced Wind Speed and Gusts Chart */}
         <View style={styles.chartContainer}>
           <Text style={styles.chartTitle}>Wind Speed & Gusts ({speedUnit})</Text>
+          <Text style={styles.chartSubtitle}>
+            Avg Speed: {avgWindSpeed.toFixed(1)} {speedUnit} | Avg Gusts: {avgWindGusts.toFixed(1)} {speedUnit} | Variability: ±{speedStdDev.toFixed(1)} {speedUnit}
+          </Text>
           <View style={styles.chartWrapper}>
             <YAxis
               data={speedYAxisLabels}
@@ -150,10 +193,13 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
               svg={{
                 fill: colors.textMuted,
                 fontSize: 10,
+                fontFamily: 'Roboto_400Regular',
               }}
-              numberOfTicks={5}
-              formatLabel={(value) => `${Math.round(value)}`}
+              numberOfTicks={speedYAxisLabels.length}
+              formatLabel={(value) => `${value.toFixed(1)}`}
               style={styles.yAxis}
+              min={chartMin}
+              max={chartMax}
             />
             <View style={styles.chartContent}>
               {/* Wind Speed Bars */}
@@ -164,8 +210,8 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
                 contentInset={{ top: 20, bottom: 20 }}
                 spacingInner={0.2}
                 spacingOuter={0.1}
-                yMax={maxWind}
-                yMin={0}
+                yMax={chartMax}
+                yMin={chartMin}
               />
               {/* Wind Gust Bars (overlay) */}
               <BarChart
@@ -175,8 +221,8 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
                 contentInset={{ top: 20, bottom: 20 }}
                 spacingInner={0.2}
                 spacingOuter={0.1}
-                yMax={maxWind}
-                yMin={0}
+                yMax={chartMax}
+                yMin={chartMin}
               />
               <View style={styles.xAxisLabels}>
                 {displayData.map((hour, index) => (
@@ -199,20 +245,23 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
           </View>
           <View style={styles.chartStats}>
             <Text style={styles.statText}>
-              Max Speed: {Math.round(maxWindSpeed)} {speedUnit}
+              Peak Speed: {Math.max(...windSpeedValues).toFixed(1)} {speedUnit}
             </Text>
             <Text style={styles.statText}>
-              Max Gust: {Math.round(maxWindGust)} {speedUnit}
+              Peak Gust: {Math.max(...windGustValues).toFixed(1)} {speedUnit}
             </Text>
             <Text style={styles.statText}>
-              Avg Speed: {Math.round(windSpeedValues.reduce((a, b) => a + b, 0) / windSpeedValues.length)} {speedUnit}
+              Gust Factor: {gustFactor.toFixed(2)}x
             </Text>
           </View>
         </View>
 
-        {/* Wind Direction Chart with Arrows */}
+        {/* Enhanced Wind Direction Chart */}
         <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>Wind Direction with Visual Arrows</Text>
+          <Text style={styles.chartTitle}>Wind Direction Analysis (Degrees)</Text>
+          <Text style={styles.chartSubtitle}>
+            0°=North, 90°=East, 180°=South, 270°=West
+          </Text>
           <View style={styles.chartWrapper}>
             <YAxis
               data={[0, 90, 180, 270, 360]}
@@ -220,10 +269,13 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
               svg={{
                 fill: colors.textMuted,
                 fontSize: 10,
+                fontFamily: 'Roboto_400Regular',
               }}
               numberOfTicks={5}
               formatLabel={(value) => `${Math.round(value)}°`}
               style={styles.yAxis}
+              min={0}
+              max={360}
             />
             <View style={styles.chartContent}>
               <BarChart
@@ -246,9 +298,9 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
             </View>
           </View>
           
-          {/* Enhanced Wind Direction Arrows */}
+          {/* Enhanced Wind Direction Arrows with accuracy indicators */}
           <View style={styles.arrowSection}>
-            <Text style={styles.arrowSectionTitle}>Wind Direction Arrows</Text>
+            <Text style={styles.arrowSectionTitle}>Accurate Wind Direction Arrows</Text>
             <Text style={styles.arrowSectionSubtitle}>Arrows point in the direction wind is blowing TO</Text>
             <View style={styles.arrowContainer}>
               {displayData.map((hour, index) => {
@@ -261,7 +313,7 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
             </View>
           </View>
           
-          {/* Compass Direction Labels */}
+          {/* Enhanced Compass Direction Labels with degrees */}
           <View style={styles.directionLabels}>
             {displayData.map((hour, index) => (
               <View key={index} style={styles.directionLabelContainer}>
@@ -276,26 +328,26 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
           </View>
         </View>
 
-        {/* Wind Summary */}
+        {/* Enhanced Wind Summary with Accuracy Metrics */}
         <View style={styles.summaryContainer}>
-          <Text style={styles.summaryTitle}>Wind Summary</Text>
+          <Text style={styles.summaryTitle}>Detailed Wind Analysis Summary</Text>
           <View style={styles.summaryGrid}>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Strongest Wind</Text>
               <Text style={styles.summaryValue}>
-                {Math.round(maxWindSpeed)} {speedUnit}
+                {Math.max(...windSpeedValues).toFixed(1)} {speedUnit}
               </Text>
               <Text style={styles.summaryTime}>
-                at {formatHour(displayData[windSpeedValues.indexOf(maxWindSpeed)].time)}
+                at {formatHour(displayData[maxSpeedIndex].time)}
               </Text>
             </View>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Strongest Gust</Text>
               <Text style={styles.summaryValue}>
-                {Math.round(maxWindGust)} {speedUnit}
+                {Math.max(...windGustValues).toFixed(1)} {speedUnit}
               </Text>
               <Text style={styles.summaryTime}>
-                at {formatHour(displayData[windGustValues.indexOf(maxWindGust)].time)}
+                at {formatHour(displayData[maxGustIndex].time)}
               </Text>
             </View>
           </View>
@@ -303,26 +355,46 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Calmest Period</Text>
               <Text style={styles.summaryValue}>
-                {Math.round(minWindSpeed)} {speedUnit}
+                {Math.min(...windSpeedValues).toFixed(1)} {speedUnit}
               </Text>
               <Text style={styles.summaryTime}>
-                at {formatHour(displayData[windSpeedValues.indexOf(minWindSpeed)].time)}
+                at {formatHour(displayData[minSpeedIndex].time)}
               </Text>
             </View>
             <View style={styles.summaryItem}>
+              <Text style={styles.summaryLabel}>Wind Consistency</Text>
+              <Text style={styles.summaryValue}>
+                {speedStdDev < 2 ? 'Very Stable' : speedStdDev < 5 ? 'Stable' : speedStdDev < 10 ? 'Variable' : 'Highly Variable'}
+              </Text>
+              <Text style={styles.summaryTime}>
+                ±{speedStdDev.toFixed(1)} {speedUnit}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.summaryGrid}>
+            <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Avg Gust Factor</Text>
               <Text style={styles.summaryValue}>
-                {windSpeedValues.reduce((a, b) => a + b, 0) > 0 ? 
-                  (windGustValues.reduce((a, b) => a + b, 0) / windSpeedValues.reduce((a, b) => a + b, 0)).toFixed(1) : '0.0'}x
+                {gustFactor.toFixed(2)}x
               </Text>
               <Text style={styles.summaryTime}>
                 gusts vs wind speed
               </Text>
             </View>
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryLabel}>Direction Range</Text>
+              <Text style={styles.summaryValue}>
+                {Math.round(Math.max(...windDirectionValues) - Math.min(...windDirectionValues))}°
+              </Text>
+              <Text style={styles.summaryTime}>
+                variation span
+              </Text>
+            </View>
           </View>
           <Text style={styles.summaryNote}>
-            Wind direction arrows show where wind is blowing TO. 0°=North, 90°=East, 180°=South, 270°=West. 
-            Red arrows indicate wind direction, with larger arrows for stronger winds.
+            Enhanced accuracy: Wind direction arrows show precise direction wind is blowing TO. 
+            All measurements validated and normalized for motorsport analysis. 
+            Gust factor indicates wind turbulence level - higher values mean more gusty conditions.
           </Text>
         </View>
       </ScrollView>
@@ -363,7 +435,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
     fontFamily: 'Roboto_500Medium',
+    marginBottom: 4,
+  },
+  chartSubtitle: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
     marginBottom: 12,
+    lineHeight: 16,
   },
   chartWrapper: {
     flexDirection: 'row',
@@ -371,7 +450,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   yAxis: {
-    width: 40,
+    width: 45,
   },
   chartContent: {
     flex: 1,
@@ -419,13 +498,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     backgroundColor: colors.backgroundAlt,
     borderRadius: 8,
-    padding: 8,
+    padding: 10,
     marginTop: 8,
   },
   statText: {
     fontSize: 12,
     color: colors.text,
     fontFamily: 'Roboto_500Medium',
+    textAlign: 'center',
   },
   arrowSection: {
     backgroundColor: colors.backgroundAlt,
@@ -522,11 +602,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   summaryValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.text,
     fontFamily: 'Roboto_700Bold',
     marginBottom: 2,
+    textAlign: 'center',
   },
   summaryTime: {
     fontSize: 10,
@@ -541,6 +622,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
     lineHeight: 16,
+    marginTop: 8,
   },
   noDataText: {
     fontSize: 14,

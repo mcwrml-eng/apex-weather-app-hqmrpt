@@ -87,17 +87,88 @@ function toUnitParams(unit: Unit) {
   };
 }
 
-// Convert precipitation from mm to inches if needed
+// Enhanced precipitation conversion with higher precision
 function convertPrecipitation(value: number, unit: Unit): number {
+  if (!value || isNaN(value)) return 0;
+  
   if (unit === 'imperial') {
-    return value / 25.4; // Convert mm to inches
+    // Convert mm to inches with high precision
+    const inches = value / 25.4;
+    // Round to 3 decimal places for accuracy
+    return Math.round(inches * 1000) / 1000;
   }
-  return value; // Keep mm for metric
+  
+  // Round mm to 2 decimal places for metric
+  return Math.round(value * 100) / 100;
 }
 
 // Get precipitation unit label
 function getPrecipitationUnit(unit: Unit): string {
   return unit === 'metric' ? 'mm' : 'in';
+}
+
+// Enhanced data validation and sanitization
+function validateAndSanitizeNumber(value: any, fallback: number = 0, min?: number, max?: number): number {
+  let num = Number(value);
+  
+  if (isNaN(num) || !isFinite(num)) {
+    console.log('useWeather: Invalid number detected, using fallback:', value, '→', fallback);
+    num = fallback;
+  }
+  
+  if (min !== undefined && num < min) {
+    console.log('useWeather: Value below minimum, clamping:', num, '→', min);
+    num = min;
+  }
+  
+  if (max !== undefined && num > max) {
+    console.log('useWeather: Value above maximum, clamping:', num, '→', max);
+    num = max;
+  }
+  
+  return num;
+}
+
+// Enhanced temperature validation
+function validateTemperature(value: any, unit: Unit): number {
+  const minTemp = unit === 'metric' ? -60 : -76; // Extreme cold limits
+  const maxTemp = unit === 'metric' ? 60 : 140;  // Extreme heat limits
+  return validateAndSanitizeNumber(value, 0, minTemp, maxTemp);
+}
+
+// Enhanced wind speed validation
+function validateWindSpeed(value: any, unit: Unit): number {
+  const maxWind = unit === 'metric' ? 300 : 186; // ~300 km/h = ~186 mph (extreme hurricane)
+  return validateAndSanitizeNumber(value, 0, 0, maxWind);
+}
+
+// Enhanced humidity validation
+function validateHumidity(value: any): number {
+  return validateAndSanitizeNumber(value, 50, 0, 100);
+}
+
+// Enhanced precipitation validation
+function validatePrecipitation(value: any): number {
+  return validateAndSanitizeNumber(value, 0, 0, 500); // Max 500mm/hour (extreme rainfall)
+}
+
+// Enhanced pressure validation
+function validatePressure(value: any): number {
+  return validateAndSanitizeNumber(value, 1013, 870, 1085); // Realistic atmospheric pressure range
+}
+
+// Enhanced visibility validation
+function validateVisibility(value: any): number {
+  return validateAndSanitizeNumber(value, 10000, 0, 50000); // 0-50km visibility range
+}
+
+// Enhanced wind direction validation
+function validateWindDirection(value: any): number {
+  let direction = validateAndSanitizeNumber(value, 0, 0, 360);
+  // Normalize to 0-360 range
+  direction = direction % 360;
+  if (direction < 0) direction += 360;
+  return direction;
 }
 
 // Calculate sunrise and sunset times for better day/night detection
@@ -217,7 +288,7 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
     
     async function run() {
       try {
-        console.log('useWeather: Starting enhanced fetch for', latitude, longitude, unit);
+        console.log('useWeather: Starting enhanced accurate fetch for', latitude, longitude, unit);
         setLoading(true);
         setErr(null);
 
@@ -242,7 +313,7 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
           `&timezone=auto&forecast_days=7&forecast_hours=168` + // 7 days of hourly data
           `&temperature_unit=${unitParams.temperature_unit}&wind_speed_unit=${unitParams.wind_speed_unit}&precipitation_unit=${unitParams.precipitation_unit}`;
 
-        console.log('useWeather: Fetching enhanced data from API');
+        console.log('useWeather: Fetching enhanced accurate data from API');
         const res = await fetch(url);
         
         if (!res.ok) {
@@ -257,45 +328,45 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
           return;
         }
 
-        // Enhanced current weather data
+        // Enhanced current weather data with validation
         const cur = {
-          temperature: json?.current?.temperature_2m ?? 0,
-          apparent_temperature: json?.current?.apparent_temperature ?? json?.current?.temperature_2m ?? 0,
-          wind_speed: json?.current?.wind_speed_10m ?? 0,
-          wind_direction: json?.current?.wind_direction_10m ?? 0,
-          wind_gusts: json?.current?.wind_gusts_10m ?? json?.current?.wind_speed_10m ?? 0,
-          humidity: json?.current?.relative_humidity_2m ?? 0,
-          weather_code: json?.current?.weather_code ?? 0,
-          pressure: json?.current?.surface_pressure ?? 1013,
-          visibility: json?.current?.visibility ?? 10000,
-          uv_index: json?.current?.uv_index ?? 0,
-          dew_point: json?.current?.dew_point_2m ?? 0,
-          cloud_cover: json?.current?.cloud_cover ?? 0,
+          temperature: validateTemperature(json?.current?.temperature_2m, unit),
+          apparent_temperature: validateTemperature(json?.current?.apparent_temperature || json?.current?.temperature_2m, unit),
+          wind_speed: validateWindSpeed(json?.current?.wind_speed_10m, unit),
+          wind_direction: validateWindDirection(json?.current?.wind_direction_10m),
+          wind_gusts: validateWindSpeed(json?.current?.wind_gusts_10m || json?.current?.wind_speed_10m, unit),
+          humidity: validateHumidity(json?.current?.relative_humidity_2m),
+          weather_code: validateAndSanitizeNumber(json?.current?.weather_code, 0, 0, 99),
+          pressure: validatePressure(json?.current?.surface_pressure),
+          visibility: validateVisibility(json?.current?.visibility),
+          uv_index: validateAndSanitizeNumber(json?.current?.uv_index, 0, 0, 15),
+          dew_point: validateTemperature(json?.current?.dew_point_2m, unit),
+          cloud_cover: validateAndSanitizeNumber(json?.current?.cloud_cover, 0, 0, 100),
         } as Current;
 
-        // Enhanced daily forecast data - convert precipitation for display
+        // Enhanced daily forecast data with validation and accurate precipitation conversion
         const days: DayInfo[] = (json?.daily?.time || []).map((t: string, idx: number) => ({
           date: t,
           weekday: weekdayFromDate(t),
-          min: json?.daily?.temperature_2m_min?.[idx] ?? 0,
-          max: json?.daily?.temperature_2m_max?.[idx] ?? 0,
-          weather_code: json?.daily?.weather_code?.[idx] ?? 0,
-          precipitation_probability: json?.daily?.precipitation_probability_max?.[idx] ?? 0,
-          precipitation_sum: convertPrecipitation(json?.daily?.precipitation_sum?.[idx] ?? 0, unit),
-          wind_speed_max: json?.daily?.wind_speed_10m_max?.[idx] ?? 0,
-          wind_direction_dominant: json?.daily?.wind_direction_10m_dominant?.[idx] ?? 0,
-          wind_gusts_max: json?.daily?.wind_gusts_10m_max?.[idx] ?? json?.daily?.wind_speed_10m_max?.[idx] ?? 0,
-          uv_index_max: json?.daily?.uv_index_max?.[idx] ?? 0,
-          sunrise: json?.daily?.sunrise?.[idx] ?? '06:00',
-          sunset: json?.daily?.sunset?.[idx] ?? '18:00',
+          min: validateTemperature(json?.daily?.temperature_2m_min?.[idx], unit),
+          max: validateTemperature(json?.daily?.temperature_2m_max?.[idx], unit),
+          weather_code: validateAndSanitizeNumber(json?.daily?.weather_code?.[idx], 0, 0, 99),
+          precipitation_probability: validateAndSanitizeNumber(json?.daily?.precipitation_probability_max?.[idx], 0, 0, 100),
+          precipitation_sum: convertPrecipitation(validatePrecipitation(json?.daily?.precipitation_sum?.[idx]), unit),
+          wind_speed_max: validateWindSpeed(json?.daily?.wind_speed_10m_max?.[idx], unit),
+          wind_direction_dominant: validateWindDirection(json?.daily?.wind_direction_10m_dominant?.[idx]),
+          wind_gusts_max: validateWindSpeed(json?.daily?.wind_gusts_10m_max?.[idx] || json?.daily?.wind_speed_10m_max?.[idx], unit),
+          uv_index_max: validateAndSanitizeNumber(json?.daily?.uv_index_max?.[idx], 0, 0, 15),
+          sunrise: json?.daily?.sunrise?.[idx] || '06:00',
+          sunset: json?.daily?.sunset?.[idx] || '18:00',
         }));
 
         const d: Daily = {
-          precipitation_probability_max: json?.daily?.precipitation_probability_max?.[0],
+          precipitation_probability_max: validateAndSanitizeNumber(json?.daily?.precipitation_probability_max?.[0], 0, 0, 100),
           days,
         };
 
-        // Enhanced hourly data for the next 72 hours (3 days) - convert precipitation for display
+        // Enhanced hourly data for the next 72 hours (3 days) with validation and accurate conversion
         const hourlyTimes = json?.hourly?.time || [];
         const hourlyTemps = json?.hourly?.temperature_2m || [];
         const hourlyWindSpeeds = json?.hourly?.wind_speed_10m || [];
@@ -313,26 +384,27 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
 
         const hourlyData: HourlyData[] = hourlyTimes.slice(0, 72).map((time: string, idx: number) => ({
           time,
-          temperature: hourlyTemps[idx] ?? 0,
-          windSpeed: hourlyWindSpeeds[idx] ?? 0,
-          windDirection: hourlyWindDirections[idx] ?? 0,
-          windGusts: hourlyWindGusts[idx] ?? hourlyWindSpeeds[idx] ?? 0,
-          humidity: hourlyHumidity[idx] ?? 0,
-          precipitation: convertPrecipitation(hourlyPrecipitation[idx] ?? 0, unit),
-          precipitationProbability: hourlyPrecipitationProb[idx] ?? 0,
-          weatherCode: hourlyWeatherCodes[idx] ?? 0,
-          pressure: hourlyPressure[idx] ?? 1013,
-          visibility: hourlyVisibility[idx] ?? 10000,
-          uvIndex: hourlyUvIndex[idx] ?? 0,
-          dewPoint: hourlyDewPoint[idx] ?? 0,
-          cloudCover: hourlyCloudCover[idx] ?? 0,
+          temperature: validateTemperature(hourlyTemps[idx], unit),
+          windSpeed: validateWindSpeed(hourlyWindSpeeds[idx], unit),
+          windDirection: validateWindDirection(hourlyWindDirections[idx]),
+          windGusts: validateWindSpeed(hourlyWindGusts[idx] || hourlyWindSpeeds[idx], unit),
+          humidity: validateHumidity(hourlyHumidity[idx]),
+          precipitation: convertPrecipitation(validatePrecipitation(hourlyPrecipitation[idx]), unit),
+          precipitationProbability: validateAndSanitizeNumber(hourlyPrecipitationProb[idx], 0, 0, 100),
+          weatherCode: validateAndSanitizeNumber(hourlyWeatherCodes[idx], 0, 0, 99),
+          pressure: validatePressure(hourlyPressure[idx]),
+          visibility: validateVisibility(hourlyVisibility[idx]),
+          uvIndex: validateAndSanitizeNumber(hourlyUvIndex[idx], 0, 0, 15),
+          dewPoint: validateTemperature(hourlyDewPoint[idx], unit),
+          cloudCover: validateAndSanitizeNumber(hourlyCloudCover[idx], 0, 0, 100),
         }));
 
         // Analyze weather for alerts
         const weatherAlerts = analyzeWeatherAlerts(cur, hourlyData, unit);
 
-        console.log('useWeather: Enhanced data processed - current temp:', cur.temperature, 'daily days:', days.length, 'hourly points:', hourlyData.length, 'alerts:', weatherAlerts.length);
+        console.log('useWeather: Enhanced accurate data processed - current temp:', cur.temperature, 'daily days:', days.length, 'hourly points:', hourlyData.length, 'alerts:', weatherAlerts.length);
         console.log('useWeather: Precipitation unit for', unit, 'is', getPrecipitationUnit(unit));
+        console.log('useWeather: Sample hourly precipitation values:', hourlyData.slice(0, 5).map(h => h.precipitation));
 
         const now = new Date();
         setCurrent(cur);
@@ -353,7 +425,7 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
         
         cache[key] = { ts: Date.now(), data: weatherData };
         setLoading(false);
-        console.log('useWeather: Successfully loaded enhanced weather data');
+        console.log('useWeather: Successfully loaded enhanced accurate weather data');
       } catch (e: any) {
         console.log('useWeather: Error fetching enhanced weather:', e?.message || e);
         setErr('fetch_failed');
@@ -371,4 +443,4 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
 }
 
 // Export utility functions for use in components
-export { convertPrecipitation, getPrecipitationUnit };
+export { convertPrecipitation, getPrecipitationUnit, validateTemperature, validateWindSpeed, validateHumidity, validatePrecipitation, validatePressure, validateWindDirection };
