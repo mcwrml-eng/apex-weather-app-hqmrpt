@@ -11,6 +11,7 @@ import WindRadarGraph from '../../components/WindRadarGraph';
 import WeatherChart from '../../components/WeatherChart';
 import WeatherSymbol from '../../components/WeatherSymbol';
 import EnhancedWeatherForecast from '../../components/EnhancedWeatherForecast';
+import WeatherTextForecast from '../../components/WeatherTextForecast';
 import WeatherAlerts from '../../components/WeatherAlerts';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
@@ -146,6 +147,18 @@ function DetailScreen() {
               Updated {lastUpdated.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
             </Text>
           </View>
+        )}
+
+        {/* NEW: Written Text Weather Forecast */}
+        {!loading && current && hourly.length > 0 && (
+          <WeatherTextForecast
+            current={current}
+            hourlyData={hourly}
+            unit={unit}
+            circuitName={circuit.name}
+            latitude={circuit.latitude}
+            longitude={circuit.longitude}
+          />
         )}
 
         {/* Wind Speed, Gusts and Direction Bar Graphs - Always show if we have data */}
@@ -472,7 +485,7 @@ function DetailScreen() {
           />
           <View style={{ height: 18 }} />
           <Text style={styles.muted}>
-            Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, and detailed forecasts.
+            Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, and written text summaries.
             Data updates every 10 minutes for accuracy.
           </Text>
         </BottomSheetView>
