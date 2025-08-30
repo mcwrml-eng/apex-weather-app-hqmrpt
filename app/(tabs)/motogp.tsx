@@ -5,7 +5,6 @@ import { colors } from '../../styles/commonStyles';
 import { motogpCircuits } from '../../data/circuits';
 import CircuitCard from '../../components/CircuitCard';
 import SearchBar from '../../components/SearchBar';
-import FeaturedTrackCard from '../../components/FeaturedTrackCard';
 
 export default function MotoGPScreen() {
   console.log('MotoGPScreen: Rendering with', motogpCircuits.length, 'circuits');
@@ -39,21 +38,10 @@ export default function MotoGPScreen() {
         />
       </Animated.View>
       <ScrollView contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled">
-        {/* Show featured track only when not searching */}
-        {!query.trim() && <FeaturedTrackCard category="motogp" />}
-        
-        {/* Regular circuits list */}
         {filtered.length === 0 ? (
           <Text style={styles.empty}>No circuits match your search.</Text>
         ) : (
-          <>
-            {query.trim() && (
-              <Text style={styles.resultsHeader}>
-                {filtered.length} circuit{filtered.length !== 1 ? 's' : ''} found
-              </Text>
-            )}
-            {filtered.map((c) => <CircuitCard key={c.slug} circuit={c} category="motogp" />)}
-          </>
+          filtered.map((c) => <CircuitCard key={c.slug} circuit={c} category="motogp" />)
         )}
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -87,11 +75,4 @@ const styles = StyleSheet.create({
     paddingTop: 6,
   },
   empty: { color: colors.textMuted, paddingHorizontal: 4, marginTop: 10, fontFamily: 'Roboto_400Regular' },
-  resultsHeader: {
-    color: colors.textMuted,
-    fontSize: 14,
-    fontFamily: 'Roboto_400Regular',
-    marginBottom: 16,
-    paddingHorizontal: 4,
-  },
 });
