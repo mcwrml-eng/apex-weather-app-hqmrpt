@@ -2,12 +2,12 @@
 import { StyleSheet } from 'react-native';
 
 export const colors = {
-  // Base colors
-  background: '#FAFBFC',
-  backgroundAlt: '#F1F3F5',
-  card: '#FFFFFF',
-  text: '#1A1D23',
-  textMuted: '#6B7280',
+  // Base colors - Dark theme
+  background: '#0F1419',
+  backgroundAlt: '#1A1F26',
+  card: '#1E2328',
+  text: '#E8EAED',
+  textMuted: '#9AA0A6',
   
   // Motorsport-inspired primary colors
   primary: '#E10600', // Ferrari Red / Racing Red
@@ -36,20 +36,20 @@ export const colors = {
   
   // Weather colors
   temperature: '#FF6B35',
-  wind: '#0066CC',
+  wind: '#4FC3F7',
   humidity: '#00D4AA',
-  precipitation: '#4FC3F7',
+  precipitation: '#64B5F6',
   
   // Status colors
   success: '#00D4AA',
   warning: '#FFB800',
   error: '#E10600',
   
-  // UI colors
-  divider: '#E5E7EB',
-  border: '#D1D5DB',
-  shadow: 'rgba(26, 29, 35, 0.08)',
-  shadowDark: 'rgba(26, 29, 35, 0.15)',
+  // UI colors - Dark theme
+  divider: '#2D3748',
+  border: '#374151',
+  shadow: 'rgba(0, 0, 0, 0.3)',
+  shadowDark: 'rgba(0, 0, 0, 0.5)',
   
   // Gradients (for use with expo-linear-gradient)
   gradientPrimary: ['#E10600', '#FF2B2B'],
