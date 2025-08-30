@@ -138,40 +138,74 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
     return value.toFixed(1);
   };
 
-  // Enhanced time formatting for better readability
+  // Enhanced time formatting for better readability and accurate time scales
   const formatTimeLabel = (timeString: string, index: number) => {
+    console.log('WeatherChart: Formatting time label for', timeString, 'at index', index);
     const date = new Date(timeString);
     const hour = date.getHours();
     const minute = date.getMinutes();
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
     
-    // Show different formats based on data density
-    if (validData.length <= 12) {
-      // For shorter periods, show hour:minute
+    // Show different formats based on data density and time span
+    const totalHours = validData.length;
+    const timeSpanHours = totalHours;
+    
+    if (timeSpanHours <= 6) {
+      // For very short periods (≤6 hours), show hour:minute
       return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-    } else if (validData.length <= 24) {
-      // For 24 hours, show hour only
+    } else if (timeSpanHours <= 12) {
+      // For short periods (≤12 hours), show hour with h suffix
       return `${hour.toString().padStart(2, '0')}h`;
+    } else if (timeSpanHours <= 24) {
+      // For 24 hours, show hour only at key intervals
+      return `${hour.toString().padStart(2, '0')}h`;
+    } else if (timeSpanHours <= 48) {
+      // For 2 days, show day/hour
+      return `${day}/${hour.toString().padStart(2, '0')}h`;
     } else {
-      // For longer periods, show day/hour
-      const day = date.getDate();
-      return index % 6 === 0 ? `${day}/${hour}h` : `${hour}h`;
+      // For longer periods, show month/day hour
+      return `${month}/${day} ${hour.toString().padStart(2, '0')}h`;
     }
   };
 
-  // Generate intelligent time labels
+  // Generate intelligent time labels with proper spacing
   const generateTimeLabels = () => {
     const totalPoints = validData.length;
-    let showEvery = 1;
+    console.log('WeatherChart: Generating time labels for', totalPoints, 'data points');
     
-    // Adjust label frequency based on data length
-    if (totalPoints > 48) showEvery = 8;
-    else if (totalPoints > 24) showEvery = 4;
-    else if (totalPoints > 12) showEvery = 3;
-    else if (totalPoints > 6) showEvery = 2;
+    // Determine how many labels to show based on data length
+    let labelInterval = 1;
+    let maxLabels = 8; // Maximum number of labels to show
+    
+    if (totalPoints <= 6) {
+      labelInterval = 1; // Show all labels for very short periods
+      maxLabels = totalPoints;
+    } else if (totalPoints <= 12) {
+      labelInterval = 2; // Show every 2nd label
+      maxLabels = 6;
+    } else if (totalPoints <= 24) {
+      labelInterval = 4; // Show every 4th label (every 4 hours for hourly data)
+      maxLabels = 6;
+    } else if (totalPoints <= 48) {
+      labelInterval = 8; // Show every 8th label (every 8 hours for hourly data)
+      maxLabels = 6;
+    } else {
+      labelInterval = Math.ceil(totalPoints / maxLabels); // Adaptive interval
+    }
+    
+    console.log('WeatherChart: Using label interval', labelInterval, 'for', totalPoints, 'points');
     
     return validData.map((point, index) => {
-      if (index % showEvery === 0 || index === totalPoints - 1) {
-        return formatTimeLabel(point.time, index);
+      // Always show first and last labels, plus labels at intervals
+      const shouldShowLabel = index === 0 || 
+                             index === totalPoints - 1 || 
+                             index % labelInterval === 0;
+      
+      if (shouldShowLabel) {
+        const label = formatTimeLabel(point.time, index);
+        console.log('WeatherChart: Generated label at index', index, ':', label);
+        return label;
       }
       return '';
     });
@@ -182,6 +216,8 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
   const unitLabel = getUnit();
   const title = getTitle();
   const timeLabels = generateTimeLabels();
+
+  console.log('WeatherChart: Generated', timeLabels.filter(l => l !== '').length, 'time labels:', timeLabels.filter(l => l !== ''));
 
   // Enhanced statistical calculations
   const minValue = Math.min(...chartData);
@@ -327,7 +363,10 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
       <View style={styles.xAxisContainer}>
         <View style={styles.xAxisLabelsContainer}>
           {timeLabels.map((label, index) => (
-            <View key={index} style={styles.xAxisLabelWrapper}>
+            <View key={index} style={[
+              styles.xAxisLabelWrapper,
+              { flex: 1 / timeLabels.length }
+            ]}>
               <Text style={[
                 styles.xAxisLabel,
                 { opacity: label ? 1 : 0 }
@@ -337,7 +376,7 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
             </View>
           ))}
         </View>
-        <Text style={styles.xAxisTitle}>Time</Text>
+        <Text style={styles.xAxisTitle}>Time Scale</Text>
       </View>
 
       {/* Enhanced statistics panel */}
@@ -439,16 +478,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
+    minHeight: 20,
   },
   xAxisLabelWrapper: {
-    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 2,
   },
   xAxisLabel: {
     fontSize: 10,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
     textAlign: 'center',
+    lineHeight: 12,
   },
   xAxisTitle: {
     fontSize: 11,
