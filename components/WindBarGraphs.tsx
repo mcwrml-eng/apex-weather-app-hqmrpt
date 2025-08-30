@@ -111,6 +111,13 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
     windDirection: validateWindDirection(hour.windDirection),
   }));
 
+  console.log('WindBarGraphs: Sample wind data after validation:', displayData.slice(0, 3).map(h => ({
+    time: h.time,
+    windSpeed: h.windSpeed,
+    windGusts: h.windGusts,
+    windDirection: h.windDirection
+  })));
+
   if (displayData.length === 0) {
     return (
       <View style={styles.container}>
@@ -139,6 +146,10 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
   const allWindSpeeds = windSpeedData.map(d => d.value);
   const allWindGusts = windGustData.map(d => d.value);
   const allWindValues = [...allWindSpeeds, ...allWindGusts];
+  
+  console.log('WindBarGraphs: Wind speed values:', allWindSpeeds.slice(0, 5));
+  console.log('WindBarGraphs: Wind gust values:', allWindGusts.slice(0, 5));
+  console.log('WindBarGraphs: All wind values range:', Math.min(...allWindValues), 'to', Math.max(...allWindValues));
   
   const minWind = Math.min(...allWindValues);
   const maxWind = Math.max(...allWindValues);
@@ -194,6 +205,10 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
   const windGustValues = windGustData.map(d => d.value);
   const windDirectionValues = windDirectionData.map(d => d.value);
 
+  console.log('WindBarGraphs: Final chart data - Speed values:', windSpeedValues.slice(0, 5));
+  console.log('WindBarGraphs: Final chart data - Gust values:', windGustValues.slice(0, 5));
+  console.log('WindBarGraphs: Chart scale - min:', chartMin, 'max:', chartMax);
+
   // Calculate wind statistics for enhanced accuracy
   const maxSpeedIndex = windSpeedValues.indexOf(Math.max(...windSpeedValues));
   const maxGustIndex = windGustValues.indexOf(Math.max(...windGustValues));
@@ -208,14 +223,14 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Enhanced Wind Analysis</Text>
-      <Text style={styles.subtitle}>Accurate 24-hour wind speed, gusts, and direction analysis with 3-hour interval time scales</Text>
+      <Text style={styles.subtitle}>Separate charts for wind speed and gusts with accurate 24-hour analysis and 3-hour interval time scales</Text>
       
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Enhanced Wind Speed and Gusts Chart */}
+        {/* Enhanced Wind Speed Chart */}
         <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>Wind Speed & Gusts ({speedUnit})</Text>
+          <Text style={styles.chartTitle}>Wind Speed ({speedUnit})</Text>
           <Text style={styles.chartSubtitle}>
-            Avg Speed: {avgWindSpeed.toFixed(1)} {speedUnit} | Avg Gusts: {avgWindGusts.toFixed(1)} {speedUnit} | Variability: ±{speedStdDev.toFixed(1)} {speedUnit}
+            Average: {avgWindSpeed.toFixed(1)} {speedUnit} | Peak: {Math.max(...windSpeedValues).toFixed(1)} {speedUnit} | Variability: ±{speedStdDev.toFixed(1)} {speedUnit}
           </Text>
           <View style={styles.chartWrapper}>
             <YAxis
@@ -238,17 +253,6 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
                 style={[styles.chart]}
                 data={windSpeedValues}
                 svg={{ fill: colors.wind, fillOpacity: 0.8 }}
-                contentInset={{ top: 20, bottom: 20 }}
-                spacingInner={0.2}
-                spacingOuter={0.1}
-                yMax={chartMax}
-                yMin={chartMin}
-              />
-              {/* Wind Gust Bars (overlay) */}
-              <BarChart
-                style={[styles.chart, { position: 'absolute', top: 0 }]}
-                data={windGustValues}
-                svg={{ fill: colors.accent, fillOpacity: 0.6 }}
                 contentInset={{ top: 20, bottom: 20 }}
                 spacingInner={0.2}
                 spacingOuter={0.1}
@@ -287,20 +291,85 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
               <View style={[styles.legendColor, { backgroundColor: colors.wind }]} />
               <Text style={styles.legendText}>Wind Speed</Text>
             </View>
+          </View>
+        </View>
+
+        {/* Enhanced Wind Gusts Chart - Separate Chart */}
+        <View style={styles.chartContainer}>
+          <Text style={styles.chartTitle}>Wind Gusts ({speedUnit})</Text>
+          <Text style={styles.chartSubtitle}>
+            Average: {avgWindGusts.toFixed(1)} {speedUnit} | Peak: {Math.max(...windGustValues).toFixed(1)} {speedUnit} | Gust Factor: {gustFactor.toFixed(2)}x
+          </Text>
+          <View style={styles.chartWrapper}>
+            <YAxis
+              data={speedYAxisLabels}
+              contentInset={{ top: 20, bottom: 20 }}
+              svg={{
+                fill: colors.textMuted,
+                fontSize: 10,
+                fontFamily: 'Roboto_400Regular',
+              }}
+              numberOfTicks={speedYAxisLabels.length}
+              formatLabel={(value) => `${value.toFixed(1)}`}
+              style={styles.yAxis}
+              min={chartMin}
+              max={chartMax}
+            />
+            <View style={styles.chartContent}>
+              {/* Wind Gust Bars */}
+              <BarChart
+                style={[styles.chart]}
+                data={windGustValues}
+                svg={{ fill: colors.accent, fillOpacity: 0.8 }}
+                contentInset={{ top: 20, bottom: 20 }}
+                spacingInner={0.2}
+                spacingOuter={0.1}
+                yMax={chartMax}
+                yMin={chartMin}
+              />
+            </View>
+          </View>
+          
+          {/* Enhanced X-axis with 3-hour interval time scales for gusts */}
+          <View style={styles.xAxisContainer}>
+            <View style={styles.xAxisLabelsContainer}>
+              {timeLabels.map((label, index) => (
+                <View key={index} style={[
+                  styles.xAxisLabelWrapper,
+                  { flex: 1 }
+                ]}>
+                  <Text style={[
+                    styles.xAxisLabel,
+                    { 
+                      opacity: label ? 1 : 0,
+                      fontSize: 10,
+                      fontWeight: label ? '500' : '400'
+                    }
+                  ]}>
+                    {label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            <Text style={styles.xAxisTitle}>Time Scale (3-hour intervals)</Text>
+          </View>
+          
+          <View style={styles.legendContainer}>
             <View style={styles.legendItem}>
               <View style={[styles.legendColor, { backgroundColor: colors.accent }]} />
               <Text style={styles.legendText}>Wind Gusts</Text>
             </View>
           </View>
+          
           <View style={styles.chartStats}>
-            <Text style={styles.statText}>
-              Peak Speed: {Math.max(...windSpeedValues).toFixed(1)} {speedUnit}
-            </Text>
             <Text style={styles.statText}>
               Peak Gust: {Math.max(...windGustValues).toFixed(1)} {speedUnit}
             </Text>
             <Text style={styles.statText}>
               Gust Factor: {gustFactor.toFixed(2)}x
+            </Text>
+            <Text style={styles.statText}>
+              Consistency: {speedStdDev < 2 ? 'Stable' : 'Variable'}
             </Text>
           </View>
         </View>
@@ -473,10 +542,11 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
             </View>
           </View>
           <Text style={styles.summaryNote}>
-            Enhanced accuracy: Wind direction arrows show precise direction wind is blowing TO. 
+            Enhanced accuracy: Wind speed and gusts now displayed in separate charts for better visibility. 
+            Wind direction arrows show precise direction wind is blowing TO. 
             All measurements validated and normalized for motorsport analysis. 
             Gust factor indicates wind turbulence level - higher values mean more gusty conditions.
-            Time scales now display at optimal 3-hour intervals for 24-hour racing strategy analysis.
+            Time scales display at optimal 3-hour intervals for 24-hour racing strategy analysis.
           </Text>
         </View>
       </ScrollView>
