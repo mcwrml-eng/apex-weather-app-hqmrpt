@@ -23,8 +23,12 @@ function DetailScreen() {
   const slug = params.slug as string;
   const category = (params.category as 'f1' | 'motogp') || 'f1';
 
+  console.log('DetailScreen: Rendering with params:', { slug, category });
+
   const circuit = getCircuitBySlug(slug, category);
   const { unit, toggleUnit } = useUnit();
+
+  console.log('DetailScreen: Circuit data:', circuit);
 
   const { current, daily, hourly, alerts, loading, error, lastUpdated } = useWeather(circuit.latitude, circuit.longitude, unit);
 
@@ -97,6 +101,32 @@ function DetailScreen() {
     return descriptions[code] || 'Unknown conditions';
   };
 
+  // Validate circuit data
+  if (!circuit || !circuit.latitude || !circuit.longitude) {
+    console.error('DetailScreen: Invalid circuit data:', circuit);
+    return (
+      <View style={styles.wrapper}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            onPress={() => router.back()}
+            style={styles.backBtn}
+            activeOpacity={0.8}
+          >
+            <Icon name="chevron-back" size={22} color="#fff" />
+            <Text style={styles.backText}>Back</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Circuit Not Found</Text>
+        </View>
+        <View style={styles.content}>
+          <View style={styles.card}>
+            <Text style={styles.error}>Circuit data not available</Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.wrapper}>
       <View style={styles.header}>
@@ -148,12 +178,14 @@ function DetailScreen() {
           </View>
         )}
 
-        {/* Rainfall Radar Component */}
-        <RainfallRadar
-          latitude={circuit.latitude}
-          longitude={circuit.longitude}
-          circuitName={circuit.name}
-        />
+        {/* Rainfall Radar Component - with error boundary */}
+        {circuit.latitude && circuit.longitude && (
+          <RainfallRadar
+            latitude={circuit.latitude}
+            longitude={circuit.longitude}
+            circuitName={circuit.name}
+          />
+        )}
 
         {/* Wind Speed, Gusts and Direction Bar Graphs - Always show if we have data */}
         {!loading && windData.length > 0 && (
@@ -595,9 +627,9 @@ const styles = StyleSheet.create({
     gap: 6,
     boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
   },
-  backText: { color: '#fff', fontWeight: '700', fontFamily: 'Roboto_700Bold' },
-  title: { fontSize: 26, fontWeight: '700', marginTop: 10, color: colors.text, fontFamily: 'Roboto_700Bold' },
-  subtitle: { color: colors.textMuted, marginTop: 4, fontFamily: 'Roboto_400Regular' },
+  backText: { color: '#fff', fontWeight: '700' },
+  title: { fontSize: 26, fontWeight: '700', marginTop: 10, color: colors.text },
+  subtitle: { color: colors.textMuted, marginTop: 4 },
   actions: { position: 'absolute', right: 16, top: 8, flexDirection: 'row', gap: 4 },
   actionBtn: { padding: 8, borderRadius: 10 },
   content: { paddingHorizontal: 16, paddingTop: 8 },
@@ -614,7 +646,6 @@ const styles = StyleSheet.create({
   updateText: {
     fontSize: 12,
     color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
   },
   card: {
     flex: 1,
@@ -663,12 +694,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: colors.text,
-    fontFamily: 'Roboto_700Bold',
   },
   forecast72Subtitle: {
     fontSize: 14,
     color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
     marginBottom: 16,
   },
   viewDetailedBtn: {
@@ -683,7 +712,6 @@ const styles = StyleSheet.create({
   viewDetailedText: {
     fontSize: 13,
     color: colors.primary,
-    fontFamily: 'Roboto_500Medium',
   },
   chartPreviewContainer: {
     marginBottom: 16,
@@ -691,7 +719,6 @@ const styles = StyleSheet.create({
   chartPreviewLabel: {
     fontSize: 14,
     color: colors.textMuted,
-    fontFamily: 'Roboto_500Medium',
     marginBottom: 8,
   },
   forecast72Highlights: {
@@ -701,7 +728,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: colors.text,
-    fontFamily: 'Roboto_500Medium',
     marginBottom: 12,
   },
   highlightsGrid: {
@@ -722,7 +748,6 @@ const styles = StyleSheet.create({
   highlightLabel: {
     fontSize: 11,
     color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
     marginTop: 4,
     marginBottom: 2,
   },
@@ -730,7 +755,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.text,
-    fontFamily: 'Roboto_500Medium',
   },
   quickHourlyPreview: {
     marginTop: 4,
@@ -739,7 +763,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: colors.text,
-    fontFamily: 'Roboto_500Medium',
     marginBottom: 12,
   },
   quickHourlyScroll: {
@@ -758,21 +781,18 @@ const styles = StyleSheet.create({
   quickHourTime: {
     fontSize: 10,
     color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
     marginBottom: 6,
   },
   quickHourTemp: {
     fontSize: 13,
     fontWeight: '600',
     color: colors.text,
-    fontFamily: 'Roboto_500Medium',
     marginTop: 6,
     marginBottom: 2,
   },
   quickHourRain: {
     fontSize: 10,
     color: colors.precipitation,
-    fontFamily: 'Roboto_400Regular',
   },
   // New style for schedule card with proper spacing
   scheduleCard: {
@@ -804,7 +824,6 @@ const styles = StyleSheet.create({
   metricLabel: {
     fontSize: 14,
     color: colors.textMuted,
-    fontFamily: 'Roboto_500Medium',
     marginBottom: 8,
   },
   currentWeatherContainer: {
@@ -819,13 +838,11 @@ const styles = StyleSheet.create({
   feelsLike: {
     fontSize: 14,
     color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
     marginTop: 2,
   },
   weatherDescription: {
     fontSize: 13,
     color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
     marginTop: 4,
     fontStyle: 'italic',
   },
@@ -849,7 +866,6 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 12,
     color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
     marginTop: 6,
     marginBottom: 4,
   },
@@ -857,16 +873,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: colors.text,
-    fontFamily: 'Roboto_700Bold',
   },
   detailSub: {
     fontSize: 10,
     color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
     marginTop: 2,
   },
-  cardLabel: { color: colors.textMuted, fontFamily: 'Roboto_500Medium' },
-  cardValue: { fontSize: 28, color: colors.text, fontWeight: '700', marginTop: 6, fontFamily: 'Roboto_700Bold' },
+  cardLabel: { color: colors.textMuted },
+  cardValue: { fontSize: 28, color: colors.text, fontWeight: '700', marginTop: 6 },
   dayPill: {
     backgroundColor: colors.backgroundAlt,
     paddingVertical: 12,
@@ -879,7 +893,6 @@ const styles = StyleSheet.create({
   },
   dayText: { 
     color: colors.text, 
-    fontFamily: 'Roboto_500Medium',
     fontSize: 13,
     marginBottom: 6,
   },
@@ -891,24 +904,21 @@ const styles = StyleSheet.create({
   },
   dayTemp: { 
     color: colors.textMuted, 
-    fontFamily: 'Roboto_400Regular',
     fontSize: 12,
     marginBottom: 2,
   },
   dayRain: {
     color: colors.precipitation,
-    fontFamily: 'Roboto_500Medium',
     fontSize: 11,
     fontWeight: '600',
     marginBottom: 2,
   },
   dayRainProb: {
     color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
     fontSize: 10,
   },
-  muted: { color: colors.textMuted, fontFamily: 'Roboto_400Regular' },
-  error: { color: '#C62828', fontWeight: '600', fontFamily: 'Roboto_500Medium' },
+  muted: { color: colors.textMuted },
+  error: { color: '#C62828', fontWeight: '600' },
   // FIXED: BottomSheet styling for dark theme
   bottomSheetBackground: {
     backgroundColor: colors.background,
@@ -921,9 +931,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background, // Ensure the sheet content also has dark background
   },
-  sheetTitle: { fontSize: 18, fontWeight: '700', color: colors.text, fontFamily: 'Roboto_700Bold' },
+  sheetTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
   sessionRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  sessionText: { color: colors.text, fontFamily: 'Roboto_400Regular' },
+  sessionText: { color: colors.text },
   moreBtn: {
     alignSelf: 'flex-start',
     backgroundColor: colors.backgroundAlt,
@@ -933,7 +943,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.divider,
   },
-  moreBtnText: { color: colors.text, fontFamily: 'Roboto_500Medium' },
+  moreBtnText: { color: colors.text },
   sessionItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -944,6 +954,6 @@ const styles = StyleSheet.create({
   },
   sessionDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent, marginRight: 8 },
   sessionDotLarge: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent },
-  sessionTitle: { color: colors.text, fontFamily: 'Roboto_700Bold' },
-  sessionSub: { color: colors.textMuted, fontFamily: 'Roboto_400Regular', marginTop: 2 },
+  sessionTitle: { color: colors.text, fontWeight: '700' },
+  sessionSub: { color: colors.textMuted, marginTop: 2 },
 });

@@ -19,15 +19,22 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
   const [showRadar, setShowRadar] = useState(false);
   const webViewRef = useRef<WebView>(null);
 
+  console.log('RainfallRadar: Rendering with props:', { latitude, longitude, circuitName, showRadar });
+
   // Generate HTML content for the radar map
   const generateRadarHTML = () => {
+    console.log('RainfallRadar: Generating HTML for radar');
+    
+    // Escape the circuit name to prevent HTML injection
+    const safeCircuitName = circuitName.replace(/[<>"'&]/g, '');
+    
     return `
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rainfall Radar - ${circuitName}</title>
+    <title>Rainfall Radar - ${safeCircuitName}</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body {
@@ -109,12 +116,29 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
             border-radius: 8px;
             text-align: center;
         }
+        .error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            background: rgba(255, 59, 48, 0.9);
+            color: white;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
     <div id="loading" class="loading">
         <div>Loading rainfall radar...</div>
         <div style="font-size: 12px; margin-top: 8px; opacity: 0.7;">Powered by RainViewer</div>
+    </div>
+    
+    <div id="error" class="error-message" style="display: none;">
+        <div>Failed to load radar data</div>
+        <div style="font-size: 12px; margin-top: 8px;">Please check your connection</div>
     </div>
     
     <div id="map"></div>
@@ -151,6 +175,8 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        console.log('RainfallRadar: Starting map initialization');
+        
         let map;
         let radarLayer = null;
         let radarData = [];
@@ -158,174 +184,321 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
         let isRadarVisible = false;
         let isSatelliteView = false;
         
-        // Initialize map
-        function initMap() {
-            map = L.map('map').setView([${latitude}, ${longitude}], 8);
-            
-            // Default tile layer (OpenStreetMap)
-            const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            });
-            
-            // Satellite tile layer
-            const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: '© Esri, Maxar, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, and the GIS User Community'
-            });
-            
-            osmLayer.addTo(map);
-            
-            // Add circuit marker
-            const circuitIcon = L.divIcon({
-                html: '<div style="background: ${colors.primary}; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
-                iconSize: [22, 22],
-                iconAnchor: [11, 11],
-                className: 'circuit-marker'
-            });
-            
-            L.marker([${latitude}, ${longitude}], { icon: circuitIcon })
-                .addTo(map)
-                .bindPopup('<b>${circuitName}</b><br>Racing Circuit')
-                .openPopup();
-            
-            // Control buttons
-            document.getElementById('radarToggle').addEventListener('click', toggleRadar);
-            document.getElementById('satelliteToggle').addEventListener('click', toggleSatellite);
-            document.getElementById('timeSlider').addEventListener('input', updateRadarFrame);
-            
-            // Load radar data
-            loadRadarData();
-            
-            // Hide loading
-            document.getElementById('loading').style.display = 'none';
-            
-            // Switch layers function
-            window.switchToSatellite = function() {
-                map.removeLayer(osmLayer);
-                satelliteLayer.addTo(map);
-                isSatelliteView = true;
-                document.getElementById('satelliteToggle').textContent = 'Street Map';
-                document.getElementById('satelliteToggle').classList.add('active');
-            };
-            
-            window.switchToStreet = function() {
-                map.removeLayer(satelliteLayer);
-                osmLayer.addTo(map);
-                isSatelliteView = false;
-                document.getElementById('satelliteToggle').textContent = 'Satellite';
-                document.getElementById('satelliteToggle').classList.remove('active');
-            };
-        }
-        
-        function toggleSatellite() {
-            if (isSatelliteView) {
-                window.switchToStreet();
-            } else {
-                window.switchToSatellite();
+        // Error handling wrapper
+        function safeExecute(fn, errorMessage) {
+            try {
+                return fn();
+            } catch (error) {
+                console.error(errorMessage, error);
+                showError(errorMessage + ': ' + error.message);
+                return null;
             }
         }
         
+        function showError(message) {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            if (loading) loading.style.display = 'none';
+            if (error) {
+                error.style.display = 'block';
+                error.querySelector('div').textContent = message;
+            }
+        }
+        
+        function hideError() {
+            const error = document.getElementById('error');
+            if (error) error.style.display = 'none';
+        }
+        
+        // Initialize map with error handling
+        function initMap() {
+            console.log('RainfallRadar: Initializing map');
+            
+            safeExecute(() => {
+                // Validate coordinates
+                const lat = parseFloat(${latitude});
+                const lng = parseFloat(${longitude});
+                
+                if (isNaN(lat) || isNaN(lng)) {
+                    throw new Error('Invalid coordinates');
+                }
+                
+                console.log('RainfallRadar: Creating map at', lat, lng);
+                
+                map = L.map('map').setView([lat, lng], 8);
+                
+                // Default tile layer (OpenStreetMap)
+                const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors',
+                    maxZoom: 18,
+                    errorTileUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgZmlsbD0iIzMzMyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSIjNjY2IiBmb250LXNpemU9IjE0IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+Tm8gSW1hZ2U8L3RleHQ+PC9zdmc+'
+                });
+                
+                // Satellite tile layer
+                const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    attribution: '© Esri, Maxar, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, and the GIS User Community',
+                    maxZoom: 18,
+                    errorTileUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgZmlsbD0iIzMzMyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSIjNjY2IiBmb250LXNpemU9IjE0IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+Tm8gSW1hZ2U8L3RleHQ+PC9zdmc+'
+                });
+                
+                osmLayer.addTo(map);
+                
+                // Add circuit marker
+                const circuitIcon = L.divIcon({
+                    html: '<div style="background: ${colors.primary}; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+                    iconSize: [22, 22],
+                    iconAnchor: [11, 11],
+                    className: 'circuit-marker'
+                });
+                
+                L.marker([lat, lng], { icon: circuitIcon })
+                    .addTo(map)
+                    .bindPopup('<b>${safeCircuitName}</b><br>Racing Circuit')
+                    .openPopup();
+                
+                // Control buttons with error handling
+                const radarToggle = document.getElementById('radarToggle');
+                const satelliteToggle = document.getElementById('satelliteToggle');
+                const timeSlider = document.getElementById('timeSlider');
+                
+                if (radarToggle) radarToggle.addEventListener('click', toggleRadar);
+                if (satelliteToggle) satelliteToggle.addEventListener('click', toggleSatellite);
+                if (timeSlider) timeSlider.addEventListener('input', updateRadarFrame);
+                
+                // Load radar data
+                loadRadarData();
+                
+                // Hide loading
+                const loading = document.getElementById('loading');
+                if (loading) loading.style.display = 'none';
+                
+                hideError();
+                
+                console.log('RainfallRadar: Map initialized successfully');
+                
+                // Switch layers function
+                window.switchToSatellite = function() {
+                    try {
+                        map.removeLayer(osmLayer);
+                        satelliteLayer.addTo(map);
+                        isSatelliteView = true;
+                        const btn = document.getElementById('satelliteToggle');
+                        if (btn) {
+                            btn.textContent = 'Street Map';
+                            btn.classList.add('active');
+                        }
+                    } catch (error) {
+                        console.error('Error switching to satellite view:', error);
+                    }
+                };
+                
+                window.switchToStreet = function() {
+                    try {
+                        map.removeLayer(satelliteLayer);
+                        osmLayer.addTo(map);
+                        isSatelliteView = false;
+                        const btn = document.getElementById('satelliteToggle');
+                        if (btn) {
+                            btn.textContent = 'Satellite';
+                            btn.classList.remove('active');
+                        }
+                    } catch (error) {
+                        console.error('Error switching to street view:', error);
+                    }
+                };
+                
+            }, 'Failed to initialize map');
+        }
+        
+        function toggleSatellite() {
+            safeExecute(() => {
+                if (isSatelliteView) {
+                    window.switchToStreet();
+                } else {
+                    window.switchToSatellite();
+                }
+            }, 'Failed to toggle satellite view');
+        }
+        
         async function loadRadarData() {
+            console.log('RainfallRadar: Loading radar data');
+            
             try {
-                // Use RainViewer API for radar data
-                const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                
+                const response = await fetch('https://api.rainviewer.com/public/weather-maps.json', {
+                    signal: controller.signal,
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.status);
+                }
+                
                 const data = await response.json();
                 
                 if (data && data.radar && data.radar.past) {
                     radarData = data.radar.past.concat(data.radar.nowcast || []);
-                    console.log('Loaded radar frames:', radarData.length);
+                    console.log('RainfallRadar: Loaded radar frames:', radarData.length);
                     
                     if (radarData.length > 0) {
                         currentFrame = radarData.length - 1; // Start with latest frame
-                        document.getElementById('timeSlider').max = radarData.length - 1;
-                        document.getElementById('timeSlider').value = currentFrame;
+                        const slider = document.getElementById('timeSlider');
+                        if (slider) {
+                            slider.max = radarData.length - 1;
+                            slider.value = currentFrame;
+                        }
                     }
+                } else {
+                    console.warn('RainfallRadar: No radar data available');
                 }
             } catch (error) {
-                console.error('Failed to load radar data:', error);
+                console.error('RainfallRadar: Failed to load radar data:', error);
+                if (error.name === 'AbortError') {
+                    console.error('RainfallRadar: Request timed out');
+                }
+                // Don't show error for radar data loading failure, just log it
             }
         }
         
         function toggleRadar() {
-            const button = document.getElementById('radarToggle');
-            const legend = document.getElementById('legend');
-            const slider = document.getElementById('timeSlider');
-            
-            if (isRadarVisible) {
-                // Hide radar
-                if (radarLayer) {
-                    map.removeLayer(radarLayer);
-                    radarLayer = null;
+            safeExecute(() => {
+                const button = document.getElementById('radarToggle');
+                const legend = document.getElementById('legend');
+                const slider = document.getElementById('timeSlider');
+                
+                if (isRadarVisible) {
+                    // Hide radar
+                    if (radarLayer && map) {
+                        map.removeLayer(radarLayer);
+                        radarLayer = null;
+                    }
+                    if (button) {
+                        button.textContent = 'Show Radar';
+                        button.classList.remove('active');
+                    }
+                    if (legend) legend.style.display = 'none';
+                    if (slider) slider.style.display = 'none';
+                    isRadarVisible = false;
+                } else {
+                    // Show radar
+                    if (radarData.length > 0) {
+                        showRadarFrame(currentFrame);
+                        if (button) {
+                            button.textContent = 'Hide Radar';
+                            button.classList.add('active');
+                        }
+                        if (legend) legend.style.display = 'block';
+                        if (slider) slider.style.display = 'block';
+                        isRadarVisible = true;
+                    } else {
+                        console.warn('RainfallRadar: No radar data available to show');
+                    }
                 }
-                button.textContent = 'Show Radar';
-                button.classList.remove('active');
-                legend.style.display = 'none';
-                slider.style.display = 'none';
-                isRadarVisible = false;
-            } else {
-                // Show radar
-                if (radarData.length > 0) {
-                    showRadarFrame(currentFrame);
-                    button.textContent = 'Hide Radar';
-                    button.classList.add('active');
-                    legend.style.display = 'block';
-                    slider.style.display = 'block';
-                    isRadarVisible = true;
-                }
-            }
+            }, 'Failed to toggle radar');
         }
         
         function showRadarFrame(frameIndex) {
-            if (frameIndex < 0 || frameIndex >= radarData.length) return;
-            
-            // Remove existing radar layer
-            if (radarLayer) {
-                map.removeLayer(radarLayer);
-            }
-            
-            const frame = radarData[frameIndex];
-            const radarUrl = \`https://tilecache.rainviewer.com/v2/radar/\${frame.path}/256/{z}/{x}/{y}/2/1_1.png\`;
-            
-            radarLayer = L.tileLayer(radarUrl, {
-                opacity: 0.6,
-                attribution: 'Radar data © RainViewer'
-            });
-            
-            radarLayer.addTo(map);
-            currentFrame = frameIndex;
-            
-            // Update time display
-            const frameTime = new Date(frame.time * 1000);
-            console.log('Showing radar frame for:', frameTime.toLocaleString());
+            safeExecute(() => {
+                if (frameIndex < 0 || frameIndex >= radarData.length || !map) return;
+                
+                // Remove existing radar layer
+                if (radarLayer) {
+                    map.removeLayer(radarLayer);
+                }
+                
+                const frame = radarData[frameIndex];
+                if (!frame || !frame.path) {
+                    console.warn('RainfallRadar: Invalid frame data');
+                    return;
+                }
+                
+                const radarUrl = 'https://tilecache.rainviewer.com/v2/radar/' + frame.path + '/256/{z}/{x}/{y}/2/1_1.png';
+                
+                radarLayer = L.tileLayer(radarUrl, {
+                    opacity: 0.6,
+                    attribution: 'Radar data © RainViewer',
+                    errorTileUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgZmlsbD0idHJhbnNwYXJlbnQiLz48L3N2Zz4='
+                });
+                
+                radarLayer.addTo(map);
+                currentFrame = frameIndex;
+                
+                // Update time display
+                const frameTime = new Date(frame.time * 1000);
+                console.log('RainfallRadar: Showing radar frame for:', frameTime.toLocaleString());
+                
+            }, 'Failed to show radar frame');
         }
         
         function updateRadarFrame(event) {
-            const frameIndex = parseInt(event.target.value);
-            if (isRadarVisible) {
-                showRadarFrame(frameIndex);
-            }
+            safeExecute(() => {
+                const frameIndex = parseInt(event.target.value);
+                if (isRadarVisible && !isNaN(frameIndex)) {
+                    showRadarFrame(frameIndex);
+                }
+            }, 'Failed to update radar frame');
         }
         
         // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', initMap);
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('RainfallRadar: DOM loaded, initializing map');
+            initMap();
+        });
         
         // Auto-refresh radar data every 10 minutes
-        setInterval(loadRadarData, 10 * 60 * 1000);
+        setInterval(function() {
+            console.log('RainfallRadar: Auto-refreshing radar data');
+            loadRadarData();
+        }, 10 * 60 * 1000);
+        
+        // Global error handler
+        window.addEventListener('error', function(event) {
+            console.error('RainfallRadar: Global error:', event.error);
+        });
+        
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('RainfallRadar: Unhandled promise rejection:', event.reason);
+        });
+        
     </script>
 </body>
 </html>`;
   };
 
   const handleWebViewLoad = () => {
+    console.log('RainfallRadar: WebView loaded successfully');
     setIsLoading(false);
     setHasError(false);
   };
 
-  const handleWebViewError = () => {
+  const handleWebViewError = (syntheticEvent: any) => {
+    console.error('RainfallRadar: WebView error:', syntheticEvent.nativeEvent);
     setIsLoading(false);
     setHasError(true);
   };
 
+  const handleWebViewMessage = (event: any) => {
+    try {
+      const message = JSON.parse(event.nativeEvent.data);
+      console.log('RainfallRadar: Received message from WebView:', message);
+      
+      if (message.type === 'error') {
+        console.error('RainfallRadar: Error from WebView:', message.error);
+        setHasError(true);
+      }
+    } catch (error) {
+      console.log('RainfallRadar: Non-JSON message from WebView:', event.nativeEvent.data);
+    }
+  };
+
   const toggleRadarView = () => {
+    console.log('RainfallRadar: Toggling radar view from', showRadar, 'to', !showRadar);
     setShowRadar(!showRadar);
     if (!showRadar) {
       setIsLoading(true);
@@ -334,12 +507,33 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
   };
 
   const refreshRadar = () => {
+    console.log('RainfallRadar: Refreshing radar');
     if (webViewRef.current) {
       webViewRef.current.reload();
       setIsLoading(true);
       setHasError(false);
     }
   };
+
+  // Validate props
+  if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
+    console.error('RainfallRadar: Invalid coordinates provided:', { latitude, longitude });
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <View style={styles.titleContainer}>
+            <Icon name="rainy" size={20} color={colors.precipitation} />
+            <Text style={styles.title}>Rainfall Radar</Text>
+          </View>
+        </View>
+        <View style={styles.errorContainer}>
+          <Icon name="warning" size={32} color={colors.error} />
+          <Text style={styles.errorText}>Invalid location data</Text>
+          <Text style={styles.errorSubtext}>Cannot display radar for this circuit</Text>
+        </View>
+      </View>
+    );
+  }
 
   if (!showRadar) {
     return (
@@ -416,14 +610,20 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
           style={styles.webView}
           onLoad={handleWebViewLoad}
           onError={handleWebViewError}
+          onMessage={handleWebViewMessage}
           javaScriptEnabled={true}
           domStorageEnabled={true}
           startInLoadingState={false}
           scalesPageToFit={true}
           scrollEnabled={true}
           bounces={false}
-          allowsInlineMediaPlayback={true}
+          allowsInlineMediaPlaybook={true}
           mediaPlaybackRequiresUserAction={false}
+          mixedContentMode="compatibility"
+          originWhitelist={['*']}
+          allowsFullscreenVideo={false}
+          allowsProtectedMedia={false}
+          dataDetectorTypes="none"
         />
       </View>
 
@@ -467,12 +667,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: colors.text,
-    fontFamily: 'Roboto_700Bold',
   },
   subtitle: {
     fontSize: 12,
     color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
     marginLeft: 4,
   },
   controls: {
@@ -497,7 +695,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 13,
     fontWeight: '600',
-    fontFamily: 'Roboto_500Medium',
   },
   previewContainer: {
     alignItems: 'center',
@@ -507,21 +704,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: colors.text,
-    fontFamily: 'Roboto_700Bold',
     marginTop: 12,
     marginBottom: 8,
   },
   previewDescription: {
     fontSize: 14,
     color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
     textAlign: 'center',
     marginBottom: 16,
   },
   previewFeatures: {
     fontSize: 13,
     color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -542,13 +736,11 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: colors.text,
-    fontFamily: 'Roboto_500Medium',
     marginTop: 12,
   },
   loadingSubtext: {
     fontSize: 12,
     color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
     marginTop: 4,
   },
   errorContainer: {
@@ -560,13 +752,11 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,
     color: colors.error,
-    fontFamily: 'Roboto_500Medium',
     marginTop: 12,
   },
   errorSubtext: {
     fontSize: 12,
     color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
     marginTop: 4,
     marginBottom: 16,
   },
@@ -580,7 +770,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 13,
     fontWeight: '600',
-    fontFamily: 'Roboto_500Medium',
   },
   footer: {
     padding: 12,
@@ -591,13 +780,11 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 11,
     color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
     textAlign: 'center',
   },
   attribution: {
     fontSize: 10,
     color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
     textAlign: 'center',
     marginTop: 2,
     opacity: 0.7,
