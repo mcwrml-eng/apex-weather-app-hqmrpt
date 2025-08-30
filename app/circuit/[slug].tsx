@@ -1,6 +1,6 @@
 
-import React, { useMemo, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useMemo, useRef, useCallback, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { colors, buttonStyles } from '../../styles/commonStyles';
 import { getCircuitBySlug } from '../../data/circuits';
@@ -27,18 +27,25 @@ function DetailScreen() {
 
   const { current, daily, hourly, alerts, loading, error, lastUpdated } = useWeather(circuit.latitude, circuit.longitude, unit);
 
+  // Custom weather forecast state
+  const [customForecast, setCustomForecast] = useState('');
+  const [isEditingForecast, setIsEditingForecast] = useState(false);
+
   const settingsRef = useRef<BottomSheet>(null);
   const scheduleRef = useRef<BottomSheet>(null);
   const chartsRef = useRef<BottomSheet>(null);
   const forecastRef = useRef<BottomSheet>(null);
+  const customForecastRef = useRef<BottomSheet>(null);
   const settingsSnap = useMemo(() => ['32%', '60%'], []);
   const scheduleSnap = useMemo(() => ['40%', '85%'], []);
   const chartsSnap = useMemo(() => ['50%', '90%'], []);
   const forecastSnap = useMemo(() => ['60%', '95%'], []);
+  const customForecastSnap = useMemo(() => ['50%', '85%'], []);
   const openSettings = useCallback(() => settingsRef.current?.expand(), []);
   const openSchedule = useCallback(() => scheduleRef.current?.expand(), []);
   const openCharts = useCallback(() => chartsRef.current?.expand(), []);
   const openForecast = useCallback(() => forecastRef.current?.expand(), []);
+  const openCustomForecast = useCallback(() => customForecastRef.current?.expand(), []);
 
   const schedule: WeekendSession[] = useMemo(() => getWeekendSchedule(slug, category), [slug, category]);
 
@@ -91,6 +98,36 @@ function DetailScreen() {
     return descriptions[code] || 'Unknown conditions';
   };
 
+  // Custom forecast handlers
+  const handleSaveCustomForecast = useCallback(() => {
+    if (customForecast.trim()) {
+      console.log('Saving custom forecast for', circuit.name, ':', customForecast);
+      setIsEditingForecast(false);
+      customForecastRef.current?.close();
+      Alert.alert('Forecast Saved', 'Your custom weather forecast has been saved for this circuit.');
+    } else {
+      Alert.alert('Empty Forecast', 'Please enter a forecast before saving.');
+    }
+  }, [customForecast, circuit.name]);
+
+  const handleClearCustomForecast = useCallback(() => {
+    Alert.alert(
+      'Clear Forecast',
+      'Are you sure you want to clear your custom forecast?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Clear', 
+          style: 'destructive',
+          onPress: () => {
+            setCustomForecast('');
+            setIsEditingForecast(false);
+          }
+        }
+      ]
+    );
+  }, []);
+
   return (
     <View style={styles.wrapper}>
       <View style={styles.header}>
@@ -108,6 +145,9 @@ function DetailScreen() {
         <Text style={styles.subtitle}>{circuit.country} • {category.toUpperCase()}</Text>
 
         <View style={styles.actions}>
+          <TouchableOpacity onPress={openCustomForecast} style={styles.actionBtn} activeOpacity={0.8}>
+            <Icon name="create-outline" size={22} color={colors.text} />
+          </TouchableOpacity>
           <TouchableOpacity onPress={openForecast} style={styles.actionBtn} activeOpacity={0.8}>
             <Icon name="time-outline" size={22} color={colors.text} />
           </TouchableOpacity>
@@ -130,6 +170,28 @@ function DetailScreen() {
         {/* Weather Alerts */}
         {!loading && alerts && alerts.length > 0 && (
           <WeatherAlerts alerts={alerts} />
+        )}
+
+        {/* Custom Weather Forecast Display */}
+        {customForecast.trim() ? (
+          <View style={styles.customForecastCard}>
+            <View style={styles.customForecastHeader}>
+              <Icon name="create" size={18} color={colors.primary} />
+              <Text style={styles.customForecastTitle}>My Weather Forecast</Text>
+              <TouchableOpacity onPress={openCustomForecast} style={styles.editBtn}>
+                <Icon name="pencil" size={16} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.customForecastText}>{customForecast}</Text>
+          </View>
+        ) : (
+          <View style={styles.customForecastPrompt}>
+            <TouchableOpacity onPress={openCustomForecast} style={styles.customForecastPromptBtn}>
+              <Icon name="create-outline" size={20} color={colors.primary} />
+              <Text style={styles.customForecastPromptText}>Add your own weather forecast</Text>
+              <Icon name="chevron-forward" size={16} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* Last Updated Info */}
@@ -500,6 +562,68 @@ function DetailScreen() {
           />
         </BottomSheetView>
       </BottomSheet>
+
+      {/* Custom Weather Forecast Bottom Sheet */}
+      <BottomSheet 
+        ref={customForecastRef} 
+        index={-1} 
+        snapPoints={customForecastSnap} 
+        enablePanDownToClose
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.bottomSheetHandle}
+      >
+        <BottomSheetView style={styles.sheet}>
+          <View style={styles.customForecastSheetHeader}>
+            <Text style={styles.sheetTitle}>Custom Weather Forecast</Text>
+            <Text style={styles.customForecastSubtitle}>Write your own forecast for {circuit.name}</Text>
+          </View>
+          
+          <View style={styles.customForecastInputContainer}>
+            <TextInput
+              style={styles.customForecastInput}
+              value={customForecast}
+              onChangeText={setCustomForecast}
+              placeholder="Enter your weather forecast for this circuit..."
+              placeholderTextColor={colors.textMuted}
+              multiline
+              numberOfLines={6}
+              textAlignVertical="top"
+              autoFocus={isEditingForecast}
+            />
+          </View>
+
+          <View style={styles.customForecastActions}>
+            <TouchableOpacity 
+              onPress={handleSaveCustomForecast}
+              style={[styles.customForecastBtn, styles.saveBtn]}
+              activeOpacity={0.8}
+            >
+              <Icon name="checkmark" size={18} color="#fff" />
+              <Text style={styles.saveBtnText}>Save Forecast</Text>
+            </TouchableOpacity>
+
+            {customForecast.trim() && (
+              <TouchableOpacity 
+                onPress={handleClearCustomForecast}
+                style={[styles.customForecastBtn, styles.clearBtn]}
+                activeOpacity={0.8}
+              >
+                <Icon name="trash-outline" size={18} color={colors.error} />
+                <Text style={styles.clearBtnText}>Clear</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View style={styles.customForecastTips}>
+            <Text style={styles.tipsTitle}>Tips for writing a good forecast:</Text>
+            <Text style={styles.tipText}>• Include temperature expectations and trends</Text>
+            <Text style={styles.tipText}>• Mention wind conditions and direction</Text>
+            <Text style={styles.tipText}>• Note any precipitation chances</Text>
+            <Text style={styles.tipText}>• Consider track-specific weather patterns</Text>
+            <Text style={styles.tipText}>• Add timing for weather changes</Text>
+          </View>
+        </BottomSheetView>
+      </BottomSheet>
     </View>
   );
 }
@@ -761,4 +885,139 @@ const styles = StyleSheet.create({
   sessionDotLarge: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent },
   sessionTitle: { color: colors.text, fontFamily: 'Roboto_700Bold' },
   sessionSub: { color: colors.textMuted, fontFamily: 'Roboto_400Regular', marginTop: 2 },
+  
+  // Custom Weather Forecast Styles
+  customForecastCard: {
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+    marginBottom: 12,
+  },
+  customForecastHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  customForecastTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    fontFamily: 'Roboto_700Bold',
+  },
+  editBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: colors.backgroundAlt,
+  },
+  customForecastText: {
+    fontSize: 14,
+    color: colors.text,
+    fontFamily: 'Roboto_400Regular',
+    lineHeight: 20,
+  },
+  customForecastSheetHeader: {
+    marginBottom: 20,
+  },
+  customForecastSubtitle: {
+    fontSize: 14,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginTop: 4,
+  },
+  customForecastInputContainer: {
+    marginBottom: 20,
+  },
+  customForecastInput: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: colors.text,
+    fontFamily: 'Roboto_400Regular',
+    borderWidth: 1,
+    borderColor: colors.divider,
+    minHeight: 120,
+    maxHeight: 200,
+  },
+  customForecastActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
+  },
+  customForecastBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 10,
+    flex: 1,
+    justifyContent: 'center',
+  },
+  saveBtn: {
+    backgroundColor: colors.primary,
+  },
+  saveBtnText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontFamily: 'Roboto_600SemiBold',
+  },
+  clearBtn: {
+    backgroundColor: colors.backgroundAlt,
+    borderWidth: 1,
+    borderColor: colors.error,
+  },
+  clearBtnText: {
+    color: colors.error,
+    fontWeight: '600',
+    fontFamily: 'Roboto_600SemiBold',
+  },
+  customForecastTips: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  tipsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: 'Roboto_600SemiBold',
+    marginBottom: 8,
+  },
+  tipText: {
+    fontSize: 13,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginBottom: 4,
+    lineHeight: 18,
+  },
+  
+  // Custom Forecast Prompt Styles
+  customForecastPrompt: {
+    marginBottom: 12,
+  },
+  customForecastPromptBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    borderStyle: 'dashed',
+  },
+  customForecastPromptText: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.primary,
+    fontFamily: 'Roboto_500Medium',
+  },
 });
