@@ -38,41 +38,6 @@ function formatHour(timeString: string): string {
   });
 }
 
-function formatTimeWithScale(timeString: string, index: number, totalHours: number): { main: string; sub: string } {
-  const date = new Date(timeString);
-  const hour = date.getHours();
-  const minute = date.getMinutes();
-  const day = date.getDate();
-  const month = date.getMonth() + 1;
-  
-  // Different time scale formats based on data length and position
-  if (totalHours <= 12) {
-    // For short periods, show hour:minute
-    return {
-      main: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
-      sub: index === 0 ? `${day}/${month}` : ''
-    };
-  } else if (totalHours <= 24) {
-    // For 24 hours, show hour with day context
-    return {
-      main: `${hour.toString().padStart(2, '0')}h`,
-      sub: hour === 0 || index === 0 ? `${day}/${month}` : ''
-    };
-  } else {
-    // For longer periods, show selective hours with day context
-    const isNewDay = hour === 0 || index === 0;
-    const isKeyHour = hour % 6 === 0; // Show every 6 hours
-    
-    if (isNewDay || isKeyHour) {
-      return {
-        main: `${hour.toString().padStart(2, '0')}h`,
-        sub: isNewDay ? `${day}/${month}` : ''
-      };
-    }
-    return { main: '', sub: '' };
-  }
-}
-
 function formatDate(timeString: string): string {
   const date = new Date(timeString);
   const today = new Date();
@@ -154,7 +119,7 @@ function formatPrecipitation(value: number, unit: 'metric' | 'imperial'): string
 }
 
 export default function EnhancedWeatherForecast({ hourlyData, unit, latitude, longitude, showExtended = false }: Props) {
-  console.log('EnhancedWeatherForecast: Rendering with', hourlyData.length, 'hours of enhanced data with time scales, unit:', unit);
+  console.log('EnhancedWeatherForecast: Rendering with', hourlyData.length, 'hours of enhanced data, unit:', unit);
 
   if (!hourlyData || hourlyData.length === 0) {
     return (
@@ -173,18 +138,13 @@ export default function EnhancedWeatherForecast({ hourlyData, unit, latitude, lo
         {showExtended ? 'Extended Weather Forecast' : '24-Hour Enhanced Forecast'}
       </Text>
       <Text style={styles.subtitle}>
-        Detailed conditions including rain totals in {getPrecipitationUnit(unit)}, UV index, visibility, and pressure with precise time scales
+        Detailed conditions including rain totals in {getPrecipitationUnit(unit)}, UV index, visibility, and pressure
       </Text>
       
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollContainer}>
         {dailyForecasts.map((dayForecast, dayIndex) => (
           <View key={dayForecast.date} style={styles.dayContainer}>
-            <View style={styles.dayHeader}>
-              <Text style={styles.dayTitle}>{dayForecast.displayDate}</Text>
-              <Text style={styles.daySubtitle}>
-                {dayForecast.hours.length} hour{dayForecast.hours.length !== 1 ? 's' : ''} of data
-              </Text>
-            </View>
+            <Text style={styles.dayTitle}>{dayForecast.displayDate}</Text>
             
             <ScrollView 
               horizontal 
@@ -193,29 +153,16 @@ export default function EnhancedWeatherForecast({ hourlyData, unit, latitude, lo
             >
               {dayForecast.hours.map((hour, hourIndex) => {
                 const isNight = isNightTime(hour.time, latitude, longitude);
-                const timeScale = formatTimeWithScale(hour.time, hourIndex, dayForecast.hours.length);
+                const hourLabel = formatHour(hour.time);
                 const temperature = Math.round(hour.temperature);
                 const tempUnit = unit === 'metric' ? '°C' : '°F';
                 const windDir = getWindDirection(hour.windDirection);
                 const uvLevel = getUVIndexLevel(hour.uvIndex);
                 const visibilityKm = Math.round(hour.visibility / 1000);
                 
-                // Show more hours for extended view, fewer for 24-hour view
-                const shouldShow = showExtended || timeScale.main !== '' || hourIndex === 0 || hourIndex === dayForecast.hours.length - 1;
-                
-                if (!shouldShow && dayForecast.hours.length > 12) {
-                  return null; // Skip this hour for dense datasets
-                }
-                
                 return (
                   <View key={hour.time} style={styles.hourCard}>
-                    {/* Enhanced time display with scale context */}
-                    <View style={styles.timeContainer}>
-                      <Text style={styles.hourTime}>{timeScale.main || formatHour(hour.time)}</Text>
-                      {timeScale.sub && (
-                        <Text style={styles.timeContext}>{timeScale.sub}</Text>
-                      )}
-                    </View>
+                    <Text style={styles.hourTime}>{hourLabel}</Text>
                     
                     <View style={styles.symbolContainer}>
                       <WeatherSymbol 
@@ -284,31 +231,6 @@ export default function EnhancedWeatherForecast({ hourlyData, unit, latitude, lo
           </View>
         ))}
       </ScrollView>
-      
-      {/* Enhanced time scale legend */}
-      <View style={styles.timeScaleLegend}>
-        <Text style={styles.legendTitle}>Time Scale Guide</Text>
-        <View style={styles.legendContent}>
-          <View style={styles.legendRow}>
-            <Text style={styles.legendLabel}>Format:</Text>
-            <Text style={styles.legendText}>
-              {displayData.length <= 12 ? 'HH:MM (precise timing)' : 
-               displayData.length <= 24 ? 'HHh (hourly)' : 
-               'Key hours every 6h'}
-            </Text>
-          </View>
-          <View style={styles.legendRow}>
-            <Text style={styles.legendLabel}>Context:</Text>
-            <Text style={styles.legendText}>Day/Month shown for multi-day periods</Text>
-          </View>
-          <View style={styles.legendRow}>
-            <Text style={styles.legendLabel}>Data:</Text>
-            <Text style={styles.legendText}>
-              {showExtended ? 'Extended forecast' : '24-hour detailed forecast'}
-            </Text>
-          </View>
-        </View>
-      </View>
     </View>
   );
 }
@@ -342,23 +264,13 @@ const styles = StyleSheet.create({
   dayContainer: {
     marginBottom: 20,
   },
-  dayHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingHorizontal: 4,
-  },
   dayTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
     fontFamily: 'Roboto_500Medium',
-  },
-  daySubtitle: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
+    marginBottom: 12,
+    paddingHorizontal: 4,
   },
   hourlyScrollContent: {
     paddingHorizontal: 4,
@@ -373,22 +285,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.divider,
   },
-  timeContainer: {
-    alignItems: 'center',
-    marginBottom: 8,
-    minHeight: 28,
-  },
   hourTime: {
     fontSize: 11,
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    fontWeight: '600',
-  },
-  timeContext: {
-    fontSize: 9,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
-    marginTop: 1,
+    marginBottom: 8,
   },
   symbolContainer: {
     height: 36,
@@ -469,39 +370,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
-  },
-  timeScaleLegend: {
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 12,
-  },
-  legendTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    marginBottom: 8,
-  },
-  legendContent: {
-    gap: 4,
-  },
-  legendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  legendLabel: {
-    fontSize: 11,
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    minWidth: 60,
-  },
-  legendText: {
-    fontSize: 11,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    flex: 1,
   },
   noDataText: {
     fontSize: 14,

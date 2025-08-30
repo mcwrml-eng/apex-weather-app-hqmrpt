@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { LineChart, AreaChart, YAxis, XAxis } from 'react-native-svg-charts';
+import { LineChart, AreaChart, YAxis } from 'react-native-svg-charts';
 import { colors } from '../styles/commonStyles';
 import { getPrecipitationUnit } from '../hooks/useWeather';
 import * as shape from 'd3-shape';
@@ -138,50 +138,10 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
     return value.toFixed(1);
   };
 
-  // Enhanced time formatting for better readability
-  const formatTimeLabel = (timeString: string, index: number) => {
-    const date = new Date(timeString);
-    const hour = date.getHours();
-    const minute = date.getMinutes();
-    
-    // Show different formats based on data density
-    if (validData.length <= 12) {
-      // For shorter periods, show hour:minute
-      return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-    } else if (validData.length <= 24) {
-      // For 24 hours, show hour only
-      return `${hour.toString().padStart(2, '0')}h`;
-    } else {
-      // For longer periods, show day/hour
-      const day = date.getDate();
-      return index % 6 === 0 ? `${day}/${hour}h` : `${hour}h`;
-    }
-  };
-
-  // Generate intelligent time labels
-  const generateTimeLabels = () => {
-    const totalPoints = validData.length;
-    let showEvery = 1;
-    
-    // Adjust label frequency based on data length
-    if (totalPoints > 48) showEvery = 8;
-    else if (totalPoints > 24) showEvery = 4;
-    else if (totalPoints > 12) showEvery = 3;
-    else if (totalPoints > 6) showEvery = 2;
-    
-    return validData.map((point, index) => {
-      if (index % showEvery === 0 || index === totalPoints - 1) {
-        return formatTimeLabel(point.time, index);
-      }
-      return '';
-    });
-  };
-
   const chartData = getChartData();
   const chartColor = getChartColor();
   const unitLabel = getUnit();
   const title = getTitle();
-  const timeLabels = generateTimeLabels();
 
   // Enhanced statistical calculations
   const minValue = Math.min(...chartData);
@@ -323,22 +283,35 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
         </View>
       </View>
       
-      {/* Enhanced X-axis with proper time scale */}
-      <View style={styles.xAxisContainer}>
-        <View style={styles.xAxisLabelsContainer}>
-          {timeLabels.map((label, index) => (
-            <View key={index} style={styles.xAxisLabelWrapper}>
-              <Text style={[
-                styles.xAxisLabel,
-                { opacity: label ? 1 : 0 }
-              ]}>
-                {label}
-              </Text>
-            </View>
-          ))}
-        </View>
-        <Text style={styles.xAxisTitle}>Time</Text>
-      </View>
+      {/* Enhanced time labels with better spacing */}
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.timeLabels}
+      >
+        {validData.map((point, index) => {
+          // Show labels more intelligently based on data length
+          const showEvery = Math.max(1, Math.floor(validData.length / 8));
+          const shouldShow = index % showEvery === 0 || index === validData.length - 1;
+          
+          if (!shouldShow) {
+            return <View key={index} style={styles.timeLabel} />;
+          }
+          
+          const date = new Date(point.time);
+          const timeStr = date.toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+          });
+          
+          return (
+            <Text key={index} style={styles.timeLabelText}>
+              {timeStr}
+            </Text>
+          );
+        })}
+      </ScrollView>
 
       {/* Enhanced statistics panel */}
       <View style={styles.statsPanel}>
@@ -430,33 +403,22 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 8,
   },
-  xAxisContainer: {
-    marginTop: 8,
-    paddingLeft: 55, // Account for Y-axis width
-  },
-  xAxisLabelsContainer: {
+  timeLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
+    paddingHorizontal: 63, // Account for Y-axis width
+    gap: 15,
+    marginTop: 8,
   },
-  xAxisLabelWrapper: {
-    flex: 1,
-    alignItems: 'center',
+  timeLabel: {
+    width: 35, // Placeholder for hidden labels
   },
-  xAxisLabel: {
+  timeLabelText: {
     fontSize: 10,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
     textAlign: 'center',
-  },
-  xAxisTitle: {
-    fontSize: 11,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_500Medium',
-    textAlign: 'center',
-    marginTop: 4,
-    fontWeight: '500',
+    minWidth: 35,
   },
   statsPanel: {
     flexDirection: 'row',
