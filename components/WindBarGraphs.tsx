@@ -26,22 +26,38 @@ function formatHour(timeString: string): string {
   });
 }
 
+// Enhanced time formatting with improved spacing logic
 function formatTimeLabel(timeString: string, index: number, totalPoints: number): string {
   const date = new Date(timeString);
   const hour = date.getHours();
   const minute = date.getMinutes();
+  const day = date.getDate();
+  const month = date.getMonth() + 1;
   
-  // Show different formats based on data density
-  if (totalPoints <= 12) {
-    // For shorter periods, show hour:minute
+  // Improved spacing logic based on data density and screen space
+  if (totalPoints <= 6) {
+    // Very short periods - show full time with minutes
     return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+  } else if (totalPoints <= 12) {
+    // Short periods - show hour with selective minutes
+    if (minute === 0) {
+      return `${hour.toString().padStart(2, '0')}:00`;
+    } else {
+      return `${hour.toString().padStart(2, '0')}h`;
+    }
   } else if (totalPoints <= 24) {
-    // For 24 hours, show hour only
+    // 24 hours - show every few hours
     return `${hour.toString().padStart(2, '0')}h`;
+  } else if (totalPoints <= 48) {
+    // 2 days - show day and hour
+    return `${day}/${hour}h`;
   } else {
-    // For longer periods, show day/hour
-    const day = date.getDate();
-    return index % 6 === 0 ? `${day}/${hour}h` : `${hour}h`;
+    // Longer periods - show date and selective hours
+    if (hour === 0 || hour === 12) {
+      return `${month}/${day} ${hour}h`;
+    } else {
+      return `${hour}h`;
+    }
   }
 }
 
@@ -177,18 +193,44 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
 
   const speedYAxisLabels = generateSpeedYAxisLabels();
 
-  // Generate intelligent time labels
+  // Improved time label generation with better spacing algorithm
   const generateTimeLabels = () => {
     const totalPoints = displayData.length;
-    let showEvery = 1;
+    let labelIndices: number[] = [];
     
-    // Adjust label frequency based on data length
-    if (totalPoints > 24) showEvery = 4;
-    else if (totalPoints > 12) showEvery = 3;
-    else if (totalPoints > 6) showEvery = 2;
+    // Calculate optimal number of labels based on available space
+    // Assume each label needs about 35-40 pixels of space for wind charts
+    const maxLabels = Math.floor(280 / 38); // Approximate chart width / label space
+    
+    if (totalPoints <= maxLabels) {
+      // Show all points if we have space
+      labelIndices = Array.from({ length: totalPoints }, (_, i) => i);
+    } else {
+      // Calculate optimal spacing for better distribution
+      const idealSpacing = totalPoints / (maxLabels - 1);
+      
+      // Always include first and last points
+      labelIndices.push(0);
+      
+      // Add intermediate points with calculated spacing
+      for (let i = 1; i < maxLabels - 1; i++) {
+        const index = Math.round(i * idealSpacing);
+        if (index < totalPoints - 1) {
+          labelIndices.push(index);
+        }
+      }
+      
+      // Always include last point
+      if (totalPoints > 1) {
+        labelIndices.push(totalPoints - 1);
+      }
+    }
+    
+    // Remove duplicates and sort
+    labelIndices = [...new Set(labelIndices)].sort((a, b) => a - b);
     
     return displayData.map((hour, index) => {
-      if (index % showEvery === 0 || index === totalPoints - 1) {
+      if (labelIndices.includes(index)) {
         return formatTimeLabel(hour.time, index, totalPoints);
       }
       return '';
@@ -216,7 +258,7 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Enhanced Wind Analysis</Text>
-      <Text style={styles.subtitle}>Accurate 24-hour wind speed, gusts, and direction analysis with time scales</Text>
+      <Text style={styles.subtitle}>Accurate 24-hour wind speed, gusts, and direction analysis with improved time scales</Text>
       
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Enhanced Wind Speed and Gusts Chart */}
@@ -266,21 +308,27 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
             </View>
           </View>
           
-          {/* Enhanced X-axis with proper time scale */}
+          {/* Enhanced X-axis with improved time scale spacing */}
           <View style={styles.xAxisContainer}>
             <View style={styles.xAxisLabelsContainer}>
               {timeLabels.map((label, index) => (
-                <View key={index} style={styles.xAxisLabelWrapper}>
+                <View key={index} style={[
+                  styles.xAxisLabelWrapper,
+                  { flex: 1 }
+                ]}>
                   <Text style={[
                     styles.xAxisLabel,
-                    { opacity: label ? 1 : 0 }
+                    { 
+                      opacity: label ? 1 : 0,
+                      fontSize: timeLabels.filter(l => l).length > 8 ? 9 : 10
+                    }
                   ]}>
                     {label}
                   </Text>
                 </View>
               ))}
             </View>
-            <Text style={styles.xAxisTitle}>Time</Text>
+            <Text style={styles.xAxisTitle}>Time Scale</Text>
           </View>
           
           <View style={styles.legendContainer}>
@@ -341,24 +389,30 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
             </View>
           </View>
           
-          {/* Enhanced X-axis with proper time scale for direction */}
+          {/* Enhanced X-axis with improved time scale spacing for direction */}
           <View style={styles.xAxisContainer}>
             <View style={styles.xAxisLabelsContainer}>
               {timeLabels.map((label, index) => (
-                <View key={index} style={styles.xAxisLabelWrapper}>
+                <View key={index} style={[
+                  styles.xAxisLabelWrapper,
+                  { flex: 1 }
+                ]}>
                   <Text style={[
                     styles.xAxisLabel,
-                    { opacity: label ? 1 : 0 }
+                    { 
+                      opacity: label ? 1 : 0,
+                      fontSize: timeLabels.filter(l => l).length > 8 ? 9 : 10
+                    }
                   ]}>
                     {label}
                   </Text>
                 </View>
               ))}
             </View>
-            <Text style={styles.xAxisTitle}>Time</Text>
+            <Text style={styles.xAxisTitle}>Time Scale</Text>
           </View>
           
-          {/* Enhanced Wind Direction Arrows with accuracy indicators */}
+          {/* Enhanced Wind Direction Arrows with improved spacing */}
           <View style={styles.arrowSection}>
             <Text style={styles.arrowSectionTitle}>Accurate Wind Direction Arrows</Text>
             <Text style={styles.arrowSectionSubtitle}>Arrows point in the direction wind is blowing TO</Text>
@@ -367,7 +421,10 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
                 // Show arrows with same frequency as time labels
                 const shouldShow = timeLabels[index] !== '';
                 return (
-                  <View key={index} style={styles.arrowItem}>
+                  <View key={index} style={[
+                    styles.arrowItem,
+                    { flex: 1 }
+                  ]}>
                     {shouldShow && <WindDirectionArrow direction={hour.windDirection} size={24} />}
                   </View>
                 );
@@ -375,12 +432,15 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
             </View>
           </View>
           
-          {/* Enhanced Compass Direction Labels with degrees */}
+          {/* Enhanced Compass Direction Labels with improved spacing */}
           <View style={styles.directionLabels}>
             {displayData.map((hour, index) => {
               const shouldShow = timeLabels[index] !== '';
               return (
-                <View key={index} style={styles.directionLabelContainer}>
+                <View key={index} style={[
+                  styles.directionLabelContainer,
+                  { flex: 1 }
+                ]}>
                   {shouldShow && (
                     <>
                       <Text style={styles.directionLabel}>
@@ -464,7 +524,7 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
             Enhanced accuracy: Wind direction arrows show precise direction wind is blowing TO. 
             All measurements validated and normalized for motorsport analysis. 
             Gust factor indicates wind turbulence level - higher values mean more gusty conditions.
-            Time scales provide precise temporal context for racing strategy.
+            Improved time scales provide optimal temporal context for racing strategy.
           </Text>
         </View>
       </ScrollView>
@@ -538,16 +598,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
+    minHeight: 16,
   },
   xAxisLabelWrapper: {
-    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 1,
   },
   xAxisLabel: {
     fontSize: 10,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
     textAlign: 'center',
+    lineHeight: 12,
   },
   xAxisTitle: {
     fontSize: 11,
@@ -622,7 +685,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   arrowItem: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 32,
@@ -641,7 +703,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   directionLabelContainer: {
-    flex: 1,
     alignItems: 'center',
   },
   directionLabel: {

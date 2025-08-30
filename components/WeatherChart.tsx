@@ -138,40 +138,80 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
     return value.toFixed(1);
   };
 
-  // Enhanced time formatting for better readability
-  const formatTimeLabel = (timeString: string, index: number) => {
+  // Enhanced time formatting with improved spacing logic
+  const formatTimeLabel = (timeString: string, index: number, totalPoints: number) => {
     const date = new Date(timeString);
     const hour = date.getHours();
     const minute = date.getMinutes();
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
     
-    // Show different formats based on data density
-    if (validData.length <= 12) {
-      // For shorter periods, show hour:minute
+    // Improved spacing logic based on data density and screen space
+    if (totalPoints <= 6) {
+      // Very short periods - show full time with minutes
       return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-    } else if (validData.length <= 24) {
-      // For 24 hours, show hour only
+    } else if (totalPoints <= 12) {
+      // Short periods - show hour with selective minutes
+      if (minute === 0) {
+        return `${hour.toString().padStart(2, '0')}:00`;
+      } else {
+        return `${hour.toString().padStart(2, '0')}h`;
+      }
+    } else if (totalPoints <= 24) {
+      // 24 hours - show every few hours
       return `${hour.toString().padStart(2, '0')}h`;
+    } else if (totalPoints <= 48) {
+      // 2 days - show day and hour
+      return `${day}/${hour}h`;
     } else {
-      // For longer periods, show day/hour
-      const day = date.getDate();
-      return index % 6 === 0 ? `${day}/${hour}h` : `${hour}h`;
+      // Longer periods - show date and selective hours
+      if (hour === 0 || hour === 12) {
+        return `${month}/${day} ${hour}h`;
+      } else {
+        return `${hour}h`;
+      }
     }
   };
 
-  // Generate intelligent time labels
+  // Improved time label generation with better spacing algorithm
   const generateTimeLabels = () => {
     const totalPoints = validData.length;
-    let showEvery = 1;
+    let labelIndices: number[] = [];
     
-    // Adjust label frequency based on data length
-    if (totalPoints > 48) showEvery = 8;
-    else if (totalPoints > 24) showEvery = 4;
-    else if (totalPoints > 12) showEvery = 3;
-    else if (totalPoints > 6) showEvery = 2;
+    // Calculate optimal number of labels based on available space
+    // Assume each label needs about 40-50 pixels of space
+    const maxLabels = Math.floor(300 / 45); // Approximate chart width / label space
+    
+    if (totalPoints <= maxLabels) {
+      // Show all points if we have space
+      labelIndices = Array.from({ length: totalPoints }, (_, i) => i);
+    } else {
+      // Calculate optimal spacing for better distribution
+      const idealSpacing = totalPoints / (maxLabels - 1);
+      
+      // Always include first and last points
+      labelIndices.push(0);
+      
+      // Add intermediate points with calculated spacing
+      for (let i = 1; i < maxLabels - 1; i++) {
+        const index = Math.round(i * idealSpacing);
+        if (index < totalPoints - 1) {
+          labelIndices.push(index);
+        }
+      }
+      
+      // Always include last point
+      if (totalPoints > 1) {
+        labelIndices.push(totalPoints - 1);
+      }
+    }
+    
+    // Remove duplicates and sort
+    labelIndices = [...new Set(labelIndices)].sort((a, b) => a - b);
     
     return validData.map((point, index) => {
-      if (index % showEvery === 0 || index === totalPoints - 1) {
-        return formatTimeLabel(point.time, index);
+      if (labelIndices.includes(index)) {
+        return formatTimeLabel(point.time, index, totalPoints);
       }
       return '';
     });
@@ -323,21 +363,27 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
         </View>
       </View>
       
-      {/* Enhanced X-axis with proper time scale */}
+      {/* Enhanced X-axis with improved time scale spacing */}
       <View style={styles.xAxisContainer}>
         <View style={styles.xAxisLabelsContainer}>
           {timeLabels.map((label, index) => (
-            <View key={index} style={styles.xAxisLabelWrapper}>
+            <View key={index} style={[
+              styles.xAxisLabelWrapper,
+              { flex: 1 }
+            ]}>
               <Text style={[
                 styles.xAxisLabel,
-                { opacity: label ? 1 : 0 }
+                { 
+                  opacity: label ? 1 : 0,
+                  fontSize: timeLabels.filter(l => l).length > 8 ? 9 : 10
+                }
               ]}>
                 {label}
               </Text>
             </View>
           ))}
         </View>
-        <Text style={styles.xAxisTitle}>Time</Text>
+        <Text style={styles.xAxisTitle}>Time Scale</Text>
       </View>
 
       {/* Enhanced statistics panel */}
@@ -439,16 +485,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
+    minHeight: 16,
   },
   xAxisLabelWrapper: {
-    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 2,
   },
   xAxisLabel: {
     fontSize: 10,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
     textAlign: 'center',
+    lineHeight: 12,
   },
   xAxisTitle: {
     fontSize: 11,
