@@ -93,7 +93,7 @@ function WindDirectionArrow({ direction, size = 20 }: { direction: number; size?
 }
 
 function WindBarGraphs({ hourlyData, unit }: Props) {
-  console.log('WindBarGraphs: Rendering accurate wind data for', hourlyData.length, 'hours, unit:', unit);
+  console.log('WindBarGraphs: Rendering wind speed and gusts data for', hourlyData.length, 'hours, unit:', unit);
 
   if (!hourlyData || hourlyData.length === 0) {
     return (
@@ -135,11 +135,6 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
   const windGustData = displayData.map((hour, index) => {
     const gusts = hour.windGusts;
     return { value: gusts, index, hour };
-  });
-  
-  const windDirectionData = displayData.map((hour, index) => {
-    const direction = hour.windDirection;
-    return { value: direction, index, hour };
   });
   
   // Enhanced scale calculations with better accuracy
@@ -203,7 +198,6 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
   // Prepare data for BarChart - it expects simple number arrays
   const windSpeedValues = windSpeedData.map(d => d.value);
   const windGustValues = windGustData.map(d => d.value);
-  const windDirectionValues = windDirectionData.map(d => d.value);
 
   console.log('WindBarGraphs: Final chart data - Speed values:', windSpeedValues.slice(0, 5));
   console.log('WindBarGraphs: Final chart data - Gust values:', windGustValues.slice(0, 5));
@@ -222,7 +216,7 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Enhanced Wind Analysis</Text>
+      <Text style={styles.title}>Wind Speed & Gusts Analysis</Text>
       <Text style={styles.subtitle}>Separate charts for wind speed and gusts with accurate 24-hour analysis and 3-hour interval time scales</Text>
       
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -374,113 +368,9 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
           </View>
         </View>
 
-        {/* Enhanced Wind Direction Chart */}
-        <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>Wind Direction Analysis (Degrees)</Text>
-          <Text style={styles.chartSubtitle}>
-            0°=North, 90°=East, 180°=South, 270°=West
-          </Text>
-          <View style={styles.chartWrapper}>
-            <YAxis
-              data={[0, 90, 180, 270, 360]}
-              contentInset={{ top: 20, bottom: 20 }}
-              svg={{
-                fill: colors.textMuted,
-                fontSize: 10,
-                fontFamily: 'Roboto_400Regular',
-              }}
-              numberOfTicks={5}
-              formatLabel={(value) => `${Math.round(value)}°`}
-              style={styles.yAxis}
-              min={0}
-              max={360}
-            />
-            <View style={styles.chartContent}>
-              <BarChart
-                style={styles.chart}
-                data={windDirectionValues}
-                svg={{ fill: colors.accent, fillOpacity: 0.7 }}
-                contentInset={{ top: 20, bottom: 20 }}
-                spacingInner={0.2}
-                spacingOuter={0.1}
-                yMax={360}
-                yMin={0}
-              />
-            </View>
-          </View>
-          
-          {/* Enhanced X-axis with 3-hour interval time scales for direction */}
-          <View style={styles.xAxisContainer}>
-            <View style={styles.xAxisLabelsContainer}>
-              {timeLabels.map((label, index) => (
-                <View key={index} style={[
-                  styles.xAxisLabelWrapper,
-                  { flex: 1 }
-                ]}>
-                  <Text style={[
-                    styles.xAxisLabel,
-                    { 
-                      opacity: label ? 1 : 0,
-                      fontSize: 10,
-                      fontWeight: label ? '500' : '400'
-                    }
-                  ]}>
-                    {label}
-                  </Text>
-                </View>
-              ))}
-            </View>
-            <Text style={styles.xAxisTitle}>Time Scale (3-hour intervals)</Text>
-          </View>
-          
-          {/* Enhanced Wind Direction Arrows with 3-hour interval spacing */}
-          <View style={styles.arrowSection}>
-            <Text style={styles.arrowSectionTitle}>Accurate Wind Direction Arrows</Text>
-            <Text style={styles.arrowSectionSubtitle}>Arrows point in the direction wind is blowing TO (3-hour intervals)</Text>
-            <View style={styles.arrowContainer}>
-              {displayData.map((hour, index) => {
-                // Show arrows with same frequency as time labels (3-hour intervals)
-                const shouldShow = timeLabels[index] !== '';
-                return (
-                  <View key={index} style={[
-                    styles.arrowItem,
-                    { flex: 1 }
-                  ]}>
-                    {shouldShow && <WindDirectionArrow direction={hour.windDirection} size={24} />}
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-          
-          {/* Enhanced Compass Direction Labels with 3-hour interval spacing */}
-          <View style={styles.directionLabels}>
-            {displayData.map((hour, index) => {
-              const shouldShow = timeLabels[index] !== '';
-              return (
-                <View key={index} style={[
-                  styles.directionLabelContainer,
-                  { flex: 1 }
-                ]}>
-                  {shouldShow && (
-                    <>
-                      <Text style={styles.directionLabel}>
-                        {getWindDirectionLabel(hour.windDirection)}
-                      </Text>
-                      <Text style={styles.directionDegrees}>
-                        {Math.round(hour.windDirection)}°
-                      </Text>
-                    </>
-                  )}
-                </View>
-              );
-            })}
-          </View>
-        </View>
-
         {/* Enhanced Wind Summary with Accuracy Metrics */}
         <View style={styles.summaryContainer}>
-          <Text style={styles.summaryTitle}>Detailed Wind Analysis Summary</Text>
+          <Text style={styles.summaryTitle}>Wind Analysis Summary</Text>
           <View style={styles.summaryGrid}>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Strongest Wind</Text>
@@ -532,18 +422,17 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
               </Text>
             </View>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Direction Range</Text>
+              <Text style={styles.summaryLabel}>Data Points</Text>
               <Text style={styles.summaryValue}>
-                {Math.round(Math.max(...windDirectionValues) - Math.min(...windDirectionValues))}°
+                {displayData.length}
               </Text>
               <Text style={styles.summaryTime}>
-                variation span
+                hours analyzed
               </Text>
             </View>
           </View>
           <Text style={styles.summaryNote}>
-            Enhanced accuracy: Wind speed and gusts now displayed in separate charts for better visibility. 
-            Wind direction arrows show precise direction wind is blowing TO. 
+            Enhanced accuracy: Wind speed and gusts displayed in separate charts for better visibility. 
             All measurements validated and normalized for motorsport analysis. 
             Gust factor indicates wind turbulence level - higher values mean more gusty conditions.
             Time scales display at optimal 3-hour intervals for 24-hour racing strategy analysis.
@@ -677,69 +566,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto_500Medium',
     textAlign: 'center',
   },
-  arrowSection: {
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  arrowSectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  arrowSectionSubtitle: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  arrowContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    minHeight: 32,
-    alignItems: 'center',
-  },
-  arrowItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 32,
-  },
-  arrowWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(225, 6, 0, 0.1)',
-    borderRadius: 12,
-    padding: 2,
-  },
-  directionLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    marginTop: 8,
-  },
-  directionLabelContainer: {
-    alignItems: 'center',
-  },
-  directionLabel: {
-    fontSize: 11,
-    color: colors.primary,
-    fontFamily: 'Roboto_500Medium',
-    textAlign: 'center',
-    marginBottom: 2,
-  },
-  directionDegrees: {
-    fontSize: 9,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    textAlign: 'center',
-  },
   summaryContainer: {
     backgroundColor: colors.backgroundAlt,
     borderRadius: 12,
@@ -798,5 +624,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto_400Regular',
     textAlign: 'center',
     padding: 20,
+  },
+  arrowWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(225, 6, 0, 0.1)',
+    borderRadius: 12,
+    padding: 2,
   },
 });

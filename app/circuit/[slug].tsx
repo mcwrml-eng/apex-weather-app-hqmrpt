@@ -148,17 +148,9 @@ function DetailScreen() {
           </View>
         )}
 
-        {/* Wind Speed, Gusts and Direction Bar Graphs - Always show if we have data */}
+        {/* Wind Speed, Gusts Bar Graphs - Always show if we have data */}
         {!loading && windData.length > 0 && (
           <WindBarGraphs
-            hourlyData={windData}
-            unit={unit}
-          />
-        )}
-
-        {/* Wind Direction Radar Analysis - New radar chart visualization */}
-        {!loading && windData.length > 0 && (
-          <WindRadarGraph
             hourlyData={windData}
             unit={unit}
           />
@@ -516,7 +508,7 @@ function DetailScreen() {
         handleIndicatorStyle={styles.bottomSheetHandle}
       >
         <BottomSheetView style={styles.sheet}>
-          <Text style={styles.sheetTitle}>Weather Analysis</Text>
+          <Text style={styles.sheetTitle}>Enhanced Wind Analysis</Text>
           <View style={{ height: 8 }} />
           <ScrollView showsVerticalScrollIndicator={false}>
             {chartData.length > 0 && (
@@ -548,7 +540,7 @@ function DetailScreen() {
               </>
             )}
             
-            {/* Wind Direction Radar Analysis in Weather Analysis section */}
+            {/* Wind Direction Radar Analysis moved to Enhanced Wind Analysis section */}
             {windData.length > 0 && (
               <WindRadarGraph
                 hourlyData={windData}
@@ -558,7 +550,7 @@ function DetailScreen() {
             
             <View style={{ height: 20 }} />
             <Text style={styles.muted}>
-              72-hour enhanced forecast data with number scales for precise readings. Charts update every 10 minutes with detailed atmospheric conditions. Wind radar analysis shows directional patterns and frequency distribution.
+              Enhanced forecast data with number scales for precise readings. Charts update every 10 minutes with detailed atmospheric conditions. Wind radar analysis shows directional patterns and frequency distribution for comprehensive motorsport strategy planning.
             </Text>
           </ScrollView>
         </BottomSheetView>
