@@ -376,7 +376,14 @@ function DetailScreen() {
       </ScrollView>
 
       {/* Settings Bottom Sheet */}
-      <BottomSheet ref={settingsRef} index={-1} snapPoints={settingsSnap} enablePanDownToClose>
+      <BottomSheet 
+        ref={settingsRef} 
+        index={-1} 
+        snapPoints={settingsSnap} 
+        enablePanDownToClose
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.bottomSheetHandle}
+      >
         <BottomSheetView style={styles.sheet}>
           <Text style={styles.sheetTitle}>Settings</Text>
           <View style={{ height: 8 }} />
@@ -396,7 +403,14 @@ function DetailScreen() {
       </BottomSheet>
 
       {/* Schedule Bottom Sheet */}
-      <BottomSheet ref={scheduleRef} index={-1} snapPoints={scheduleSnap} enablePanDownToClose>
+      <BottomSheet 
+        ref={scheduleRef} 
+        index={-1} 
+        snapPoints={scheduleSnap} 
+        enablePanDownToClose
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.bottomSheetHandle}
+      >
         <BottomSheetView style={styles.sheet}>
           <Text style={styles.sheetTitle}>Weekend Schedule</Text>
           <View style={{ height: 8 }} />
@@ -416,8 +430,15 @@ function DetailScreen() {
         </BottomSheetView>
       </BottomSheet>
 
-      {/* Enhanced Weather Charts Bottom Sheet */}
-      <BottomSheet ref={chartsRef} index={-1} snapPoints={chartsSnap} enablePanDownToClose>
+      {/* Enhanced Weather Charts Bottom Sheet - FIXED BACKGROUND */}
+      <BottomSheet 
+        ref={chartsRef} 
+        index={-1} 
+        snapPoints={chartsSnap} 
+        enablePanDownToClose
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.bottomSheetHandle}
+      >
         <BottomSheetView style={styles.sheet}>
           <Text style={styles.sheetTitle}>Weather Analysis</Text>
           <View style={{ height: 8 }} />
@@ -459,7 +480,14 @@ function DetailScreen() {
       </BottomSheet>
 
       {/* Enhanced Forecast Bottom Sheet */}
-      <BottomSheet ref={forecastRef} index={-1} snapPoints={forecastSnap} enablePanDownToClose>
+      <BottomSheet 
+        ref={forecastRef} 
+        index={-1} 
+        snapPoints={forecastSnap} 
+        enablePanDownToClose
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.bottomSheetHandle}
+      >
         <BottomSheetView style={styles.sheet}>
           <Text style={styles.sheetTitle}>Detailed Forecast</Text>
           <View style={{ height: 8 }} />
@@ -696,7 +724,18 @@ const styles = StyleSheet.create({
   },
   muted: { color: colors.textMuted, fontFamily: 'Roboto_400Regular' },
   error: { color: '#C62828', fontWeight: '600', fontFamily: 'Roboto_500Medium' },
-  sheet: { padding: 16, flex: 1 },
+  // FIXED: BottomSheet styling for dark theme
+  bottomSheetBackground: {
+    backgroundColor: colors.background,
+  },
+  bottomSheetHandle: {
+    backgroundColor: colors.divider,
+  },
+  sheet: { 
+    padding: 16, 
+    flex: 1,
+    backgroundColor: colors.background, // Ensure the sheet content also has dark background
+  },
   sheetTitle: { fontSize: 18, fontWeight: '700', color: colors.text, fontFamily: 'Roboto_700Bold' },
   sessionRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   sessionText: { color: colors.text, fontFamily: 'Roboto_400Regular' },
