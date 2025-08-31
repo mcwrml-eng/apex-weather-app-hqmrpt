@@ -13,6 +13,7 @@ import WeatherSymbol from '../../components/WeatherSymbol';
 import EnhancedWeatherForecast from '../../components/EnhancedWeatherForecast';
 import WeatherTextForecast from '../../components/WeatherTextForecast';
 import WeatherAlerts from '../../components/WeatherAlerts';
+import RainfallRadar from '../../components/RainfallRadar';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
@@ -148,6 +149,13 @@ function DetailScreen() {
             </Text>
           </View>
         )}
+
+        {/* NEW: Rainfall Radar Section */}
+        <RainfallRadar
+          latitude={circuit.latitude}
+          longitude={circuit.longitude}
+          circuitName={circuit.name}
+        />
 
         {/* NEW: Written Text Weather Forecast */}
         {!loading && current && hourly.length > 0 && (
@@ -485,7 +493,7 @@ function DetailScreen() {
           />
           <View style={{ height: 18 }} />
           <Text style={styles.muted}>
-            Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, and written text summaries.
+            Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, written text summaries, and live rainfall radar.
             Data updates every 10 minutes for accuracy.
           </Text>
         </BottomSheetView>
