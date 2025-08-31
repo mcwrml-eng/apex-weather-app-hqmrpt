@@ -198,16 +198,7 @@ function DetailScreen() {
           </View>
         )}
 
-        {/* ALWAYS DISPLAY: Animated Rainfall Radar Section */}
-        <RainfallRadar
-          latitude={circuit.latitude}
-          longitude={circuit.longitude}
-          circuitName={circuit.name}
-          alwaysVisible={true}
-          autoStartAnimation={true}
-        />
-
-        {/* NEW: Sunrise & Sunset Times Section */}
+        {/* 1. SUNRISE & SUNSET TIMES - TOP PRIORITY */}
         {!loading && todaySunTimes && (
           <View style={styles.sunTimesCard}>
             <View style={styles.sunTimesHeader}>
@@ -276,7 +267,9 @@ function DetailScreen() {
           </View>
         )}
 
-        {/* NEW: Written Text Weather Forecast */}
+        {/* 2. WEATHER FORECASTS AND CURRENT CONDITIONS */}
+        
+        {/* Written Text Weather Forecast */}
         {!loading && current && hourly.length > 0 && (
           <WeatherTextForecast
             current={current}
@@ -286,29 +279,6 @@ function DetailScreen() {
             latitude={circuit.latitude}
             longitude={circuit.longitude}
           />
-        )}
-
-        {/* Wind Speed, Gusts and Direction Bar Graphs - Always show if we have data */}
-        {!loading && windData.length > 0 && (
-          <WindBarGraphs
-            hourlyData={windData}
-            unit={unit}
-          />
-        )}
-
-        {/* Wind Direction Radar Analysis - New radar chart visualization */}
-        {!loading && windData.length > 0 && (
-          <WindRadarGraph
-            hourlyData={windData}
-            unit={unit}
-          />
-        )}
-
-        {/* Debug info when no wind data */}
-        {!loading && windData.length === 0 && (
-          <View style={styles.card}>
-            <Text style={styles.muted}>No wind data available</Text>
-          </View>
         )}
 
         {/* Enhanced Current Weather Display */}
@@ -461,7 +431,7 @@ function DetailScreen() {
                         {d.precipitation_probability}%
                       </Text>
                     )}
-                    {/* NEW: Show sunrise/sunset times in daily forecast */}
+                    {/* Show sunrise/sunset times in daily forecast */}
                     <View style={styles.daySunTimes}>
                       <Text style={styles.daySunTime}>
                         ↑{d.sunrise} ↓{d.sunset}
@@ -472,7 +442,7 @@ function DetailScreen() {
               </ScrollView>
             </View>
 
-            {/* NEW: 72-Hour Forecast Section - Properly Structured */}
+            {/* 72-Hour Forecast Section */}
             {forecast72Hours.length > 0 && (
               <View style={styles.forecast72Card}>
                 <View style={styles.forecast72Header}>
@@ -571,27 +541,61 @@ function DetailScreen() {
                 </View>
               </View>
             )}
-
-            {/* Weekend Schedule - with proper spacing */}
-            <View style={styles.scheduleCard}>
-              <Text style={styles.cardLabel}>Weekend Schedule</Text>
-              <View style={{ height: 8 }} />
-              <View>
-                {schedule.slice(0, 4).map((s) => (
-                  <View key={s.key} style={styles.sessionRow}>
-                    <View style={styles.sessionDot} />
-                    <Text style={styles.sessionText}>
-                      {s.day} • {s.title} — {s.time}{s.date ? ` • ${new Date(s.date + 'T00:00:00').toLocaleDateString()}` : ''}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-              <View style={{ height: 10 }} />
-              <TouchableOpacity onPress={openSchedule} activeOpacity={0.8} style={styles.moreBtn}>
-                <Text style={styles.moreBtnText}>View full schedule</Text>
-              </TouchableOpacity>
-            </View>
           </>
+        )}
+
+        {/* 3. RAINFALL RADAR - MIDDLE TO BOTTOM */}
+        <RainfallRadar
+          latitude={circuit.latitude}
+          longitude={circuit.longitude}
+          circuitName={circuit.name}
+          alwaysVisible={true}
+          autoStartAnimation={true}
+        />
+
+        {/* Wind Analysis - After Radar */}
+        {!loading && windData.length > 0 && (
+          <WindBarGraphs
+            hourlyData={windData}
+            unit={unit}
+          />
+        )}
+
+        {/* Wind Direction Radar Analysis */}
+        {!loading && windData.length > 0 && (
+          <WindRadarGraph
+            hourlyData={windData}
+            unit={unit}
+          />
+        )}
+
+        {/* Debug info when no wind data */}
+        {!loading && windData.length === 0 && (
+          <View style={styles.card}>
+            <Text style={styles.muted}>No wind data available</Text>
+          </View>
+        )}
+
+        {/* Weekend Schedule - Bottom */}
+        {daily && (
+          <View style={styles.scheduleCard}>
+            <Text style={styles.cardLabel}>Weekend Schedule</Text>
+            <View style={{ height: 8 }} />
+            <View>
+              {schedule.slice(0, 4).map((s) => (
+                <View key={s.key} style={styles.sessionRow}>
+                  <View style={styles.sessionDot} />
+                  <Text style={styles.sessionText}>
+                    {s.day} • {s.title} — {s.time}{s.date ? ` • ${new Date(s.date + 'T00:00:00').toLocaleDateString()}` : ''}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            <View style={{ height: 10 }} />
+            <TouchableOpacity onPress={openSchedule} activeOpacity={0.8} style={styles.moreBtn}>
+              <Text style={styles.moreBtnText}>View full schedule</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         <View style={{ height: 40 }} />
@@ -652,7 +656,7 @@ function DetailScreen() {
         </BottomSheetView>
       </BottomSheet>
 
-      {/* Enhanced Weather Charts Bottom Sheet - FIXED BACKGROUND */}
+      {/* Enhanced Weather Charts Bottom Sheet */}
       <BottomSheet 
         ref={chartsRef} 
         index={-1} 
@@ -772,7 +776,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
   },
-  // NEW: Sunrise & Sunset Times Styles
+  // Sunrise & Sunset Times Styles
   sunTimesCard: {
     backgroundColor: colors.card,
     borderRadius: 14,
@@ -912,7 +916,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
   },
-  // New styles for the 72-Hour Forecast section
+  // 72-Hour Forecast section styles
   forecast72Card: {
     backgroundColor: colors.card,
     borderRadius: 14,
@@ -1049,7 +1053,7 @@ const styles = StyleSheet.create({
     color: colors.precipitation,
     fontFamily: 'Roboto_400Regular',
   },
-  // New style for schedule card with proper spacing
+  // Schedule card with proper spacing
   scheduleCard: {
     flex: 1,
     backgroundColor: colors.card,
@@ -1059,7 +1063,7 @@ const styles = StyleSheet.create({
     borderColor: colors.divider,
     boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
     marginBottom: 12,
-    marginTop: 8, // Added top margin for additional separation
+    marginTop: 8,
   },
   metricsGrid: {
     flexDirection: 'row',
@@ -1183,7 +1187,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginBottom: 4,
   },
-  // NEW: Sunrise/sunset times in daily forecast
+  // Sunrise/sunset times in daily forecast
   daySunTimes: {
     marginTop: 2,
   },
@@ -1195,7 +1199,7 @@ const styles = StyleSheet.create({
   },
   muted: { color: colors.textMuted, fontFamily: 'Roboto_400Regular' },
   error: { color: '#C62828', fontWeight: '600', fontFamily: 'Roboto_500Medium' },
-  // FIXED: BottomSheet styling for dark theme
+  // BottomSheet styling
   bottomSheetBackground: {
     backgroundColor: colors.background,
   },
@@ -1205,7 +1209,7 @@ const styles = StyleSheet.create({
   sheet: { 
     padding: 16, 
     flex: 1,
-    backgroundColor: colors.background, // Ensure the sheet content also has dark background
+    backgroundColor: colors.background,
   },
   sheetTitle: { fontSize: 18, fontWeight: '700', color: colors.text, fontFamily: 'Roboto_700Bold' },
   sessionRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
