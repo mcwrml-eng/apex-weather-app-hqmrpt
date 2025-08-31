@@ -18,14 +18,22 @@ interface Props {
   latitude: number;
   longitude: number;
   circuitName: string;
+  alwaysVisible?: boolean;
+  autoStartAnimation?: boolean;
 }
 
 const { width: screenWidth } = Dimensions.get('window');
 
-const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) => {
+const RainfallRadar: React.FC<Props> = ({ 
+  latitude, 
+  longitude, 
+  circuitName, 
+  alwaysVisible = false,
+  autoStartAnimation = false 
+}) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [showRadar, setShowRadar] = useState(false);
+  const [showRadar, setShowRadar] = useState(alwaysVisible);
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationSpeed, setAnimationSpeed] = useState(1000); // milliseconds per frame
   const [currentFrame, setCurrentFrame] = useState(0);
@@ -44,8 +52,20 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
     showRadar, 
     isAnimating,
     currentFrame,
-    totalFrames 
+    totalFrames,
+    alwaysVisible,
+    autoStartAnimation
   });
+
+  // Auto-start animation when frames are loaded and autoStartAnimation is true
+  useEffect(() => {
+    if (autoStartAnimation && totalFrames > 1 && !isAnimating && showRadar) {
+      console.log('RainfallRadar: Auto-starting animation');
+      setTimeout(() => {
+        toggleAnimation();
+      }, 2000); // Wait 2 seconds after loading before starting animation
+    }
+  }, [totalFrames, showRadar, autoStartAnimation]);
 
   // Start pulse animation for loading state
   useEffect(() => {
@@ -288,20 +308,20 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
     <div id="map"></div>
     
     <div class="radar-controls">
-        <button id="radarToggle" class="radar-toggle">Show Radar</button>
+        <button id="radarToggle" class="radar-toggle active">Radar Active</button>
         <button id="satelliteToggle" class="radar-toggle">Satellite</button>
         
-        <div class="animation-controls" id="animationControls" style="display: none;">
+        <div class="animation-controls" id="animationControls">
             <button id="playPauseBtn" class="animation-btn">▶</button>
             <button id="speedBtn" class="animation-btn">1x</button>
-            <button id="loopBtn" class="animation-btn">Loop</button>
+            <button id="loopBtn" class="animation-btn active">Loop ✓</button>
         </div>
         
-        <input type="range" id="timeSlider" class="time-slider" min="0" max="11" value="11" style="display: none;">
-        <div id="frameInfo" class="frame-info" style="display: none;">Frame 1 of 12</div>
+        <input type="range" id="timeSlider" class="time-slider" min="0" max="11" value="11">
+        <div id="frameInfo" class="frame-info">Frame 1 of 12</div>
     </div>
     
-    <div class="legend" id="legend" style="display: none;">
+    <div class="legend" id="legend">
         <div class="legend-title">Rainfall Intensity</div>
         <div class="legend-item">
             <div class="legend-color" style="background: #00ff00;"></div>
@@ -327,19 +347,20 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        console.log('RainfallRadar: Starting map initialization with animation support');
+        console.log('RainfallRadar: Starting map initialization with auto-animation support');
         
         let map;
         let radarLayer = null;
         let radarData = [];
         let currentFrame = 0;
-        let isRadarVisible = false;
+        let isRadarVisible = true; // Always start with radar visible
         let isSatelliteView = false;
         let isAnimating = false;
         let animationInterval = null;
         let animationSpeed = 1000; // milliseconds
         let isLooping = true;
         let animationDirection = 1; // 1 for forward, -1 for backward
+        let autoStartRequested = ${autoStartAnimation ? 'true' : 'false'};
         
         // Animation speeds
         const speeds = [
@@ -389,7 +410,7 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
         
         // Initialize map with error handling
         function initMap() {
-            console.log('RainfallRadar: Initializing map');
+            console.log('RainfallRadar: Initializing map with always-on radar');
             
             safeExecute(() => {
                 const lat = parseFloat(${latitude});
@@ -440,14 +461,13 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
                 const speedBtn = document.getElementById('speedBtn');
                 const loopBtn = document.getElementById('loopBtn');
                 
-                if (radarToggle) radarToggle.addEventListener('click', toggleRadar);
                 if (satelliteToggle) satelliteToggle.addEventListener('click', toggleSatellite);
                 if (timeSlider) timeSlider.addEventListener('input', updateRadarFrame);
                 if (playPauseBtn) playPauseBtn.addEventListener('click', toggleAnimation);
                 if (speedBtn) speedBtn.addEventListener('click', cycleSpeed);
                 if (loopBtn) loopBtn.addEventListener('click', toggleLoop);
                 
-                // Load radar data
+                // Load radar data and auto-show
                 loadRadarData();
                 
                 // Hide loading
@@ -456,7 +476,7 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
                 
                 hideError();
                 
-                console.log('RainfallRadar: Map initialized successfully');
+                console.log('RainfallRadar: Map initialized successfully with always-on radar');
                 
                 // Switch layers function
                 window.switchToSatellite = function() {
@@ -503,7 +523,7 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
         }
         
         async function loadRadarData() {
-            console.log('RainfallRadar: Loading radar data');
+            console.log('RainfallRadar: Loading radar data for always-on display');
             
             try {
                 const controller = new AbortController();
@@ -537,12 +557,35 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
                         }
                         updateFrameInfo();
                         
+                        // Auto-show radar since we're always visible
+                        showRadarFrame(currentFrame);
+                        isRadarVisible = true;
+                        
+                        // Show controls
+                        const legend = document.getElementById('legend');
+                        const animationControls = document.getElementById('animationControls');
+                        const frameInfo = document.getElementById('frameInfo');
+                        const timeSlider = document.getElementById('timeSlider');
+                        
+                        if (legend) legend.style.display = 'block';
+                        if (animationControls) animationControls.style.display = 'flex';
+                        if (frameInfo) frameInfo.style.display = 'block';
+                        if (timeSlider) timeSlider.style.display = 'block';
+                        
                         // Send frame count to React Native
                         sendMessage({
                             type: 'framesLoaded',
                             totalFrames: radarData.length,
                             currentFrame: currentFrame
                         });
+                        
+                        // Auto-start animation if requested
+                        if (autoStartRequested && radarData.length > 1) {
+                            console.log('RainfallRadar: Auto-starting animation as requested');
+                            setTimeout(() => {
+                                startAnimation();
+                            }, 1500);
+                        }
                     }
                 } else {
                     console.warn('RainfallRadar: No radar data available');
@@ -553,51 +596,6 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
                     console.error('RainfallRadar: Request timed out');
                 }
             }
-        }
-        
-        function toggleRadar() {
-            safeExecute(() => {
-                const button = document.getElementById('radarToggle');
-                const legend = document.getElementById('legend');
-                const slider = document.getElementById('timeSlider');
-                const animationControls = document.getElementById('animationControls');
-                const frameInfo = document.getElementById('frameInfo');
-                
-                if (isRadarVisible) {
-                    // Hide radar
-                    stopAnimation();
-                    if (radarLayer && map) {
-                        map.removeLayer(radarLayer);
-                        radarLayer = null;
-                    }
-                    if (button) {
-                        button.textContent = 'Show Radar';
-                        button.classList.remove('active');
-                    }
-                    if (legend) legend.style.display = 'none';
-                    if (slider) slider.style.display = 'none';
-                    if (animationControls) animationControls.style.display = 'none';
-                    if (frameInfo) frameInfo.style.display = 'none';
-                    isRadarVisible = false;
-                } else {
-                    // Show radar
-                    if (radarData.length > 0) {
-                        showRadarFrame(currentFrame);
-                        if (button) {
-                            button.textContent = 'Hide Radar';
-                            button.classList.add('active');
-                        }
-                        if (legend) legend.style.display = 'block';
-                        if (slider) slider.style.display = 'block';
-                        if (animationControls) animationControls.style.display = 'flex';
-                        if (frameInfo) frameInfo.style.display = 'block';
-                        isRadarVisible = true;
-                        updateFrameInfo();
-                    } else {
-                        console.warn('RainfallRadar: No radar data available to show');
-                    }
-                }
-            }, 'Failed to toggle radar');
         }
         
         function showRadarFrame(frameIndex) {
@@ -772,7 +770,7 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
         
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('RainfallRadar: DOM loaded, initializing map');
+            console.log('RainfallRadar: DOM loaded, initializing always-on radar map');
             initMap();
         });
         
@@ -840,10 +838,12 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
 
   const toggleRadarView = () => {
     console.log('RainfallRadar: Toggling radar view from', showRadar, 'to', !showRadar);
-    setShowRadar(!showRadar);
-    if (!showRadar) {
-      setIsLoading(true);
-      setHasError(false);
+    if (!alwaysVisible) {
+      setShowRadar(!showRadar);
+      if (!showRadar) {
+        setIsLoading(true);
+        setHasError(false);
+      }
     }
   };
 
@@ -888,7 +888,8 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
     );
   }
 
-  if (!showRadar) {
+  // When alwaysVisible is true, always show the radar
+  if (!showRadar && !alwaysVisible) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
@@ -927,8 +928,13 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Icon name="rainy" size={20} color={colors.precipitation} />
-          <Text style={styles.title}>Rainfall Radar</Text>
+          <Text style={styles.title}>Live Rainfall Radar</Text>
           <Text style={styles.subtitle}>{circuitName}</Text>
+          {alwaysVisible && (
+            <View style={styles.alwaysOnBadge}>
+              <Text style={styles.alwaysOnText}>Always On</Text>
+            </View>
+          )}
         </View>
         <View style={styles.controls}>
           {totalFrames > 1 && (
@@ -945,9 +951,11 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
           <TouchableOpacity onPress={refreshRadar} style={styles.controlButton}>
             <Icon name="refresh" size={16} color={colors.text} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={toggleRadarView} style={styles.controlButton}>
-            <Icon name="close" size={16} color={colors.text} />
-          </TouchableOpacity>
+          {!alwaysVisible && (
+            <TouchableOpacity onPress={toggleRadarView} style={styles.controlButton}>
+              <Icon name="close" size={16} color={colors.text} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -961,6 +969,9 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
             {isAnimating && (
               <Text style={styles.animatingText}> • Animating</Text>
             )}
+            {autoStartAnimation && !isAnimating && totalFrames > 1 && (
+              <Text style={styles.autoStartText}> • Auto-starting...</Text>
+            )}
           </Text>
         </View>
       )}
@@ -969,7 +980,9 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
         <Animated.View style={[styles.loadingContainer, pulseStyle]}>
           <Icon name="cloud-download" size={32} color={colors.textMuted} />
           <Text style={styles.loadingText}>Loading radar data...</Text>
-          <Text style={styles.loadingSubtext}>Powered by RainViewer</Text>
+          <Text style={styles.loadingSubtext}>
+            {alwaysVisible ? 'Always-on radar initializing' : 'Powered by RainViewer'}
+          </Text>
         </Animated.View>
       )}
 
@@ -1010,7 +1023,7 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          Real-time radar data • Updates every 10 minutes
+          {alwaysVisible ? 'Always-on animated radar' : 'Real-time radar data'} • Updates every 10 minutes
           {isAnimating && ` • Speed: ${animationSpeed}ms/frame`}
         </Text>
         <Text style={styles.attribution}>
@@ -1054,6 +1067,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     marginLeft: 4,
+  },
+  alwaysOnBadge: {
+    backgroundColor: colors.accent + '20',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginLeft: 8,
+  },
+  alwaysOnText: {
+    fontSize: 10,
+    color: colors.accent,
+    fontWeight: '600',
   },
   controls: {
     flexDirection: 'row',
@@ -1108,6 +1133,10 @@ const styles = StyleSheet.create({
   },
   animatingText: {
     color: colors.primary,
+    fontWeight: '600',
+  },
+  autoStartText: {
+    color: colors.accent,
     fontWeight: '600',
   },
   previewContainer: {

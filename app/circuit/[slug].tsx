@@ -198,6 +198,15 @@ function DetailScreen() {
           </View>
         )}
 
+        {/* ALWAYS DISPLAY: Animated Rainfall Radar Section */}
+        <RainfallRadar
+          latitude={circuit.latitude}
+          longitude={circuit.longitude}
+          circuitName={circuit.name}
+          alwaysVisible={true}
+          autoStartAnimation={true}
+        />
+
         {/* NEW: Sunrise & Sunset Times Section */}
         {!loading && todaySunTimes && (
           <View style={styles.sunTimesCard}>
@@ -266,13 +275,6 @@ function DetailScreen() {
             </View>
           </View>
         )}
-
-        {/* NEW: Rainfall Radar Section */}
-        <RainfallRadar
-          latitude={circuit.latitude}
-          longitude={circuit.longitude}
-          circuitName={circuit.name}
-        />
 
         {/* NEW: Written Text Weather Forecast */}
         {!loading && current && hourly.length > 0 && (
@@ -617,7 +619,7 @@ function DetailScreen() {
           <View style={{ height: 18 }} />
           <Text style={styles.muted}>
             Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, written text summaries, sunrise/sunset times, and live rainfall radar.
-            Data updates every 10 minutes for accuracy.
+            Data updates every 10 minutes for accuracy. Rainfall radar is always visible and animated for real-time precipitation monitoring.
           </Text>
         </BottomSheetView>
       </BottomSheet>
