@@ -138,67 +138,32 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
     return value.toFixed(1);
   };
 
-  // Enhanced time formatting with day interval detection for 72-hour forecasts
-  const formatTimeWithDayInterval = (timeString: string, index: number, totalPoints: number) => {
+  // Enhanced time formatting for 3-hour intervals on 24-hour day
+  const formatTimeLabel = (timeString: string, index: number, totalPoints: number) => {
     const date = new Date(timeString);
     const hour = date.getHours();
-    const day = date.getDate();
-    const month = date.getMonth() + 1;
-    const isNewDay = hour === 0 || index === 0;
-    const dayName = date.toLocaleDateString([], { weekday: 'short' });
     
-    // For 72-hour forecasts (3+ days), emphasize day intervals
-    if (totalPoints >= 48) {
-      if (isNewDay) {
-        return {
-          main: `${dayName}`,
-          sub: `${day}/${month}`,
-          isNewDay: true,
-          hour: `${hour.toString().padStart(2, '0')}h`
-        };
-      } else if (hour % 6 === 0) {
-        // Show key hours every 6 hours
-        return {
-          main: `${hour.toString().padStart(2, '0')}h`,
-          sub: '',
-          isNewDay: false,
-          hour: `${hour.toString().padStart(2, '0')}h`
-        };
-      }
-      return { main: '', sub: '', isNewDay: false, hour: '' };
-    } else if (totalPoints >= 24) {
-      // For 24-hour display with 3-hour intervals
-      if (hour % 3 === 0 || index === 0) {
-        return {
-          main: `${hour.toString().padStart(2, '0')}h`,
-          sub: isNewDay ? `${dayName}` : '',
-          isNewDay,
-          hour: `${hour.toString().padStart(2, '0')}h`
-        };
-      }
-      return { main: '', sub: '', isNewDay: false, hour: '' };
-    } else {
-      // For shorter periods, show all hours
-      return {
-        main: `${hour.toString().padStart(2, '0')}h`,
-        sub: isNewDay ? `${day}/${month}` : '',
-        isNewDay,
-        hour: `${hour.toString().padStart(2, '0')}h`
-      };
-    }
+    // For 24-hour display with 3-hour intervals, show: 0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h
+    return `${hour.toString().padStart(2, '0')}h`;
   };
 
-  // Generate enhanced time labels with prominent day intervals
-  const generateEnhancedTimeLabels = () => {
+  // Generate time labels at 3-hour intervals for 24-hour day
+  const generateTimeLabels = () => {
     const totalPoints = validData.length;
-    console.log('WeatherChart: Generating enhanced day interval labels for', totalPoints, 'data points');
+    console.log('WeatherChart: Generating 3-hour interval labels for', totalPoints, 'data points');
+    
+    // For 24-hour period, we want labels at 3-hour intervals: 0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h
+    const targetHours = [0, 3, 6, 9, 12, 15, 18, 21];
     
     return validData.map((point, index) => {
-      const timeInfo = formatTimeWithDayInterval(point.time, index, totalPoints);
-      return {
-        ...timeInfo,
-        originalTime: point.time
-      };
+      const date = new Date(point.time);
+      const hour = date.getHours();
+      
+      // Show label if this hour matches one of our target 3-hour intervals
+      if (targetHours.includes(hour)) {
+        return formatTimeLabel(point.time, index, totalPoints);
+      }
+      return '';
     });
   };
 
@@ -206,7 +171,7 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
   const chartColor = getChartColor();
   const unitLabel = getUnit();
   const title = getTitle();
-  const enhancedTimeLabels = generateEnhancedTimeLabels();
+  const timeLabels = generateTimeLabels();
 
   // Enhanced statistical calculations
   const minValue = Math.min(...chartData);
@@ -348,84 +313,28 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
         </View>
       </View>
       
-      {/* Enhanced X-axis with prominent day intervals for 72-hour forecasts */}
+      {/* Enhanced X-axis with 3-hour interval time scales */}
       <View style={styles.xAxisContainer}>
-        <View style={styles.enhancedXAxisLabelsContainer}>
-          {enhancedTimeLabels.map((labelInfo, index) => {
-            const shouldShow = labelInfo.main !== '';
-            
-            return (
-              <View key={index} style={[
-                styles.enhancedXAxisLabelWrapper,
-                { flex: 1 },
-                labelInfo.isNewDay && styles.newDayLabelWrapper
+        <View style={styles.xAxisLabelsContainer}>
+          {timeLabels.map((label, index) => (
+            <View key={index} style={[
+              styles.xAxisLabelWrapper,
+              { flex: 1 }
+            ]}>
+              <Text style={[
+                styles.xAxisLabel,
+                { 
+                  opacity: label ? 1 : 0,
+                  fontSize: 10,
+                  fontWeight: label ? '500' : '400'
+                }
               ]}>
-                {shouldShow && (
-                  <>
-                    {/* Day interval separator line for new days */}
-                    {labelInfo.isNewDay && index > 0 && (
-                      <View style={styles.dayIntervalLine} />
-                    )}
-                    
-                    {/* Main label (day name or hour) */}
-                    <Text style={[
-                      styles.enhancedXAxisLabel,
-                      labelInfo.isNewDay && styles.newDayLabel
-                    ]}>
-                      {labelInfo.main}
-                    </Text>
-                    
-                    {/* Sub label (date or context) */}
-                    {labelInfo.sub && (
-                      <Text style={[
-                        styles.enhancedXAxisSubLabel,
-                        labelInfo.isNewDay && styles.newDaySubLabel
-                      ]}>
-                        {labelInfo.sub}
-                      </Text>
-                    )}
-                    
-                    {/* Day interval indicator for new days */}
-                    {labelInfo.isNewDay && (
-                      <View style={styles.dayIntervalIndicator}>
-                        <Text style={styles.dayIntervalIcon}>📅</Text>
-                      </View>
-                    )}
-                  </>
-                )}
-              </View>
-            );
-          })}
-        </View>
-        
-        {/* Enhanced X-axis title with day interval information */}
-        <Text style={styles.enhancedXAxisTitle}>
-          {validData.length >= 48 ? 
-            'Time Scale (Day intervals with 6-hour markers)' : 
-            validData.length >= 24 ? 
-            'Time Scale (3-hour intervals with day markers)' : 
-            'Time Scale (Hourly with day context)'
-          }
-        </Text>
-        
-        {/* Day interval legend for 72-hour forecasts */}
-        {validData.length >= 48 && (
-          <View style={styles.dayIntervalLegend}>
-            <View style={styles.legendRow}>
-              <View style={styles.legendItem}>
-                <Text style={styles.legendIcon}>📅</Text>
-                <Text style={styles.legendText}>New Day</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: colors.accent }]} />
-                <Text style={styles.legendText}>Day Boundary</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <Text style={styles.legendText}>6h intervals shown</Text>
-              </View>
+                {label}
+              </Text>
             </View>
-          </View>
-        )}
+          ))}
+        </View>
+        <Text style={styles.xAxisTitle}>Time Scale (3-hour intervals)</Text>
       </View>
 
       {/* Enhanced statistics panel */}
@@ -522,115 +431,33 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingLeft: 55, // Account for Y-axis width
   },
-  
-  // Enhanced X-axis styles with day intervals
-  enhancedXAxisLabelsContainer: {
+  xAxisLabelsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginBottom: 8,
-    minHeight: 40,
-    position: 'relative',
-  },
-  enhancedXAxisLabelWrapper: {
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    marginBottom: 4,
+    minHeight: 16,
+  },
+  xAxisLabelWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 2,
-    position: 'relative',
-    minHeight: 40,
   },
-  newDayLabelWrapper: {
-    backgroundColor: colors.accent + '10',
-    borderRadius: 6,
-    paddingVertical: 4,
-    paddingHorizontal: 6,
-    borderWidth: 1,
-    borderColor: colors.accent + '30',
-  },
-  dayIntervalLine: {
-    position: 'absolute',
-    top: -8,
-    left: '50%',
-    width: 2,
-    height: 16,
-    backgroundColor: colors.accent,
-    borderRadius: 1,
-  },
-  enhancedXAxisLabel: {
+  xAxisLabel: {
     fontSize: 10,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
     textAlign: 'center',
     lineHeight: 12,
-    fontWeight: '500',
   },
-  newDayLabel: {
-    fontSize: 11,
-    color: colors.accent,
-    fontFamily: 'Roboto_500Medium',
-    fontWeight: '700',
-  },
-  enhancedXAxisSubLabel: {
-    fontSize: 8,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    textAlign: 'center',
-    marginTop: 1,
-    lineHeight: 10,
-  },
-  newDaySubLabel: {
-    fontSize: 9,
-    color: colors.accent,
-    fontWeight: '600',
-  },
-  dayIntervalIndicator: {
-    marginTop: 2,
-  },
-  dayIntervalIcon: {
-    fontSize: 8,
-  },
-  enhancedXAxisTitle: {
+  xAxisTitle: {
     fontSize: 11,
     color: colors.textMuted,
     fontFamily: 'Roboto_500Medium',
     textAlign: 'center',
-    marginTop: 6,
+    marginTop: 4,
     fontWeight: '500',
   },
-  
-  // Day interval legend
-  dayIntervalLegend: {
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 8,
-    padding: 8,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: colors.accent + '20',
-  },
-  legendRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  legendIcon: {
-    fontSize: 10,
-  },
-  legendDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  legendText: {
-    fontSize: 9,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-  },
-  
   statsPanel: {
     flexDirection: 'row',
     justifyContent: 'space-around',

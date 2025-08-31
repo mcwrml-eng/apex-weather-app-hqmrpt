@@ -37,47 +37,38 @@ function formatHour(timeString: string): string {
   });
 }
 
-function formatTimeWithScale(timeString: string, index: number, totalHours: number): { main: string; sub: string; isNewDay: boolean; dayName: string } {
+function formatTimeWithScale(timeString: string, index: number, totalHours: number): { main: string; sub: string } {
   const date = new Date(timeString);
   const hour = date.getHours();
   const minute = date.getMinutes();
   const day = date.getDate();
   const month = date.getMonth() + 1;
-  const isNewDay = hour === 0 || index === 0;
-  
-  // Get day name for better visibility
-  const dayName = date.toLocaleDateString([], { weekday: 'short' });
   
   // Different time scale formats based on data length and position
   if (totalHours <= 12) {
     // For short periods, show hour:minute
     return {
       main: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
-      sub: index === 0 ? `${dayName} ${day}/${month}` : '',
-      isNewDay,
-      dayName
+      sub: index === 0 ? `${day}/${month}` : ''
     };
   } else if (totalHours <= 24) {
     // For 24 hours, show hour with day context
     return {
       main: `${hour.toString().padStart(2, '0')}h`,
-      sub: hour === 0 || index === 0 ? `${dayName} ${day}/${month}` : '',
-      isNewDay,
-      dayName
+      sub: hour === 0 || index === 0 ? `${day}/${month}` : ''
     };
   } else {
-    // For longer periods (72-hour), show selective hours with prominent day context
+    // For longer periods, show selective hours with day context
+    const isNewDay = hour === 0 || index === 0;
     const isKeyHour = hour % 6 === 0; // Show every 6 hours
     
     if (isNewDay || isKeyHour) {
       return {
         main: `${hour.toString().padStart(2, '0')}h`,
-        sub: isNewDay ? `${dayName} ${day}/${month}` : '',
-        isNewDay,
-        dayName
+        sub: isNewDay ? `${day}/${month}` : ''
       };
     }
-    return { main: '', sub: '', isNewDay, dayName };
+    return { main: '', sub: '' };
   }
 }
 
@@ -113,7 +104,7 @@ function formatPrecipitation(value: number, unit: 'metric' | 'imperial'): string
 }
 
 export default function HourlyWeatherForecast({ hourlyData, unit, latitude, longitude }: Props) {
-  console.log('HourlyWeatherForecast: Rendering with', hourlyData.length, 'hours of enhanced data with visible day intervals on x-axis, unit:', unit);
+  console.log('HourlyWeatherForecast: Rendering with', hourlyData.length, 'hours of enhanced data with time scales, unit:', unit);
 
   if (!hourlyData || hourlyData.length === 0) {
     return (
@@ -127,7 +118,7 @@ export default function HourlyWeatherForecast({ hourlyData, unit, latitude, long
     <View style={styles.container}>
       <Text style={styles.title}>24-Hour Enhanced Forecast</Text>
       <Text style={styles.subtitle}>
-        Including rain totals in {getPrecipitationUnit(unit)} with clear day intervals on x-axis
+        Including rain totals in {getPrecipitationUnit(unit)} with precise time scales
       </Text>
       
       <ScrollView 
@@ -141,7 +132,7 @@ export default function HourlyWeatherForecast({ hourlyData, unit, latitude, long
           const temperature = Math.round(hour.temperature);
           const tempUnit = unit === 'metric' ? '°C' : '°F';
           
-          // Show more hours for extended view, fewer for 24-hour view
+          // Only show cards that have time labels or are important hours
           const shouldShow = timeScale.main !== '' || index === 0 || index === hourlyData.length - 1;
           
           if (!shouldShow && hourlyData.length > 24) {
@@ -149,42 +140,12 @@ export default function HourlyWeatherForecast({ hourlyData, unit, latitude, long
           }
           
           return (
-            <View key={hour.time} style={[
-              styles.hourCard,
-              timeScale.isNewDay && styles.newDayCard
-            ]}>
-              {/* Day interval separator for new days on x-axis */}
-              {timeScale.isNewDay && index > 0 && (
-                <View style={styles.dayIntervalSeparator}>
-                  <View style={styles.separatorLine} />
-                  <Text style={styles.separatorText}>NEW DAY</Text>
-                  <View style={styles.separatorLine} />
-                </View>
-              )}
-              
-              {/* Enhanced time display with prominent day intervals for x-axis */}
-              <View style={[
-                styles.timeContainer,
-                timeScale.isNewDay && styles.newDayTimeContainer
-              ]}>
-                <Text style={[
-                  styles.hourTime,
-                  timeScale.isNewDay && styles.newDayTime
-                ]}>
-                  {timeScale.main || formatHour(hour.time)}
-                </Text>
+            <View key={hour.time} style={styles.hourCard}>
+              {/* Enhanced time display with scale context */}
+              <View style={styles.timeContainer}>
+                <Text style={styles.hourTime}>{timeScale.main || formatHour(hour.time)}</Text>
                 {timeScale.sub && (
-                  <Text style={[
-                    styles.dateContext,
-                    timeScale.isNewDay && styles.newDayContext
-                  ]}>
-                    {timeScale.sub}
-                  </Text>
-                )}
-                {timeScale.isNewDay && (
-                  <View style={styles.newDayIndicator}>
-                    <Text style={styles.newDayLabel}>📅</Text>
-                  </View>
+                  <Text style={styles.dateContext}>{timeScale.sub}</Text>
                 )}
               </View>
               
@@ -235,30 +196,18 @@ export default function HourlyWeatherForecast({ hourlyData, unit, latitude, long
         })}
       </ScrollView>
       
-      {/* Enhanced time scale legend with day interval information for x-axis */}
+      {/* Time scale legend */}
       <View style={styles.timeScaleLegend}>
-        <Text style={styles.legendTitle}>📅 X-Axis Day Intervals & Time Scale Guide</Text>
-        <View style={styles.legendContent}>
-          <View style={styles.legendRow}>
-            <Text style={styles.legendLabel}>Day Changes:</Text>
-            <Text style={styles.legendText}>
-              Highlighted with calendar icon and "NEW DAY" separator on x-axis
-            </Text>
-          </View>
-          <View style={styles.legendRow}>
-            <Text style={styles.legendLabel}>Time Format:</Text>
-            <Text style={styles.legendText}>
-              {hourlyData.length <= 12 ? 'HH:MM (precise timing)' : 
-               hourlyData.length <= 24 ? 'HHh (hourly with day context)' : 
-               'Key hours every 6h with prominent day names'}
-            </Text>
-          </View>
-          <View style={styles.legendRow}>
-            <Text style={styles.legendLabel}>X-Axis Scale:</Text>
-            <Text style={styles.legendText}>
-              Day intervals clearly marked for easy time navigation
-            </Text>
-          </View>
+        <Text style={styles.legendTitle}>Time Scale Guide</Text>
+        <View style={styles.legendRow}>
+          <Text style={styles.legendText}>
+            {hourlyData.length <= 12 ? 'HH:MM format' : 
+             hourlyData.length <= 24 ? 'Hour format (HHh)' : 
+             'Key hours every 6h'}
+          </Text>
+          <Text style={styles.legendSubtext}>
+            Day/Month shown for context
+          </Text>
         </View>
       </View>
     </View>
@@ -300,49 +249,11 @@ const styles = StyleSheet.create({
     minWidth: 90,
     borderWidth: 1,
     borderColor: colors.divider,
-    position: 'relative',
-  },
-  newDayCard: {
-    backgroundColor: colors.accent + '10',
-    borderColor: colors.accent,
-    borderWidth: 2,
-  },
-  dayIntervalSeparator: {
-    position: 'absolute',
-    top: -15,
-    left: -10,
-    right: -10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  separatorLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.accent,
-    marginHorizontal: 8,
-  },
-  separatorText: {
-    fontSize: 8,
-    fontWeight: '700',
-    color: colors.accent,
-    fontFamily: 'Roboto_700Bold',
-    paddingHorizontal: 6,
   },
   timeContainer: {
     alignItems: 'center',
     marginBottom: 8,
-    minHeight: 32,
-  },
-  newDayTimeContainer: {
-    backgroundColor: colors.accent + '15',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginTop: 8,
+    minHeight: 28,
   },
   hourTime: {
     fontSize: 12,
@@ -350,27 +261,11 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto_500Medium',
     fontWeight: '600',
   },
-  newDayTime: {
-    fontSize: 13,
-    color: colors.accent,
-    fontWeight: '700',
-  },
   dateContext: {
     fontSize: 9,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
     marginTop: 1,
-  },
-  newDayContext: {
-    fontSize: 10,
-    color: colors.accent,
-    fontWeight: '600',
-  },
-  newDayIndicator: {
-    marginTop: 2,
-  },
-  newDayLabel: {
-    fontSize: 10,
   },
   symbolContainer: {
     height: 40,
@@ -424,35 +319,29 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginTop: 12,
-    borderWidth: 1,
-    borderColor: colors.accent + '30',
   },
   legendTitle: {
     fontSize: 12,
     fontWeight: '600',
     color: colors.text,
     fontFamily: 'Roboto_500Medium',
-    marginBottom: 8,
-  },
-  legendContent: {
-    gap: 4,
+    marginBottom: 4,
   },
   legendRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
-  },
-  legendLabel: {
-    fontSize: 11,
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    minWidth: 80,
   },
   legendText: {
     fontSize: 11,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
-    flex: 1,
+  },
+  legendSubtext: {
+    fontSize: 10,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    fontStyle: 'italic',
   },
   noDataText: {
     fontSize: 14,
