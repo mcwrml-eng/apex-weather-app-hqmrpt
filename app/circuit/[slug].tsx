@@ -31,15 +31,12 @@ function DetailScreen() {
   const { current, daily, hourly, alerts, loading, error, lastUpdated } = useWeather(circuit.latitude, circuit.longitude, unit);
 
   const settingsRef = useRef<BottomSheet>(null);
-  const scheduleRef = useRef<BottomSheet>(null);
   const chartsRef = useRef<BottomSheet>(null);
   const forecastRef = useRef<BottomSheet>(null);
   const settingsSnap = useMemo(() => ['32%', '60%'], []);
-  const scheduleSnap = useMemo(() => ['40%', '85%'], []);
   const chartsSnap = useMemo(() => ['50%', '90%'], []);
   const forecastSnap = useMemo(() => ['60%', '95%'], []);
   const openSettings = useCallback(() => settingsRef.current?.expand(), []);
-  const openSchedule = useCallback(() => scheduleRef.current?.expand(), []);
   const openCharts = useCallback(() => chartsRef.current?.expand(), []);
   const openForecast = useCallback(() => forecastRef.current?.expand(), []);
 
@@ -224,6 +221,88 @@ function DetailScreen() {
     return descriptions[code] || 'Unknown conditions';
   };
 
+  // Helper function to get session type styling
+  const getSessionTypeStyle = (sessionKey: string) => {
+    if (sessionKey.includes('race') || sessionKey === 'sprint') {
+      return { backgroundColor: colors.primary + '20', borderColor: colors.primary };
+    }
+    if (sessionKey.includes('qualifying') || sessionKey.includes('qual')) {
+      return { backgroundColor: colors.accent + '20', borderColor: colors.accent };
+    }
+    if (sessionKey.includes('practice') || sessionKey.includes('fp')) {
+      return { backgroundColor: colors.secondary + '20', borderColor: colors.secondary };
+    }
+    return { backgroundColor: colors.backgroundAlt, borderColor: colors.divider };
+  };
+
+  // Helper function to get session type icon
+  const getSessionIcon = (sessionKey: string) => {
+    if (sessionKey.includes('race') || sessionKey === 'sprint') {
+      return 'trophy';
+    }
+    if (sessionKey.includes('qualifying') || sessionKey.includes('qual')) {
+      return 'stopwatch';
+    }
+    if (sessionKey.includes('practice') || sessionKey.includes('fp')) {
+      return 'speedometer';
+    }
+    return 'time';
+  };
+
+  // Helper function to get session type color
+  const getSessionIconColor = (sessionKey: string) => {
+    if (sessionKey.includes('race') || sessionKey === 'sprint') {
+      return colors.primary;
+    }
+    if (sessionKey.includes('qualifying') || sessionKey.includes('qual')) {
+      return colors.accent;
+    }
+    if (sessionKey.includes('practice') || sessionKey.includes('fp')) {
+      return colors.secondary;
+    }
+    return colors.textMuted;
+  };
+
+  // Helper function to format date for display
+  const formatDateForDisplay = (dateStr: string): string => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr + 'T00:00:00');
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  // Helper function to get relative date
+  const getRelativeDate = (dateStr: string): string => {
+    if (!dateStr) return '';
+    const sessionDate = new Date(dateStr + 'T00:00:00');
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    // Reset time to compare dates only
+    today.setHours(0, 0, 0, 0);
+    tomorrow.setHours(0, 0, 0, 0);
+    yesterday.setHours(0, 0, 0, 0);
+    sessionDate.setHours(0, 0, 0, 0);
+
+    if (sessionDate.getTime() === today.getTime()) return 'Today';
+    if (sessionDate.getTime() === tomorrow.getTime()) return 'Tomorrow';
+    if (sessionDate.getTime() === yesterday.getTime()) return 'Yesterday';
+    
+    const diffTime = sessionDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays > 0 && diffDays <= 7) return `In ${diffDays} day${diffDays > 1 ? 's' : ''}`;
+    if (diffDays < 0 && diffDays >= -7) return `${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? 's' : ''} ago`;
+    
+    return formatDateForDisplay(dateStr);
+  };
+
   return (
     <View style={styles.wrapper}>
       <View style={styles.header}>
@@ -246,9 +325,6 @@ function DetailScreen() {
           </TouchableOpacity>
           <TouchableOpacity onPress={openCharts} style={styles.actionBtn} activeOpacity={0.8}>
             <Icon name="analytics-outline" size={22} color={colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={openSchedule} style={styles.actionBtn} activeOpacity={0.8}>
-            <Icon name="calendar-outline" size={22} color={colors.text} />
           </TouchableOpacity>
           <TouchableOpacity onPress={openSettings} style={styles.actionBtn} activeOpacity={0.8}>
             <Icon name="settings-outline" size={22} color={colors.text} />
@@ -275,29 +351,114 @@ function DetailScreen() {
           </View>
         )}
 
-        {/* 1. WEEKEND SCHEDULE - TOP PRIORITY */}
+        {/* 1. ENHANCED WEEKEND SCHEDULE - COMPREHENSIVE SINGLE TAB VIEW */}
         {daily && (
           <View style={styles.scheduleCard}>
             <View style={styles.scheduleHeader}>
-              <Icon name="calendar" size={20} color={colors.primary} />
-              <Text style={styles.scheduleTitle}>Weekend Schedule</Text>
-              <TouchableOpacity onPress={openSchedule} style={styles.viewScheduleBtn}>
-                <Text style={styles.viewScheduleText}>View All</Text>
-                <Icon name="chevron-forward" size={16} color={colors.primary} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.scheduleList}>
-              {schedule.slice(0, 4).map((s) => (
-                <View key={s.key} style={styles.sessionRow}>
-                  <View style={styles.sessionDot} />
-                  <View style={styles.sessionContent}>
-                    <Text style={styles.sessionTitle}>{s.title}</Text>
-                    <Text style={styles.sessionDetails}>
-                      {s.day} • {s.time}{s.date ? ` • ${new Date(s.date + 'T00:00:00').toLocaleDateString()}` : ''}
-                    </Text>
-                  </View>
+              <View style={styles.scheduleHeaderLeft}>
+                <Icon name="calendar" size={24} color={colors.primary} />
+                <View style={styles.scheduleHeaderText}>
+                  <Text style={styles.scheduleTitle}>Weekend Schedule</Text>
+                  <Text style={styles.scheduleSubtitle}>
+                    {category.toUpperCase()} • {schedule.length} sessions • Local times
+                  </Text>
                 </View>
-              ))}
+              </View>
+              <View style={styles.categoryBadge}>
+                <Text style={styles.categoryBadgeText}>{category.toUpperCase()}</Text>
+              </View>
+            </View>
+
+            {/* Enhanced Schedule List with Full Details */}
+            <View style={styles.enhancedScheduleList}>
+              {schedule.map((session, index) => {
+                const sessionStyle = getSessionTypeStyle(session.key);
+                const sessionIcon = getSessionIcon(session.key);
+                const sessionIconColor = getSessionIconColor(session.key);
+                const relativeDate = getRelativeDate(session.date || '');
+                const formattedDate = formatDateForDisplay(session.date || '');
+                
+                return (
+                  <View key={session.key} style={[styles.enhancedSessionRow, sessionStyle]}>
+                    <View style={styles.sessionIconContainer}>
+                      <Icon name={sessionIcon} size={20} color={sessionIconColor} />
+                    </View>
+                    
+                    <View style={styles.sessionMainContent}>
+                      <View style={styles.sessionTitleRow}>
+                        <Text style={styles.enhancedSessionTitle}>{session.title}</Text>
+                        <View style={styles.sessionTimeContainer}>
+                          <Icon name="time" size={14} color={colors.textMuted} />
+                          <Text style={styles.enhancedSessionTime}>{session.time}</Text>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.sessionDetailsRow}>
+                        <View style={styles.sessionDayContainer}>
+                          <Icon name="calendar-outline" size={12} color={colors.textMuted} />
+                          <Text style={styles.sessionDay}>{session.day}</Text>
+                        </View>
+                        
+                        {session.date && (
+                          <View style={styles.sessionDateContainer}>
+                            <Text style={styles.sessionRelativeDate}>{relativeDate}</Text>
+                            <Text style={styles.sessionFormattedDate}>({formattedDate})</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                    
+                    <View style={styles.sessionNumber}>
+                      <Text style={styles.sessionNumberText}>{index + 1}</Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+
+            {/* Schedule Summary */}
+            <View style={styles.scheduleSummary}>
+              <View style={styles.summaryItem}>
+                <Icon name="flag" size={16} color={colors.primary} />
+                <Text style={styles.summaryLabel}>Race Weekend</Text>
+                <Text style={styles.summaryValue}>
+                  {schedule.find(s => s.day === 'Fri')?.date ? 
+                    `${formatDateForDisplay(schedule.find(s => s.day === 'Fri')?.date || '')} - ${formatDateForDisplay(schedule.find(s => s.day === 'Sun')?.date || '')}` :
+                    'TBD'
+                  }
+                </Text>
+              </View>
+              
+              <View style={styles.summaryItem}>
+                <Icon name="location" size={16} color={colors.accent} />
+                <Text style={styles.summaryLabel}>Circuit</Text>
+                <Text style={styles.summaryValue}>{circuit.name}</Text>
+              </View>
+              
+              <View style={styles.summaryItem}>
+                <Icon name="globe" size={16} color={colors.secondary} />
+                <Text style={styles.summaryLabel}>Country</Text>
+                <Text style={styles.summaryValue}>{circuit.country}</Text>
+              </View>
+            </View>
+
+            {/* Session Type Legend */}
+            <View style={styles.sessionLegend}>
+              <Text style={styles.legendTitle}>Session Types</Text>
+              <View style={styles.legendItems}>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: colors.secondary }]} />
+                  <Text style={styles.legendText}>Practice</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: colors.accent }]} />
+                  <Text style={styles.legendText}>Qualifying</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
+                  <Text style={styles.legendText}>Race</Text>
+                </View>
+              </View>
             </View>
           </View>
         )}
@@ -370,8 +531,6 @@ function DetailScreen() {
             </View>
           </View>
         )}
-
-
 
         {/* 3. WEATHER FORECASTS AND CURRENT CONDITIONS */}
         
@@ -712,34 +871,6 @@ function DetailScreen() {
         </BottomSheetView>
       </BottomSheet>
 
-      {/* Schedule Bottom Sheet */}
-      <BottomSheet 
-        ref={scheduleRef} 
-        index={-1} 
-        snapPoints={scheduleSnap} 
-        enablePanDownToClose
-        backgroundStyle={styles.bottomSheetBackground}
-        handleIndicatorStyle={styles.bottomSheetHandle}
-      >
-        <BottomSheetView style={styles.sheet}>
-          <Text style={styles.sheetTitle}>Weekend Schedule</Text>
-          <View style={{ height: 8 }} />
-          {schedule.map((s) => (
-            <View key={s.key} style={styles.sessionItem}>
-              <View style={styles.sessionDotLarge} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.sessionTitle}>{s.title}</Text>
-                <Text style={styles.sessionSub}>
-                  {s.day} • {s.time}{s.date ? ` • ${new Date(s.date + 'T00:00:00').toLocaleDateString()}` : ''}
-                </Text>
-              </View>
-            </View>
-          ))}
-          <View style={{ height: 8 }} />
-          <Text style={styles.muted}>Local times. Subject to change.</Text>
-        </BottomSheetView>
-      </BottomSheet>
-
       {/* Enhanced Weather Charts Bottom Sheet */}
       <BottomSheet 
         ref={chartsRef} 
@@ -861,73 +992,228 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto_400Regular',
   },
 
-  // Weekend Schedule Styles - TOP PRIORITY
+  // Enhanced Weekend Schedule Styles - COMPREHENSIVE SINGLE TAB VIEW
   scheduleCard: {
     backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     borderWidth: 1,
     borderColor: colors.divider,
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
-    marginBottom: 16,
+    boxShadow: '0 8px 32px rgba(16,24,40,0.08)',
+    marginBottom: 20,
   },
   scheduleHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 20,
+  },
+  scheduleHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  scheduleHeaderText: {
+    flex: 1,
   },
   scheduleTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: colors.text,
     fontFamily: 'Roboto_700Bold',
-    marginLeft: 8,
+    marginBottom: 2,
+  },
+  scheduleSubtitle: {
+    fontSize: 13,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+  },
+  categoryBadge: {
+    backgroundColor: colors.primary + '20',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary + '40',
+  },
+  categoryBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary,
+    fontFamily: 'Roboto_700Bold',
+  },
+
+  // Enhanced Schedule List
+  enhancedScheduleList: {
+    gap: 16,
+    marginBottom: 24,
+  },
+  enhancedSessionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 14,
+    boxShadow: '0 4px 16px rgba(16,24,40,0.04)',
+  },
+  sessionIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  sessionMainContent: {
+    flex: 1,
+    gap: 8,
+  },
+  sessionTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  enhancedSessionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    fontFamily: 'Roboto_700Bold',
     flex: 1,
   },
-  viewScheduleBtn: {
+  sessionTimeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: colors.backgroundAlt,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: colors.background,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.divider,
   },
-  viewScheduleText: {
-    fontSize: 13,
-    color: colors.primary,
+  enhancedSessionTime: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
     fontFamily: 'Roboto_500Medium',
   },
-  scheduleList: {
+  sessionDetailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  sessionDayContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  sessionDay: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_500Medium',
+    fontWeight: '600',
+  },
+  sessionDateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  sessionRelativeDate: {
+    fontSize: 12,
+    color: colors.text,
+    fontFamily: 'Roboto_500Medium',
+    fontWeight: '600',
+  },
+  sessionFormattedDate: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+  },
+  sessionNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.backgroundAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  sessionNumberText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.text,
+    fontFamily: 'Roboto_700Bold',
+  },
+
+  // Schedule Summary
+  scheduleSummary: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: colors.divider,
     gap: 12,
   },
-  sessionRow: { 
-    flexDirection: 'row', 
-    alignItems: 'flex-start', 
-    gap: 12,
+  summaryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
-  sessionDot: { 
-    width: 8, 
-    height: 8, 
-    borderRadius: 4, 
-    backgroundColor: colors.primary,
-    marginTop: 6,
+  summaryLabel: {
+    fontSize: 13,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_500Medium',
+    fontWeight: '600',
+    minWidth: 60,
   },
-  sessionContent: {
+  summaryValue: {
+    fontSize: 13,
+    color: colors.text,
+    fontFamily: 'Roboto_400Regular',
     flex: 1,
   },
-  sessionTitle: { 
-    color: colors.text, 
-    fontFamily: 'Roboto_700Bold',
-    fontSize: 15,
-    marginBottom: 2,
+
+  // Session Type Legend
+  sessionLegend: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.divider,
   },
-  sessionDetails: { 
-    color: colors.textMuted, 
+  legendTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: 'Roboto_500Medium',
+    marginBottom: 12,
+  },
+  legendItems: {
+    flexDirection: 'row',
+    gap: 20,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendText: {
+    fontSize: 12,
+    color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
-    fontSize: 13,
   },
+
   // Sunrise & Sunset Times Styles
   sunTimesCard: {
     backgroundColor: colors.card,
