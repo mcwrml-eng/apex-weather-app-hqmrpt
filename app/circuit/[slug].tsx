@@ -221,45 +221,91 @@ function DetailScreen() {
     return descriptions[code] || 'Unknown conditions';
   };
 
-  // Helper function to get session type styling
+  // Helper function to get session type styling - ENHANCED FOR MOTOGP
   const getSessionTypeStyle = (sessionKey: string) => {
+    console.log('DetailScreen: Getting session type style for:', sessionKey);
+    
+    // Race sessions (highest priority)
     if (sessionKey.includes('race') || sessionKey === 'sprint') {
       return { backgroundColor: colors.primary + '20', borderColor: colors.primary };
     }
-    if (sessionKey.includes('qualifying') || sessionKey.includes('qual')) {
+    
+    // Qualifying sessions
+    if (sessionKey.includes('qualifying') || sessionKey.includes('qual') || 
+        sessionKey === 'q1' || sessionKey === 'q2' || sessionKey === 'sprint-qual') {
       return { backgroundColor: colors.accent + '20', borderColor: colors.accent };
     }
-    if (sessionKey.includes('practice') || sessionKey.includes('fp')) {
+    
+    // Practice sessions (F1: fp1, fp2, fp3; MotoGP: p1, p2, p3)
+    if (sessionKey.includes('practice') || sessionKey.includes('fp') || 
+        sessionKey === 'p1' || sessionKey === 'p2' || sessionKey === 'p3') {
       return { backgroundColor: colors.secondary + '20', borderColor: colors.secondary };
     }
+    
+    // MotoGP specific sessions
+    if (sessionKey === 'warmup') {
+      return { backgroundColor: colors.warning + '20', borderColor: colors.warning };
+    }
+    
+    // Default fallback
     return { backgroundColor: colors.backgroundAlt, borderColor: colors.divider };
   };
 
-  // Helper function to get session type icon
+  // Helper function to get session type icon - ENHANCED FOR MOTOGP
   const getSessionIcon = (sessionKey: string) => {
+    console.log('DetailScreen: Getting session icon for:', sessionKey);
+    
+    // Race sessions
     if (sessionKey.includes('race') || sessionKey === 'sprint') {
       return 'trophy';
     }
-    if (sessionKey.includes('qualifying') || sessionKey.includes('qual')) {
+    
+    // Qualifying sessions
+    if (sessionKey.includes('qualifying') || sessionKey.includes('qual') || 
+        sessionKey === 'q1' || sessionKey === 'q2' || sessionKey === 'sprint-qual') {
       return 'stopwatch';
     }
-    if (sessionKey.includes('practice') || sessionKey.includes('fp')) {
+    
+    // Practice sessions (F1: fp1, fp2, fp3; MotoGP: p1, p2, p3)
+    if (sessionKey.includes('practice') || sessionKey.includes('fp') || 
+        sessionKey === 'p1' || sessionKey === 'p2' || sessionKey === 'p3') {
       return 'speedometer';
     }
+    
+    // MotoGP specific sessions
+    if (sessionKey === 'warmup') {
+      return 'flame';
+    }
+    
     return 'time';
   };
 
-  // Helper function to get session type color
+  // Helper function to get session type color - ENHANCED FOR MOTOGP
   const getSessionIconColor = (sessionKey: string) => {
+    console.log('DetailScreen: Getting session icon color for:', sessionKey);
+    
+    // Race sessions
     if (sessionKey.includes('race') || sessionKey === 'sprint') {
       return colors.primary;
     }
-    if (sessionKey.includes('qualifying') || sessionKey.includes('qual')) {
+    
+    // Qualifying sessions
+    if (sessionKey.includes('qualifying') || sessionKey.includes('qual') || 
+        sessionKey === 'q1' || sessionKey === 'q2' || sessionKey === 'sprint-qual') {
       return colors.accent;
     }
-    if (sessionKey.includes('practice') || sessionKey.includes('fp')) {
+    
+    // Practice sessions (F1: fp1, fp2, fp3; MotoGP: p1, p2, p3)
+    if (sessionKey.includes('practice') || sessionKey.includes('fp') || 
+        sessionKey === 'p1' || sessionKey === 'p2' || sessionKey === 'p3') {
       return colors.secondary;
     }
+    
+    // MotoGP specific sessions
+    if (sessionKey === 'warmup') {
+      return colors.warning;
+    }
+    
     return colors.textMuted;
   };
 
@@ -442,7 +488,7 @@ function DetailScreen() {
               </View>
             </View>
 
-            {/* Session Type Legend */}
+            {/* Session Type Legend - ENHANCED FOR MOTOGP */}
             <View style={styles.sessionLegend}>
               <Text style={styles.legendTitle}>Session Types</Text>
               <View style={styles.legendItems}>
@@ -454,6 +500,12 @@ function DetailScreen() {
                   <View style={[styles.legendDot, { backgroundColor: colors.accent }]} />
                   <Text style={styles.legendText}>Qualifying</Text>
                 </View>
+                {category === 'motogp' && (
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: colors.warning }]} />
+                    <Text style={styles.legendText}>Warm Up</Text>
+                  </View>
+                )}
                 <View style={styles.legendItem}>
                   <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
                   <Text style={styles.legendText}>Race</Text>
@@ -1179,7 +1231,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Session Type Legend - CONDENSED
+  // Session Type Legend - CONDENSED & ENHANCED FOR MOTOGP
   sessionLegend: {
     backgroundColor: colors.backgroundAlt,
     borderRadius: 12,
@@ -1196,6 +1248,7 @@ const styles = StyleSheet.create({
   },
   legendItems: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 16, // Reduced from 20
   },
   legendItem: {
