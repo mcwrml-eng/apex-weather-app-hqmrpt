@@ -124,7 +124,7 @@ const motogpRaceDates: DateMap = {
   sachsenring: '2025-07-06',
   'silverstone-mgp': '2025-08-03',
   'red-bull-ring-mgp': '2025-08-17',
-  aragon: '2025-08-31',
+  barcelona: '2025-09-08',
   misano: '2025-09-07',
   sokol: '2025-09-21',
   mandalika: '2025-10-05',

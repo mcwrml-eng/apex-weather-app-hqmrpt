@@ -6,7 +6,6 @@ import { colors, buttonStyles } from '../../styles/commonStyles';
 import { getCircuitBySlug } from '../../data/circuits';
 import { useWeather } from '../../hooks/useWeather';
 import ChartDoughnut from '../../components/ChartDoughnut';
-import WindBarGraphs from '../../components/WindBarGraphs';
 import WindRadarGraph from '../../components/WindRadarGraph';
 import WeatherChart from '../../components/WeatherChart';
 import WeatherSymbol from '../../components/WeatherSymbol';
@@ -161,15 +160,7 @@ function DetailScreen() {
           />
         )}
 
-        {/* Wind Speed, Gusts and Direction Bar Graphs - Always show if we have data */}
-        {!loading && windData.length > 0 && (
-          <WindBarGraphs
-            hourlyData={windData}
-            unit={unit}
-          />
-        )}
-
-        {/* Wind Direction Radar Analysis - New radar chart visualization */}
+        {/* Wind Direction Radar Analysis - Replaced bar graph with radar chart visualization */}
         {!loading && windData.length > 0 && (
           <WindRadarGraph
             hourlyData={windData}
@@ -561,7 +552,7 @@ function DetailScreen() {
               </>
             )}
             
-            {/* Wind Direction Radar Analysis in Weather Analysis section */}
+            {/* Wind Direction Radar Analysis - Comprehensive radar chart visualization */}
             {windData.length > 0 && (
               <WindRadarGraph
                 hourlyData={windData}
@@ -571,7 +562,7 @@ function DetailScreen() {
             
             <View style={{ height: 20 }} />
             <Text style={styles.muted}>
-              72-hour enhanced forecast data with number scales for precise readings. Charts update every 10 minutes with detailed atmospheric conditions. Wind radar analysis shows directional patterns and frequency distribution.
+              72-hour enhanced forecast data with number scales for precise readings. Charts update every 10 minutes with detailed atmospheric conditions. Wind radar analysis provides comprehensive directional patterns, frequency distribution, and polar visualization for motorsport strategy.
             </Text>
           </ScrollView>
         </BottomSheetView>
