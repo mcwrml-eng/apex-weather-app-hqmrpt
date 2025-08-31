@@ -371,14 +371,7 @@ function DetailScreen() {
           </View>
         )}
 
-        {/* Debug info for sunrise/sunset times */}
-        {!loading && todaySunTimes && (
-          <View style={styles.debugInfo}>
-            <Text style={styles.debugText}>
-              Debug: Sunrise raw: {todaySunTimes.sunrise} | Sunset raw: {todaySunTimes.sunset} | Duration: {daylightDuration}
-            </Text>
-          </View>
-        )}
+
 
         {/* 3. WEATHER FORECASTS AND CURRENT CONDITIONS */}
         
@@ -867,20 +860,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
   },
-  // Debug info styles
-  debugInfo: {
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 8,
-    padding: 8,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  debugText: {
-    fontSize: 10,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-  },
+
   // Weekend Schedule Styles - TOP PRIORITY
   scheduleCard: {
     backgroundColor: colors.card,
