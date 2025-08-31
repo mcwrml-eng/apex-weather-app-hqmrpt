@@ -4,59 +4,11 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated } from '
 import { colors, commonStyles, spacing, borderRadius, shadows, layout } from '../../styles/commonStyles';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-
-interface RaceEvent {
-  id: string;
-  title: string;
-  circuit: string;
-  country: string;
-  date: string;
-  category: 'f1' | 'motogp';
-  status: 'upcoming' | 'live' | 'completed';
-}
-
-// Mock race events data
-const raceEvents: RaceEvent[] = [
-  {
-    id: '1',
-    title: 'Bahrain Grand Prix',
-    circuit: 'Bahrain International Circuit',
-    country: 'Bahrain',
-    date: '2025-03-15',
-    category: 'f1',
-    status: 'upcoming',
-  },
-  {
-    id: '2',
-    title: 'Qatar Grand Prix',
-    circuit: 'Losail International Circuit',
-    country: 'Qatar',
-    date: '2025-03-08',
-    category: 'motogp',
-    status: 'upcoming',
-  },
-  {
-    id: '3',
-    title: 'Australian Grand Prix',
-    circuit: 'Albert Park Circuit',
-    country: 'Australia',
-    date: '2025-03-22',
-    category: 'f1',
-    status: 'upcoming',
-  },
-  {
-    id: '4',
-    title: 'Portuguese Grand Prix',
-    circuit: 'Portimão Circuit',
-    country: 'Portugal',
-    date: '2025-03-29',
-    category: 'motogp',
-    status: 'upcoming',
-  },
-];
+import { getAllCalendarEvents, CalendarEvent } from '../../data/schedules';
+import { getCircuitBySlug } from '../../data/circuits';
 
 export default function CalendarScreen() {
-  console.log('CalendarScreen: Rendering enhanced calendar screen');
+  console.log('CalendarScreen: Rendering enhanced calendar screen with full race calendar');
   
   const headerOpacity = useMemo(() => new Animated.Value(0), []);
   const headerTranslateY = useMemo(() => new Animated.Value(-20), []);
@@ -78,9 +30,27 @@ export default function CalendarScreen() {
     ]).start();
   }, [headerOpacity, headerTranslateY]);
 
-  const filteredEvents = useMemo(() => {
-    if (selectedCategory === 'all') return raceEvents;
-    return raceEvents.filter(event => event.category === selectedCategory);
+  // Get all calendar events using the real schedule data
+  const allEvents = useMemo(() => {
+    console.log('CalendarScreen: Loading calendar events for category:', selectedCategory);
+    
+    const circuitLookup = (slug: string, category: 'f1' | 'motogp') => {
+      return getCircuitBySlug(slug, category);
+    };
+    
+    const events = getAllCalendarEvents(selectedCategory, circuitLookup);
+    console.log(`CalendarScreen: Loaded ${events.length} events`);
+    
+    // Filter to only show race events (Grand Prix) and sort by date
+    const raceEvents = events
+      .filter(event => event.key === 'race')
+      .sort((a, b) => {
+        if (!a.date || !b.date) return 0;
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      });
+    
+    console.log(`CalendarScreen: Filtered to ${raceEvents.length} race events`);
+    return raceEvents;
   }, [selectedCategory]);
 
   const getCategoryConfig = (category: 'f1' | 'motogp') => {
@@ -104,6 +74,33 @@ export default function CalendarScreen() {
       month: date.toLocaleDateString('en', { month: 'short' }),
       weekday: date.toLocaleDateString('en', { weekday: 'short' }),
     };
+  };
+
+  const getEventStatus = (dateString: string): 'upcoming' | 'live' | 'completed' => {
+    const eventDate = new Date(dateString);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+    
+    if (eventDay.getTime() === today.getTime()) {
+      return 'live';
+    } else if (eventDay < today) {
+      return 'completed';
+    } else {
+      return 'upcoming';
+    }
+  };
+
+  const getStatusColor = (status: 'upcoming' | 'live' | 'completed') => {
+    switch (status) {
+      case 'live':
+        return colors.accent;
+      case 'completed':
+        return colors.textMuted;
+      case 'upcoming':
+      default:
+        return colors.success || colors.accent;
+    }
   };
 
   return (
@@ -145,7 +142,7 @@ export default function CalendarScreen() {
                 styles.filterButtonText,
                 selectedCategory === 'all' && styles.filterButtonTextActive
               ]}>
-                All Races
+                All Races ({allEvents.length})
               </Text>
             </TouchableOpacity>
             
@@ -192,13 +189,17 @@ export default function CalendarScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.eventsContainer}>
-          {filteredEvents.map((event, index) => {
+          {allEvents.map((event, index) => {
+            if (!event.date) return null;
+            
             const categoryConfig = getCategoryConfig(event.category);
             const dateInfo = formatDate(event.date);
+            const status = getEventStatus(event.date);
+            const circuit = getCircuitBySlug(event.circuitSlug, event.category);
             
             return (
               <Animated.View
-                key={event.id}
+                key={`${event.circuitSlug}-${event.category}-${event.date}`}
                 style={{
                   opacity: headerOpacity,
                   transform: [{
@@ -241,18 +242,18 @@ export default function CalendarScreen() {
                     <View style={styles.eventMeta}>
                       <View style={styles.eventMetaItem}>
                         <Ionicons name="location" size={14} color={colors.textMuted} />
-                        <Text style={styles.eventMetaText}>{event.circuit}</Text>
+                        <Text style={styles.eventMetaText}>{circuit.name}</Text>
                       </View>
                       <View style={styles.eventMetaItem}>
                         <Ionicons name="flag" size={14} color={colors.textMuted} />
-                        <Text style={styles.eventMetaText}>{event.country}</Text>
+                        <Text style={styles.eventMetaText}>{circuit.country}</Text>
                       </View>
                     </View>
                   </View>
 
                   {/* Status indicator */}
                   <View style={styles.statusSection}>
-                    <View style={[styles.statusDot, { backgroundColor: colors.accent }]} />
+                    <View style={[styles.statusDot, { backgroundColor: getStatusColor(status) }]} />
                   </View>
                 </TouchableOpacity>
               </Animated.View>
