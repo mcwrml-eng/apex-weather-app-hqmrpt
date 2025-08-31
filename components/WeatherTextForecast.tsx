@@ -255,7 +255,7 @@ export default function WeatherTextForecast({ current, hourlyData, unit, circuit
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Icon name="document-text" size={22} color={colors.primary} />
-          <Text style={styles.title}>Written Weather Forecast</Text>
+          <Text style={styles.title}>Weather Forecast</Text>
         </View>
         <View style={styles.timestampContainer}>
           <Text style={styles.timestamp}>{currentDate}</Text>
