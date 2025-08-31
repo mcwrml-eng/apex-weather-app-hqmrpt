@@ -1,7 +1,16 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { WebView } from 'react-native-webview';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming, 
+  withRepeat,
+  withSequence,
+  interpolate,
+  Easing
+} from 'react-native-reanimated';
 import Icon from './Icon';
 import { colors } from '../styles/commonStyles';
 
@@ -17,15 +26,86 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [showRadar, setShowRadar] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [animationSpeed, setAnimationSpeed] = useState(1000); // milliseconds per frame
+  const [currentFrame, setCurrentFrame] = useState(0);
+  const [totalFrames, setTotalFrames] = useState(0);
   const webViewRef = useRef<WebView>(null);
+  
+  // Animation values
+  const pulseAnimation = useSharedValue(0);
+  const playButtonRotation = useSharedValue(0);
+  const progressAnimation = useSharedValue(0);
 
-  console.log('RainfallRadar: Rendering with props:', { latitude, longitude, circuitName, showRadar });
+  console.log('RainfallRadar: Rendering with props:', { 
+    latitude, 
+    longitude, 
+    circuitName, 
+    showRadar, 
+    isAnimating,
+    currentFrame,
+    totalFrames 
+  });
 
-  // Generate HTML content for the radar map
+  // Start pulse animation for loading state
+  useEffect(() => {
+    if (isLoading) {
+      pulseAnimation.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0, { duration: 1000, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        false
+      );
+    }
+  }, [isLoading]);
+
+  // Animate play button rotation
+  useEffect(() => {
+    playButtonRotation.value = withTiming(isAnimating ? 1 : 0, {
+      duration: 300,
+      easing: Easing.inOut(Easing.ease)
+    });
+  }, [isAnimating]);
+
+  // Update progress animation when frame changes
+  useEffect(() => {
+    if (totalFrames > 0) {
+      progressAnimation.value = withTiming(currentFrame / (totalFrames - 1), {
+        duration: 200,
+        easing: Easing.out(Easing.ease)
+      });
+    }
+  }, [currentFrame, totalFrames]);
+
+  const pulseStyle = useAnimatedStyle(() => {
+    return {
+      opacity: interpolate(pulseAnimation.value, [0, 1], [0.5, 1]),
+      transform: [
+        { scale: interpolate(pulseAnimation.value, [0, 1], [0.95, 1.05]) }
+      ]
+    };
+  });
+
+  const playButtonStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { rotate: `${interpolate(playButtonRotation.value, [0, 1], [0, 360])}deg` }
+      ]
+    };
+  });
+
+  const progressStyle = useAnimatedStyle(() => {
+    return {
+      width: `${interpolate(progressAnimation.value, [0, 1], [0, 100])}%`
+    };
+  });
+
+  // Generate HTML content for the radar map with animation support
   const generateRadarHTML = () => {
-    console.log('RainfallRadar: Generating HTML for radar');
+    console.log('RainfallRadar: Generating HTML for radar with animation support');
     
-    // Escape the circuit name to prevent HTML injection
     const safeCircuitName = circuitName.replace(/[<>"'&]/g, '');
     
     return `
@@ -56,6 +136,7 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
             background: rgba(0, 0, 0, 0.8);
             border-radius: 8px;
             padding: 8px;
+            backdrop-filter: blur(10px);
         }
         .radar-toggle {
             background: ${colors.primary};
@@ -67,16 +148,72 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
             cursor: pointer;
             margin-bottom: 4px;
             width: 100%;
+            transition: all 0.2s ease;
         }
         .radar-toggle:hover {
             opacity: 0.8;
+            transform: scale(0.98);
         }
         .radar-toggle.active {
+            background: ${colors.accent};
+            box-shadow: 0 0 10px rgba(0, 122, 255, 0.3);
+        }
+        .animation-controls {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+        }
+        .animation-btn {
+            background: ${colors.secondary};
+            color: white;
+            border: none;
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            flex: 1;
+            transition: all 0.2s ease;
+        }
+        .animation-btn:hover {
+            opacity: 0.8;
+        }
+        .animation-btn.active {
             background: ${colors.accent};
         }
         .time-slider {
             width: 100%;
             margin-top: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            outline: none;
+        }
+        .time-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: ${colors.primary};
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .time-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: ${colors.primary};
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .frame-info {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+            margin-top: 4px;
         }
         .legend {
             position: absolute;
@@ -88,6 +225,8 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
             padding: 8px;
             font-size: 11px;
             color: white;
+            backdrop-filter: blur(10px);
+            transition: opacity 0.3s ease;
         }
         .legend-title {
             font-weight: bold;
@@ -115,6 +254,7 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
             padding: 16px;
             border-radius: 8px;
             text-align: center;
+            backdrop-filter: blur(10px);
         }
         .error-message {
             position: absolute;
@@ -127,6 +267,10 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
             padding: 16px;
             border-radius: 8px;
             text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        .radar-layer {
+            transition: opacity 0.3s ease;
         }
     </style>
 </head>
@@ -146,7 +290,15 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
     <div class="radar-controls">
         <button id="radarToggle" class="radar-toggle">Show Radar</button>
         <button id="satelliteToggle" class="radar-toggle">Satellite</button>
+        
+        <div class="animation-controls" id="animationControls" style="display: none;">
+            <button id="playPauseBtn" class="animation-btn">▶</button>
+            <button id="speedBtn" class="animation-btn">1x</button>
+            <button id="loopBtn" class="animation-btn">Loop</button>
+        </div>
+        
         <input type="range" id="timeSlider" class="time-slider" min="0" max="11" value="11" style="display: none;">
+        <div id="frameInfo" class="frame-info" style="display: none;">Frame 1 of 12</div>
     </div>
     
     <div class="legend" id="legend" style="display: none;">
@@ -175,7 +327,7 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        console.log('RainfallRadar: Starting map initialization');
+        console.log('RainfallRadar: Starting map initialization with animation support');
         
         let map;
         let radarLayer = null;
@@ -183,6 +335,20 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
         let currentFrame = 0;
         let isRadarVisible = false;
         let isSatelliteView = false;
+        let isAnimating = false;
+        let animationInterval = null;
+        let animationSpeed = 1000; // milliseconds
+        let isLooping = true;
+        let animationDirection = 1; // 1 for forward, -1 for backward
+        
+        // Animation speeds
+        const speeds = [
+            { label: '0.5x', value: 2000 },
+            { label: '1x', value: 1000 },
+            { label: '2x', value: 500 },
+            { label: '4x', value: 250 }
+        ];
+        let currentSpeedIndex = 1;
         
         // Error handling wrapper
         function safeExecute(fn, errorMessage) {
@@ -210,12 +376,22 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
             if (error) error.style.display = 'none';
         }
         
+        // Send messages to React Native
+        function sendMessage(data) {
+            try {
+                if (window.ReactNativeWebView) {
+                    window.ReactNativeWebView.postMessage(JSON.stringify(data));
+                }
+            } catch (error) {
+                console.error('Failed to send message to React Native:', error);
+            }
+        }
+        
         // Initialize map with error handling
         function initMap() {
             console.log('RainfallRadar: Initializing map');
             
             safeExecute(() => {
-                // Validate coordinates
                 const lat = parseFloat(${latitude});
                 const lng = parseFloat(${longitude});
                 
@@ -260,10 +436,16 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
                 const radarToggle = document.getElementById('radarToggle');
                 const satelliteToggle = document.getElementById('satelliteToggle');
                 const timeSlider = document.getElementById('timeSlider');
+                const playPauseBtn = document.getElementById('playPauseBtn');
+                const speedBtn = document.getElementById('speedBtn');
+                const loopBtn = document.getElementById('loopBtn');
                 
                 if (radarToggle) radarToggle.addEventListener('click', toggleRadar);
                 if (satelliteToggle) satelliteToggle.addEventListener('click', toggleSatellite);
                 if (timeSlider) timeSlider.addEventListener('input', updateRadarFrame);
+                if (playPauseBtn) playPauseBtn.addEventListener('click', toggleAnimation);
+                if (speedBtn) speedBtn.addEventListener('click', cycleSpeed);
+                if (loopBtn) loopBtn.addEventListener('click', toggleLoop);
                 
                 // Load radar data
                 loadRadarData();
@@ -325,7 +507,7 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
             
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
                 
                 const response = await fetch('https://api.rainviewer.com/public/weather-maps.json', {
                     signal: controller.signal,
@@ -347,12 +529,20 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
                     console.log('RainfallRadar: Loaded radar frames:', radarData.length);
                     
                     if (radarData.length > 0) {
-                        currentFrame = radarData.length - 1; // Start with latest frame
+                        currentFrame = radarData.length - 1;
                         const slider = document.getElementById('timeSlider');
                         if (slider) {
                             slider.max = radarData.length - 1;
                             slider.value = currentFrame;
                         }
+                        updateFrameInfo();
+                        
+                        // Send frame count to React Native
+                        sendMessage({
+                            type: 'framesLoaded',
+                            totalFrames: radarData.length,
+                            currentFrame: currentFrame
+                        });
                     }
                 } else {
                     console.warn('RainfallRadar: No radar data available');
@@ -362,7 +552,6 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
                 if (error.name === 'AbortError') {
                     console.error('RainfallRadar: Request timed out');
                 }
-                // Don't show error for radar data loading failure, just log it
             }
         }
         
@@ -371,9 +560,12 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
                 const button = document.getElementById('radarToggle');
                 const legend = document.getElementById('legend');
                 const slider = document.getElementById('timeSlider');
+                const animationControls = document.getElementById('animationControls');
+                const frameInfo = document.getElementById('frameInfo');
                 
                 if (isRadarVisible) {
                     // Hide radar
+                    stopAnimation();
                     if (radarLayer && map) {
                         map.removeLayer(radarLayer);
                         radarLayer = null;
@@ -384,6 +576,8 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
                     }
                     if (legend) legend.style.display = 'none';
                     if (slider) slider.style.display = 'none';
+                    if (animationControls) animationControls.style.display = 'none';
+                    if (frameInfo) frameInfo.style.display = 'none';
                     isRadarVisible = false;
                 } else {
                     // Show radar
@@ -395,7 +589,10 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
                         }
                         if (legend) legend.style.display = 'block';
                         if (slider) slider.style.display = 'block';
+                        if (animationControls) animationControls.style.display = 'flex';
+                        if (frameInfo) frameInfo.style.display = 'block';
                         isRadarVisible = true;
+                        updateFrameInfo();
                     } else {
                         console.warn('RainfallRadar: No radar data available to show');
                     }
@@ -423,13 +620,26 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
                 radarLayer = L.tileLayer(radarUrl, {
                     opacity: 0.6,
                     attribution: 'Radar data © RainViewer',
+                    className: 'radar-layer',
                     errorTileUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgZmlsbD0idHJhbnNwYXJlbnQiLz48L3N2Zz4='
                 });
                 
                 radarLayer.addTo(map);
                 currentFrame = frameIndex;
                 
-                // Update time display
+                // Update slider
+                const slider = document.getElementById('timeSlider');
+                if (slider) slider.value = frameIndex;
+                
+                updateFrameInfo();
+                
+                // Send frame update to React Native
+                sendMessage({
+                    type: 'frameChanged',
+                    currentFrame: frameIndex,
+                    totalFrames: radarData.length
+                });
+                
                 const frameTime = new Date(frame.time * 1000);
                 console.log('RainfallRadar: Showing radar frame for:', frameTime.toLocaleString());
                 
@@ -443,6 +653,121 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
                     showRadarFrame(frameIndex);
                 }
             }, 'Failed to update radar frame');
+        }
+        
+        function updateFrameInfo() {
+            const frameInfo = document.getElementById('frameInfo');
+            if (frameInfo && radarData.length > 0) {
+                const frameTime = new Date(radarData[currentFrame].time * 1000);
+                const timeStr = frameTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                frameInfo.textContent = \`Frame \${currentFrame + 1} of \${radarData.length} - \${timeStr}\`;
+            }
+        }
+        
+        function toggleAnimation() {
+            safeExecute(() => {
+                if (isAnimating) {
+                    stopAnimation();
+                } else {
+                    startAnimation();
+                }
+            }, 'Failed to toggle animation');
+        }
+        
+        function startAnimation() {
+            if (radarData.length <= 1) return;
+            
+            isAnimating = true;
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            if (playPauseBtn) {
+                playPauseBtn.textContent = '⏸';
+                playPauseBtn.classList.add('active');
+            }
+            
+            animationInterval = setInterval(() => {
+                let nextFrame = currentFrame + animationDirection;
+                
+                if (nextFrame >= radarData.length) {
+                    if (isLooping) {
+                        nextFrame = 0;
+                    } else {
+                        animationDirection = -1;
+                        nextFrame = radarData.length - 2;
+                    }
+                } else if (nextFrame < 0) {
+                    if (isLooping) {
+                        nextFrame = radarData.length - 1;
+                    } else {
+                        animationDirection = 1;
+                        nextFrame = 1;
+                    }
+                }
+                
+                showRadarFrame(nextFrame);
+            }, animationSpeed);
+            
+            // Send animation state to React Native
+            sendMessage({
+                type: 'animationStarted',
+                speed: animationSpeed
+            });
+            
+            console.log('RainfallRadar: Animation started');
+        }
+        
+        function stopAnimation() {
+            isAnimating = false;
+            if (animationInterval) {
+                clearInterval(animationInterval);
+                animationInterval = null;
+            }
+            
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            if (playPauseBtn) {
+                playPauseBtn.textContent = '▶';
+                playPauseBtn.classList.remove('active');
+            }
+            
+            // Send animation state to React Native
+            sendMessage({
+                type: 'animationStopped'
+            });
+            
+            console.log('RainfallRadar: Animation stopped');
+        }
+        
+        function cycleSpeed() {
+            currentSpeedIndex = (currentSpeedIndex + 1) % speeds.length;
+            animationSpeed = speeds[currentSpeedIndex].value;
+            
+            const speedBtn = document.getElementById('speedBtn');
+            if (speedBtn) {
+                speedBtn.textContent = speeds[currentSpeedIndex].label;
+            }
+            
+            // Restart animation with new speed if currently animating
+            if (isAnimating) {
+                stopAnimation();
+                startAnimation();
+            }
+            
+            console.log('RainfallRadar: Speed changed to', speeds[currentSpeedIndex].label);
+        }
+        
+        function toggleLoop() {
+            isLooping = !isLooping;
+            const loopBtn = document.getElementById('loopBtn');
+            if (loopBtn) {
+                if (isLooping) {
+                    loopBtn.classList.add('active');
+                    loopBtn.textContent = 'Loop ✓';
+                } else {
+                    loopBtn.classList.remove('active');
+                    loopBtn.textContent = 'Loop';
+                }
+            }
+            
+            console.log('RainfallRadar: Loop mode', isLooping ? 'enabled' : 'disabled');
         }
         
         // Initialize when page loads
@@ -488,9 +813,25 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
       const message = JSON.parse(event.nativeEvent.data);
       console.log('RainfallRadar: Received message from WebView:', message);
       
-      if (message.type === 'error') {
-        console.error('RainfallRadar: Error from WebView:', message.error);
-        setHasError(true);
+      switch (message.type) {
+        case 'error':
+          console.error('RainfallRadar: Error from WebView:', message.error);
+          setHasError(true);
+          break;
+        case 'framesLoaded':
+          setTotalFrames(message.totalFrames);
+          setCurrentFrame(message.currentFrame);
+          break;
+        case 'frameChanged':
+          setCurrentFrame(message.currentFrame);
+          break;
+        case 'animationStarted':
+          setIsAnimating(true);
+          setAnimationSpeed(message.speed);
+          break;
+        case 'animationStopped':
+          setIsAnimating(false);
+          break;
       }
     } catch (error) {
       console.log('RainfallRadar: Non-JSON message from WebView:', event.nativeEvent.data);
@@ -512,6 +853,18 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
       webViewRef.current.reload();
       setIsLoading(true);
       setHasError(false);
+      setIsAnimating(false);
+      setCurrentFrame(0);
+      setTotalFrames(0);
+    }
+  };
+
+  const toggleAnimation = () => {
+    console.log('RainfallRadar: Toggling animation from React Native');
+    if (webViewRef.current) {
+      webViewRef.current.postMessage(JSON.stringify({
+        type: 'toggleAnimation'
+      }));
     }
   };
 
@@ -550,15 +903,18 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
         </View>
         
         <View style={styles.previewContainer}>
-          <Icon name="cloud-outline" size={48} color={colors.textMuted} />
-          <Text style={styles.previewTitle}>Live Rainfall Radar</Text>
+          <Animated.View style={[styles.previewIcon, pulseStyle]}>
+            <Icon name="cloud-outline" size={48} color={colors.textMuted} />
+          </Animated.View>
+          <Text style={styles.previewTitle}>Animated Rainfall Radar</Text>
           <Text style={styles.previewDescription}>
-            View real-time precipitation data and forecasts for {circuitName}
+            View real-time precipitation data and animated forecasts for {circuitName}
           </Text>
           <Text style={styles.previewFeatures}>
-            • Live radar imagery{'\n'}
+            • Live radar animation{'\n'}
             • 12-hour historical data{'\n'}
-            • Precipitation intensity levels{'\n'}
+            • Adjustable playback speed{'\n'}
+            • Loop and timeline controls{'\n'}
             • Satellite view option
           </Text>
         </View>
@@ -575,6 +931,17 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
           <Text style={styles.subtitle}>{circuitName}</Text>
         </View>
         <View style={styles.controls}>
+          {totalFrames > 1 && (
+            <TouchableOpacity onPress={toggleAnimation} style={styles.animationButton}>
+              <Animated.View style={playButtonStyle}>
+                <Icon 
+                  name={isAnimating ? "pause" : "play"} 
+                  size={16} 
+                  color="#fff" 
+                />
+              </Animated.View>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity onPress={refreshRadar} style={styles.controlButton}>
             <Icon name="refresh" size={16} color={colors.text} />
           </TouchableOpacity>
@@ -584,12 +951,26 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
         </View>
       </View>
 
+      {totalFrames > 1 && (
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <Animated.View style={[styles.progressFill, progressStyle]} />
+          </View>
+          <Text style={styles.progressText}>
+            Frame {currentFrame + 1} of {totalFrames}
+            {isAnimating && (
+              <Text style={styles.animatingText}> • Animating</Text>
+            )}
+          </Text>
+        </View>
+      )}
+
       {isLoading && (
-        <View style={styles.loadingContainer}>
+        <Animated.View style={[styles.loadingContainer, pulseStyle]}>
           <Icon name="cloud-download" size={32} color={colors.textMuted} />
           <Text style={styles.loadingText}>Loading radar data...</Text>
           <Text style={styles.loadingSubtext}>Powered by RainViewer</Text>
-        </View>
+        </Animated.View>
       )}
 
       {hasError && (
@@ -630,6 +1011,7 @@ const RainfallRadar: React.FC<Props> = ({ latitude, longitude, circuitName }) =>
       <View style={styles.footer}>
         <Text style={styles.footerText}>
           Real-time radar data • Updates every 10 minutes
+          {isAnimating && ` • Speed: ${animationSpeed}ms/frame`}
         </Text>
         <Text style={styles.attribution}>
           Powered by RainViewer & OpenStreetMap
@@ -682,6 +1064,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: colors.backgroundAlt,
   },
+  animationButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: colors.primary,
+  },
   toggleButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -696,15 +1083,44 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
+  progressContainer: {
+    padding: 16,
+    paddingTop: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: 2,
+  },
+  progressText: {
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  animatingText: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
   previewContainer: {
     alignItems: 'center',
     padding: 32,
+  },
+  previewIcon: {
+    marginBottom: 12,
   },
   previewTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: colors.text,
-    marginTop: 12,
     marginBottom: 8,
   },
   previewDescription: {
