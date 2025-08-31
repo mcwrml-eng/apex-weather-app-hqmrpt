@@ -74,50 +74,127 @@ function DetailScreen() {
   // Get today's sunrise and sunset times
   const todaySunTimes = useMemo(() => {
     if (!daily?.days || daily.days.length === 0) return null;
+    console.log('DetailScreen: Today sun times raw data:', daily.days[0]);
     return {
       sunrise: daily.days[0].sunrise,
       sunset: daily.days[0].sunset,
     };
   }, [daily]);
 
-  // Calculate daylight duration
+  // Enhanced time parsing function
+  const parseTimeString = useCallback((timeStr: string): number => {
+    console.log('DetailScreen: Parsing time string:', timeStr);
+    
+    if (!timeStr) {
+      console.log('DetailScreen: Empty time string, returning 0');
+      return 0;
+    }
+
+    // Handle different time formats
+    let cleanTimeStr = timeStr.trim();
+    
+    // If it's an ISO datetime string, extract just the time part
+    if (cleanTimeStr.includes('T')) {
+      const timePart = cleanTimeStr.split('T')[1];
+      if (timePart) {
+        cleanTimeStr = timePart.split('.')[0]; // Remove milliseconds if present
+        cleanTimeStr = cleanTimeStr.split('+')[0]; // Remove timezone if present
+        cleanTimeStr = cleanTimeStr.split('Z')[0]; // Remove Z if present
+      }
+    }
+    
+    // Now parse HH:MM or HH:MM:SS format
+    const timeParts = cleanTimeStr.split(':');
+    if (timeParts.length >= 2) {
+      const hours = parseInt(timeParts[0], 10) || 0;
+      const minutes = parseInt(timeParts[1], 10) || 0;
+      const totalMinutes = hours * 60 + minutes;
+      console.log('DetailScreen: Parsed time', cleanTimeStr, 'to', totalMinutes, 'minutes');
+      return totalMinutes;
+    }
+    
+    console.log('DetailScreen: Could not parse time string:', timeStr);
+    return 0;
+  }, []);
+
+  // Calculate daylight duration with enhanced error handling
   const daylightDuration = useMemo(() => {
-    if (!todaySunTimes) return null;
+    if (!todaySunTimes) {
+      console.log('DetailScreen: No sun times available for daylight calculation');
+      return null;
+    }
     
-    const parseTime = (timeStr: string) => {
-      const [hours, minutes] = timeStr.split(':').map(Number);
-      return hours * 60 + minutes;
-    };
+    console.log('DetailScreen: Calculating daylight duration with sunrise:', todaySunTimes.sunrise, 'sunset:', todaySunTimes.sunset);
     
-    const sunriseMinutes = parseTime(todaySunTimes.sunrise);
-    const sunsetMinutes = parseTime(todaySunTimes.sunset);
-    const durationMinutes = sunsetMinutes - sunriseMinutes;
+    const sunriseMinutes = parseTimeString(todaySunTimes.sunrise);
+    const sunsetMinutes = parseTimeString(todaySunTimes.sunset);
+    
+    if (sunriseMinutes === 0 && sunsetMinutes === 0) {
+      console.log('DetailScreen: Both sunrise and sunset parsed to 0, returning null');
+      return null;
+    }
+    
+    let durationMinutes = sunsetMinutes - sunriseMinutes;
+    
+    // Handle case where sunset is next day (rare but possible in polar regions)
+    if (durationMinutes < 0) {
+      durationMinutes += 24 * 60; // Add 24 hours
+    }
+    
+    // Sanity check - daylight should be between 0 and 24 hours
+    if (durationMinutes < 0 || durationMinutes > 24 * 60) {
+      console.log('DetailScreen: Invalid daylight duration calculated:', durationMinutes, 'minutes');
+      return null;
+    }
     
     const hours = Math.floor(durationMinutes / 60);
     const minutes = durationMinutes % 60;
     
-    return `${hours}h ${minutes}m`;
-  }, [todaySunTimes]);
+    const result = `${hours}h ${minutes}m`;
+    console.log('DetailScreen: Calculated daylight duration:', result);
+    return result;
+  }, [todaySunTimes, parseTimeString]);
 
-  // Get current time status (day/night)
+  // Get current time status (day/night) with enhanced parsing
   const currentTimeStatus = useMemo(() => {
     if (!todaySunTimes) return 'unknown';
     
     const now = new Date();
     const currentTime = now.getHours() * 60 + now.getMinutes();
     
-    const parseTime = (timeStr: string) => {
-      const [hours, minutes] = timeStr.split(':').map(Number);
-      return hours * 60 + minutes;
-    };
+    const sunriseMinutes = parseTimeString(todaySunTimes.sunrise);
+    const sunsetMinutes = parseTimeString(todaySunTimes.sunset);
     
-    const sunriseMinutes = parseTime(todaySunTimes.sunrise);
-    const sunsetMinutes = parseTime(todaySunTimes.sunset);
+    if (sunriseMinutes === 0 && sunsetMinutes === 0) return 'unknown';
     
     if (currentTime < sunriseMinutes) return 'night';
     if (currentTime > sunsetMinutes) return 'night';
     return 'day';
-  }, [todaySunTimes]);
+  }, [todaySunTimes, parseTimeString]);
+
+  // Format time for display
+  const formatTimeForDisplay = useCallback((timeStr: string): string => {
+    if (!timeStr) return '--:--';
+    
+    // If it's an ISO datetime string, extract just the time part
+    let cleanTimeStr = timeStr.trim();
+    if (cleanTimeStr.includes('T')) {
+      const timePart = cleanTimeStr.split('T')[1];
+      if (timePart) {
+        cleanTimeStr = timePart.split('.')[0]; // Remove milliseconds if present
+        cleanTimeStr = cleanTimeStr.split('+')[0]; // Remove timezone if present
+        cleanTimeStr = cleanTimeStr.split('Z')[0]; // Remove Z if present
+      }
+    }
+    
+    // Extract HH:MM from HH:MM:SS if needed
+    const timeParts = cleanTimeStr.split(':');
+    if (timeParts.length >= 2) {
+      return `${timeParts[0]}:${timeParts[1]}`;
+    }
+    
+    return timeStr; // Return original if we can't parse it
+  }, []);
 
   // Get weather condition description
   const getWeatherDescription = (code: number): string => {
@@ -237,7 +314,7 @@ function DetailScreen() {
                 <Text style={[styles.timeStatusText, { 
                   color: currentTimeStatus === 'day' ? colors.warning : colors.primary 
                 }]}>
-                  {currentTimeStatus === 'day' ? 'Daylight' : 'Night'}
+                  {currentTimeStatus === 'day' ? 'Daylight' : currentTimeStatus === 'night' ? 'Night' : 'Unknown'}
                 </Text>
               </View>
             </View>
@@ -248,7 +325,7 @@ function DetailScreen() {
                   <Icon name="arrow-up" size={16} color={colors.warning} />
                 </View>
                 <Text style={styles.sunTimeLabel}>Sunrise</Text>
-                <Text style={styles.sunTimeValue}>{todaySunTimes.sunrise}</Text>
+                <Text style={styles.sunTimeValue}>{formatTimeForDisplay(todaySunTimes.sunrise)}</Text>
               </View>
               
               <View style={styles.sunTimeItem}>
@@ -256,7 +333,7 @@ function DetailScreen() {
                   <Icon name="arrow-down" size={16} color={colors.primary} />
                 </View>
                 <Text style={styles.sunTimeLabel}>Sunset</Text>
-                <Text style={styles.sunTimeValue}>{todaySunTimes.sunset}</Text>
+                <Text style={styles.sunTimeValue}>{formatTimeForDisplay(todaySunTimes.sunset)}</Text>
               </View>
               
               <View style={styles.sunTimeItem}>
@@ -264,7 +341,7 @@ function DetailScreen() {
                   <Icon name="time" size={16} color={colors.text} />
                 </View>
                 <Text style={styles.sunTimeLabel}>Daylight</Text>
-                <Text style={styles.sunTimeValue}>{daylightDuration}</Text>
+                <Text style={styles.sunTimeValue}>{daylightDuration || '--h --m'}</Text>
               </View>
             </View>
 
@@ -280,17 +357,26 @@ function DetailScreen() {
                     <View style={styles.weeklySunTimeValues}>
                       <View style={styles.weeklySunTimeRow}>
                         <Icon name="arrow-up" size={12} color={colors.warning} />
-                        <Text style={styles.weeklySunTimeText}>{day.sunrise}</Text>
+                        <Text style={styles.weeklySunTimeText}>{formatTimeForDisplay(day.sunrise)}</Text>
                       </View>
                       <View style={styles.weeklySunTimeRow}>
                         <Icon name="arrow-down" size={12} color={colors.primary} />
-                        <Text style={styles.weeklySunTimeText}>{day.sunset}</Text>
+                        <Text style={styles.weeklySunTimeText}>{formatTimeForDisplay(day.sunset)}</Text>
                       </View>
                     </View>
                   </View>
                 ))}
               </ScrollView>
             </View>
+          </View>
+        )}
+
+        {/* Debug info for sunrise/sunset times */}
+        {!loading && todaySunTimes && (
+          <View style={styles.debugInfo}>
+            <Text style={styles.debugText}>
+              Debug: Sunrise raw: {todaySunTimes.sunrise} | Sunset raw: {todaySunTimes.sunset} | Duration: {daylightDuration}
+            </Text>
           </View>
         )}
 
@@ -461,7 +547,7 @@ function DetailScreen() {
                     {/* Show sunrise/sunset times in daily forecast */}
                     <View style={styles.daySunTimes}>
                       <Text style={styles.daySunTime}>
-                        ↑{d.sunrise} ↓{d.sunset}
+                        ↑{formatTimeForDisplay(d.sunrise)} ↓{formatTimeForDisplay(d.sunset)}
                       </Text>
                     </View>
                   </View>
@@ -778,6 +864,20 @@ const styles = StyleSheet.create({
   },
   updateText: {
     fontSize: 12,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+  },
+  // Debug info styles
+  debugInfo: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  debugText: {
+    fontSize: 10,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
   },
