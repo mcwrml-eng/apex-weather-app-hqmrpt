@@ -71,6 +71,54 @@ function DetailScreen() {
     return hourly.slice(0, 72);
   }, [hourly]);
 
+  // Get today's sunrise and sunset times
+  const todaySunTimes = useMemo(() => {
+    if (!daily?.days || daily.days.length === 0) return null;
+    return {
+      sunrise: daily.days[0].sunrise,
+      sunset: daily.days[0].sunset,
+    };
+  }, [daily]);
+
+  // Calculate daylight duration
+  const daylightDuration = useMemo(() => {
+    if (!todaySunTimes) return null;
+    
+    const parseTime = (timeStr: string) => {
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      return hours * 60 + minutes;
+    };
+    
+    const sunriseMinutes = parseTime(todaySunTimes.sunrise);
+    const sunsetMinutes = parseTime(todaySunTimes.sunset);
+    const durationMinutes = sunsetMinutes - sunriseMinutes;
+    
+    const hours = Math.floor(durationMinutes / 60);
+    const minutes = durationMinutes % 60;
+    
+    return `${hours}h ${minutes}m`;
+  }, [todaySunTimes]);
+
+  // Get current time status (day/night)
+  const currentTimeStatus = useMemo(() => {
+    if (!todaySunTimes) return 'unknown';
+    
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    
+    const parseTime = (timeStr: string) => {
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      return hours * 60 + minutes;
+    };
+    
+    const sunriseMinutes = parseTime(todaySunTimes.sunrise);
+    const sunsetMinutes = parseTime(todaySunTimes.sunset);
+    
+    if (currentTime < sunriseMinutes) return 'night';
+    if (currentTime > sunsetMinutes) return 'night';
+    return 'day';
+  }, [todaySunTimes]);
+
   // Get weather condition description
   const getWeatherDescription = (code: number): string => {
     const descriptions: { [key: number]: string } = {
@@ -147,6 +195,75 @@ function DetailScreen() {
             <Text style={styles.updateText}>
               Updated {lastUpdated.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
             </Text>
+          </View>
+        )}
+
+        {/* NEW: Sunrise & Sunset Times Section */}
+        {!loading && todaySunTimes && (
+          <View style={styles.sunTimesCard}>
+            <View style={styles.sunTimesHeader}>
+              <Icon name="sunny" size={20} color={colors.warning} />
+              <Text style={styles.sunTimesTitle}>Sunrise & Sunset</Text>
+              <View style={[styles.timeStatusBadge, { 
+                backgroundColor: currentTimeStatus === 'day' ? colors.warning + '20' : colors.primary + '20' 
+              }]}>
+                <Text style={[styles.timeStatusText, { 
+                  color: currentTimeStatus === 'day' ? colors.warning : colors.primary 
+                }]}>
+                  {currentTimeStatus === 'day' ? 'Daylight' : 'Night'}
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.sunTimesGrid}>
+              <View style={styles.sunTimeItem}>
+                <View style={styles.sunTimeIconContainer}>
+                  <Icon name="arrow-up" size={16} color={colors.warning} />
+                </View>
+                <Text style={styles.sunTimeLabel}>Sunrise</Text>
+                <Text style={styles.sunTimeValue}>{todaySunTimes.sunrise}</Text>
+              </View>
+              
+              <View style={styles.sunTimeItem}>
+                <View style={styles.sunTimeIconContainer}>
+                  <Icon name="arrow-down" size={16} color={colors.primary} />
+                </View>
+                <Text style={styles.sunTimeLabel}>Sunset</Text>
+                <Text style={styles.sunTimeValue}>{todaySunTimes.sunset}</Text>
+              </View>
+              
+              <View style={styles.sunTimeItem}>
+                <View style={styles.sunTimeIconContainer}>
+                  <Icon name="time" size={16} color={colors.text} />
+                </View>
+                <Text style={styles.sunTimeLabel}>Daylight</Text>
+                <Text style={styles.sunTimeValue}>{daylightDuration}</Text>
+              </View>
+            </View>
+
+            {/* Weekly Sunrise/Sunset Preview */}
+            <View style={styles.weeklySunTimes}>
+              <Text style={styles.weeklySunTimesTitle}>This Week</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weeklySunTimesScroll}>
+                {daily?.days.slice(0, 7).map((day, index) => (
+                  <View key={day.date} style={[styles.weeklySunTimeCard, index === 0 && styles.weeklySunTimeCardToday]}>
+                    <Text style={[styles.weeklySunTimeDay, index === 0 && styles.weeklySunTimeDayToday]}>
+                      {index === 0 ? 'Today' : day.weekday}
+                    </Text>
+                    <View style={styles.weeklySunTimeValues}>
+                      <View style={styles.weeklySunTimeRow}>
+                        <Icon name="arrow-up" size={12} color={colors.warning} />
+                        <Text style={styles.weeklySunTimeText}>{day.sunrise}</Text>
+                      </View>
+                      <View style={styles.weeklySunTimeRow}>
+                        <Icon name="arrow-down" size={12} color={colors.primary} />
+                        <Text style={styles.weeklySunTimeText}>{day.sunset}</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
           </View>
         )}
 
@@ -342,6 +459,12 @@ function DetailScreen() {
                         {d.precipitation_probability}%
                       </Text>
                     )}
+                    {/* NEW: Show sunrise/sunset times in daily forecast */}
+                    <View style={styles.daySunTimes}>
+                      <Text style={styles.daySunTime}>
+                        ↑{d.sunrise} ↓{d.sunset}
+                      </Text>
+                    </View>
                   </View>
                 ))}
               </ScrollView>
@@ -493,7 +616,7 @@ function DetailScreen() {
           />
           <View style={{ height: 18 }} />
           <Text style={styles.muted}>
-            Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, written text summaries, and live rainfall radar.
+            Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, written text summaries, sunrise/sunset times, and live rainfall radar.
             Data updates every 10 minutes for accuracy.
           </Text>
         </BottomSheetView>
@@ -645,6 +768,125 @@ const styles = StyleSheet.create({
   updateText: {
     fontSize: 12,
     color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+  },
+  // NEW: Sunrise & Sunset Times Styles
+  sunTimesCard: {
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+    marginBottom: 16,
+  },
+  sunTimesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  sunTimesTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    fontFamily: 'Roboto_700Bold',
+    marginLeft: 8,
+    flex: 1,
+  },
+  timeStatusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  timeStatusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'Roboto_500Medium',
+  },
+  sunTimesGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  sunTimeItem: {
+    flex: 1,
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  sunTimeIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  sunTimeLabel: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginBottom: 4,
+  },
+  sunTimeValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    fontFamily: 'Roboto_700Bold',
+  },
+  weeklySunTimes: {
+    marginTop: 4,
+  },
+  weeklySunTimesTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: 'Roboto_500Medium',
+    marginBottom: 12,
+  },
+  weeklySunTimesScroll: {
+    paddingHorizontal: 4,
+    gap: 8,
+  },
+  weeklySunTimeCard: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 10,
+    padding: 10,
+    minWidth: 80,
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  weeklySunTimeCardToday: {
+    backgroundColor: colors.primary + '15',
+    borderColor: colors.primary + '30',
+  },
+  weeklySunTimeDay: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_500Medium',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  weeklySunTimeDayToday: {
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  weeklySunTimeValues: {
+    gap: 4,
+  },
+  weeklySunTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  weeklySunTimeText: {
+    fontSize: 10,
+    color: colors.text,
     fontFamily: 'Roboto_400Regular',
   },
   card: {
@@ -937,6 +1179,17 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
     fontSize: 10,
+    marginBottom: 4,
+  },
+  // NEW: Sunrise/sunset times in daily forecast
+  daySunTimes: {
+    marginTop: 2,
+  },
+  daySunTime: {
+    fontSize: 9,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    textAlign: 'center',
   },
   muted: { color: colors.textMuted, fontFamily: 'Roboto_400Regular' },
   error: { color: '#C62828', fontWeight: '600', fontFamily: 'Roboto_500Medium' },
