@@ -38,38 +38,47 @@ function formatHour(timeString: string): string {
   });
 }
 
-function formatTimeWithScale(timeString: string, index: number, totalHours: number): { main: string; sub: string } {
+function formatTimeWithScale(timeString: string, index: number, totalHours: number): { main: string; sub: string; isNewDay: boolean; dayName: string } {
   const date = new Date(timeString);
   const hour = date.getHours();
   const minute = date.getMinutes();
   const day = date.getDate();
   const month = date.getMonth() + 1;
+  const isNewDay = hour === 0 || index === 0;
+  
+  // Get day name for better visibility
+  const dayName = date.toLocaleDateString([], { weekday: 'short' });
   
   // Different time scale formats based on data length and position
   if (totalHours <= 12) {
     // For short periods, show hour:minute
     return {
       main: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
-      sub: index === 0 ? `${day}/${month}` : ''
+      sub: index === 0 ? `${dayName} ${day}/${month}` : '',
+      isNewDay,
+      dayName
     };
   } else if (totalHours <= 24) {
     // For 24 hours, show hour with day context
     return {
       main: `${hour.toString().padStart(2, '0')}h`,
-      sub: hour === 0 || index === 0 ? `${day}/${month}` : ''
+      sub: hour === 0 || index === 0 ? `${dayName} ${day}/${month}` : '',
+      isNewDay,
+      dayName
     };
   } else {
-    // For longer periods, show selective hours with day context
-    const isNewDay = hour === 0 || index === 0;
+    // For longer periods (72-hour), show selective hours with prominent day context
     const isKeyHour = hour % 6 === 0; // Show every 6 hours
     
     if (isNewDay || isKeyHour) {
       return {
         main: `${hour.toString().padStart(2, '0')}h`,
-        sub: isNewDay ? `${day}/${month}` : ''
+        sub: isNewDay ? `${dayName} ${day}/${month}` : '',
+        isNewDay,
+        dayName
       };
     }
-    return { main: '', sub: '' };
+    return { main: '', sub: '', isNewDay, dayName };
   }
 }
 
@@ -154,7 +163,7 @@ function formatPrecipitation(value: number, unit: 'metric' | 'imperial'): string
 }
 
 export default function EnhancedWeatherForecast({ hourlyData, unit, latitude, longitude, showExtended = false }: Props) {
-  console.log('EnhancedWeatherForecast: Rendering with', hourlyData.length, 'hours of enhanced data with time scales, unit:', unit);
+  console.log('EnhancedWeatherForecast: Rendering with', hourlyData.length, 'hours of enhanced data with visible day intervals, unit:', unit);
 
   if (!hourlyData || hourlyData.length === 0) {
     return (
@@ -170,10 +179,10 @@ export default function EnhancedWeatherForecast({ hourlyData, unit, latitude, lo
   return (
     <View style={styles.container}>
       <Text style={styles.title}>
-        {showExtended ? 'Extended Weather Forecast' : '24-Hour Enhanced Forecast'}
+        {showExtended ? '72-Hour Extended Forecast' : '24-Hour Enhanced Forecast'}
       </Text>
       <Text style={styles.subtitle}>
-        Detailed conditions including rain totals in {getPrecipitationUnit(unit)}, UV index, visibility, and pressure with precise time scales
+        Detailed conditions with clear day intervals, rain totals in {getPrecipitationUnit(unit)}, UV index, visibility, and pressure
       </Text>
       
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollContainer}>
@@ -208,12 +217,42 @@ export default function EnhancedWeatherForecast({ hourlyData, unit, latitude, lo
                 }
                 
                 return (
-                  <View key={hour.time} style={styles.hourCard}>
-                    {/* Enhanced time display with scale context */}
-                    <View style={styles.timeContainer}>
-                      <Text style={styles.hourTime}>{timeScale.main || formatHour(hour.time)}</Text>
+                  <View key={hour.time} style={[
+                    styles.hourCard,
+                    timeScale.isNewDay && styles.newDayCard
+                  ]}>
+                    {/* Day interval separator for new days */}
+                    {timeScale.isNewDay && hourIndex > 0 && (
+                      <View style={styles.dayIntervalSeparator}>
+                        <View style={styles.separatorLine} />
+                        <Text style={styles.separatorText}>NEW DAY</Text>
+                        <View style={styles.separatorLine} />
+                      </View>
+                    )}
+                    
+                    {/* Enhanced time display with prominent day intervals */}
+                    <View style={[
+                      styles.timeContainer,
+                      timeScale.isNewDay && styles.newDayTimeContainer
+                    ]}>
+                      <Text style={[
+                        styles.hourTime,
+                        timeScale.isNewDay && styles.newDayTime
+                      ]}>
+                        {timeScale.main || formatHour(hour.time)}
+                      </Text>
                       {timeScale.sub && (
-                        <Text style={styles.timeContext}>{timeScale.sub}</Text>
+                        <Text style={[
+                          styles.timeContext,
+                          timeScale.isNewDay && styles.newDayContext
+                        ]}>
+                          {timeScale.sub}
+                        </Text>
+                      )}
+                      {timeScale.isNewDay && (
+                        <View style={styles.newDayIndicator}>
+                          <Text style={styles.newDayLabel}>📅</Text>
+                        </View>
                       )}
                     </View>
                     
@@ -285,26 +324,28 @@ export default function EnhancedWeatherForecast({ hourlyData, unit, latitude, lo
         ))}
       </ScrollView>
       
-      {/* Enhanced time scale legend */}
+      {/* Enhanced time scale legend with day interval information */}
       <View style={styles.timeScaleLegend}>
-        <Text style={styles.legendTitle}>Time Scale Guide</Text>
+        <Text style={styles.legendTitle}>📅 Day Intervals & Time Scale Guide</Text>
         <View style={styles.legendContent}>
           <View style={styles.legendRow}>
-            <Text style={styles.legendLabel}>Format:</Text>
+            <Text style={styles.legendLabel}>Day Changes:</Text>
             <Text style={styles.legendText}>
-              {displayData.length <= 12 ? 'HH:MM (precise timing)' : 
-               displayData.length <= 24 ? 'HHh (hourly)' : 
-               'Key hours every 6h'}
+              Highlighted with calendar icon and "NEW DAY" separator
             </Text>
           </View>
           <View style={styles.legendRow}>
-            <Text style={styles.legendLabel}>Context:</Text>
-            <Text style={styles.legendText}>Day/Month shown for multi-day periods</Text>
+            <Text style={styles.legendLabel}>Time Format:</Text>
+            <Text style={styles.legendText}>
+              {displayData.length <= 12 ? 'HH:MM (precise timing)' : 
+               displayData.length <= 24 ? 'HHh (hourly)' : 
+               'Key hours every 6h with day names'}
+            </Text>
           </View>
           <View style={styles.legendRow}>
-            <Text style={styles.legendLabel}>Data:</Text>
+            <Text style={styles.legendLabel}>Data Period:</Text>
             <Text style={styles.legendText}>
-              {showExtended ? 'Extended forecast' : '24-hour detailed forecast'}
+              {showExtended ? '72-hour extended forecast with clear day boundaries' : '24-hour detailed forecast'}
             </Text>
           </View>
         </View>
@@ -372,11 +413,49 @@ const styles = StyleSheet.create({
     minWidth: 100,
     borderWidth: 1,
     borderColor: colors.divider,
+    position: 'relative',
+  },
+  newDayCard: {
+    backgroundColor: colors.accent + '10',
+    borderColor: colors.accent,
+    borderWidth: 2,
+  },
+  dayIntervalSeparator: {
+    position: 'absolute',
+    top: -15,
+    left: -10,
+    right: -10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  separatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.accent,
+    marginHorizontal: 8,
+  },
+  separatorText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: colors.accent,
+    fontFamily: 'Roboto_700Bold',
+    paddingHorizontal: 6,
   },
   timeContainer: {
     alignItems: 'center',
     marginBottom: 8,
-    minHeight: 28,
+    minHeight: 32,
+  },
+  newDayTimeContainer: {
+    backgroundColor: colors.accent + '15',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginTop: 8,
   },
   hourTime: {
     fontSize: 11,
@@ -384,11 +463,27 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto_500Medium',
     fontWeight: '600',
   },
+  newDayTime: {
+    fontSize: 12,
+    color: colors.accent,
+    fontWeight: '700',
+  },
   timeContext: {
     fontSize: 9,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
     marginTop: 1,
+  },
+  newDayContext: {
+    fontSize: 10,
+    color: colors.accent,
+    fontWeight: '600',
+  },
+  newDayIndicator: {
+    marginTop: 2,
+  },
+  newDayLabel: {
+    fontSize: 12,
   },
   symbolContainer: {
     height: 36,
@@ -475,6 +570,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginTop: 12,
+    borderWidth: 1,
+    borderColor: colors.accent + '30',
   },
   legendTitle: {
     fontSize: 12,
@@ -495,7 +592,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.text,
     fontFamily: 'Roboto_500Medium',
-    minWidth: 60,
+    minWidth: 80,
   },
   legendText: {
     fontSize: 11,
