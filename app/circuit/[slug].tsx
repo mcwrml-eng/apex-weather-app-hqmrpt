@@ -381,21 +381,21 @@ function DetailScreen() {
                 return (
                   <View key={session.key} style={[styles.enhancedSessionRow, sessionStyle]}>
                     <View style={styles.sessionIconContainer}>
-                      <Icon name={sessionIcon} size={20} color={sessionIconColor} />
+                      <Icon name={sessionIcon} size={18} color={sessionIconColor} />
                     </View>
                     
                     <View style={styles.sessionMainContent}>
                       <View style={styles.sessionTitleRow}>
                         <Text style={styles.enhancedSessionTitle}>{session.title}</Text>
                         <View style={styles.sessionTimeContainer}>
-                          <Icon name="time" size={14} color={colors.textMuted} />
+                          <Icon name="time" size={12} color={colors.textMuted} />
                           <Text style={styles.enhancedSessionTime}>{session.time}</Text>
                         </View>
                       </View>
                       
                       <View style={styles.sessionDetailsRow}>
                         <View style={styles.sessionDayContainer}>
-                          <Icon name="calendar-outline" size={12} color={colors.textMuted} />
+                          <Icon name="calendar-outline" size={10} color={colors.textMuted} />
                           <Text style={styles.sessionDay}>{session.day}</Text>
                         </View>
                         
@@ -419,7 +419,7 @@ function DetailScreen() {
             {/* Schedule Summary */}
             <View style={styles.scheduleSummary}>
               <View style={styles.summaryItem}>
-                <Icon name="flag" size={16} color={colors.primary} />
+                <Icon name="flag" size={14} color={colors.primary} />
                 <Text style={styles.summaryLabel}>Race Weekend</Text>
                 <Text style={styles.summaryValue}>
                   {schedule.find(s => s.day === 'Fri')?.date ? 
@@ -430,13 +430,13 @@ function DetailScreen() {
               </View>
               
               <View style={styles.summaryItem}>
-                <Icon name="location" size={16} color={colors.accent} />
+                <Icon name="location" size={14} color={colors.accent} />
                 <Text style={styles.summaryLabel}>Circuit</Text>
                 <Text style={styles.summaryValue}>{circuit.name}</Text>
               </View>
               
               <View style={styles.summaryItem}>
-                <Icon name="globe" size={16} color={colors.secondary} />
+                <Icon name="globe" size={14} color={colors.secondary} />
                 <Text style={styles.summaryLabel}>Country</Text>
                 <Text style={styles.summaryValue}>{circuit.country}</Text>
               </View>
@@ -992,11 +992,11 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto_400Regular',
   },
 
-  // Enhanced Weekend Schedule Styles - COMPREHENSIVE SINGLE TAB VIEW
+  // Enhanced Weekend Schedule Styles - CONDENSED VERSION
   scheduleCard: {
     backgroundColor: colors.card,
     borderRadius: 16,
-    padding: 20,
+    padding: 16, // Reduced from 20
     borderWidth: 1,
     borderColor: colors.divider,
     boxShadow: '0 8px 32px rgba(16,24,40,0.08)',
@@ -1006,62 +1006,62 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 14, // Reduced from 20
   },
   scheduleHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10, // Reduced from 12
     flex: 1,
   },
   scheduleHeaderText: {
     flex: 1,
   },
   scheduleTitle: {
-    fontSize: 20,
+    fontSize: 18, // Reduced from 20
     fontWeight: '700',
     color: colors.text,
     fontFamily: 'Roboto_700Bold',
     marginBottom: 2,
   },
   scheduleSubtitle: {
-    fontSize: 13,
+    fontSize: 12, // Reduced from 13
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
   },
   categoryBadge: {
     backgroundColor: colors.primary + '20',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10, // Reduced from 12
+    paddingVertical: 5, // Reduced from 6
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.primary + '40',
   },
   categoryBadgeText: {
-    fontSize: 12,
+    fontSize: 11, // Reduced from 12
     fontWeight: '700',
     color: colors.primary,
     fontFamily: 'Roboto_700Bold',
   },
 
-  // Enhanced Schedule List
+  // Enhanced Schedule List - CONDENSED
   enhancedScheduleList: {
-    gap: 16,
-    marginBottom: 24,
+    gap: 10, // Reduced from 16
+    marginBottom: 16, // Reduced from 24
   },
   enhancedSessionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 12, // Reduced from 16
     borderRadius: 12,
     borderWidth: 1,
-    gap: 14,
+    gap: 10, // Reduced from 14
     boxShadow: '0 4px 16px rgba(16,24,40,0.04)',
   },
   sessionIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36, // Reduced from 44
+    height: 36, // Reduced from 44
+    borderRadius: 18, // Reduced from 22
     backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1070,7 +1070,7 @@ const styles = StyleSheet.create({
   },
   sessionMainContent: {
     flex: 1,
-    gap: 8,
+    gap: 6, // Reduced from 8
   },
   sessionTitleRow: {
     flexDirection: 'row',
@@ -1078,7 +1078,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   enhancedSessionTitle: {
-    fontSize: 16,
+    fontSize: 15, // Reduced from 16
     fontWeight: '700',
     color: colors.text,
     fontFamily: 'Roboto_700Bold',
@@ -1087,16 +1087,16 @@ const styles = StyleSheet.create({
   sessionTimeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3, // Reduced from 4
     backgroundColor: colors.background,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 6, // Reduced from 8
+    paddingVertical: 3, // Reduced from 4
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.divider,
   },
   enhancedSessionTime: {
-    fontSize: 14,
+    fontSize: 13, // Reduced from 14
     fontWeight: '600',
     color: colors.text,
     fontFamily: 'Roboto_500Medium',
@@ -1104,15 +1104,15 @@ const styles = StyleSheet.create({
   sessionDetailsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 12, // Reduced from 16
   },
   sessionDayContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3, // Reduced from 4
   },
   sessionDay: {
-    fontSize: 12,
+    fontSize: 11, // Reduced from 12
     color: colors.textMuted,
     fontFamily: 'Roboto_500Medium',
     fontWeight: '600',
@@ -1120,23 +1120,23 @@ const styles = StyleSheet.create({
   sessionDateContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4, // Reduced from 6
   },
   sessionRelativeDate: {
-    fontSize: 12,
+    fontSize: 11, // Reduced from 12
     color: colors.text,
     fontFamily: 'Roboto_500Medium',
     fontWeight: '600',
   },
   sessionFormattedDate: {
-    fontSize: 11,
+    fontSize: 10, // Reduced from 11
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
   },
   sessionNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24, // Reduced from 28
+    height: 24, // Reduced from 28
+    borderRadius: 12, // Reduced from 14
     backgroundColor: colors.backgroundAlt,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1144,72 +1144,72 @@ const styles = StyleSheet.create({
     borderColor: colors.divider,
   },
   sessionNumberText: {
-    fontSize: 12,
+    fontSize: 11, // Reduced from 12
     fontWeight: '700',
     color: colors.text,
     fontFamily: 'Roboto_700Bold',
   },
 
-  // Schedule Summary
+  // Schedule Summary - CONDENSED
   scheduleSummary: {
     backgroundColor: colors.backgroundAlt,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
+    padding: 12, // Reduced from 16
+    marginBottom: 14, // Reduced from 20
     borderWidth: 1,
     borderColor: colors.divider,
-    gap: 12,
+    gap: 8, // Reduced from 12
   },
   summaryItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8, // Reduced from 10
   },
   summaryLabel: {
-    fontSize: 13,
+    fontSize: 12, // Reduced from 13
     color: colors.textMuted,
     fontFamily: 'Roboto_500Medium',
     fontWeight: '600',
-    minWidth: 60,
+    minWidth: 55, // Reduced from 60
   },
   summaryValue: {
-    fontSize: 13,
+    fontSize: 12, // Reduced from 13
     color: colors.text,
     fontFamily: 'Roboto_400Regular',
     flex: 1,
   },
 
-  // Session Type Legend
+  // Session Type Legend - CONDENSED
   sessionLegend: {
     backgroundColor: colors.backgroundAlt,
     borderRadius: 12,
-    padding: 16,
+    padding: 12, // Reduced from 16
     borderWidth: 1,
     borderColor: colors.divider,
   },
   legendTitle: {
-    fontSize: 14,
+    fontSize: 13, // Reduced from 14
     fontWeight: '600',
     color: colors.text,
     fontFamily: 'Roboto_500Medium',
-    marginBottom: 12,
+    marginBottom: 8, // Reduced from 12
   },
   legendItems: {
     flexDirection: 'row',
-    gap: 20,
+    gap: 16, // Reduced from 20
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5, // Reduced from 6
   },
   legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 7, // Reduced from 8
+    height: 7, // Reduced from 8
+    borderRadius: 3.5, // Reduced from 4
   },
   legendText: {
-    fontSize: 12,
+    fontSize: 11, // Reduced from 12
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
   },
