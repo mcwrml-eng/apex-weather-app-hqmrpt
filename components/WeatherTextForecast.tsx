@@ -254,8 +254,8 @@ export default function WeatherTextForecast({ current, hourlyData, unit, circuit
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Icon name="document-text" size={20} color={colors.primary} />
-          <Text style={styles.title}>Weather Forecast</Text>
+          <Icon name="document-text" size={22} color={colors.primary} />
+          <Text style={styles.title}>Written Weather Forecast</Text>
         </View>
         <View style={styles.timestampContainer}>
           <Text style={styles.timestamp}>{currentDate}</Text>
@@ -269,9 +269,12 @@ export default function WeatherTextForecast({ current, hourlyData, unit, circuit
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.forecastContainer}>
-          <Text style={styles.locationLabel}>
-            {circuitName} • {latitude.toFixed(2)}°N, {longitude.toFixed(2)}°E
-          </Text>
+          <View style={styles.locationLabel}>
+            <Icon name="location" size={14} color={colors.primary} />
+            <Text style={styles.locationText}>
+              {circuitName} • {latitude.toFixed(2)}°N, {longitude.toFixed(2)}°E
+            </Text>
+          </View>
           
           <Text style={styles.forecastText}>
             {forecast}
@@ -301,31 +304,31 @@ export default function WeatherTextForecast({ current, hourlyData, unit, circuit
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.card,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.divider,
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
-    marginBottom: 12,
+    boxShadow: '0 8px 32px rgba(16,24,40,0.08)',
+    marginBottom: 16,
     overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    padding: 16,
-    paddingBottom: 12,
+    padding: 20,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: colors.divider,
-    backgroundColor: colors.backgroundAlt,
+    backgroundColor: colors.primary + '08',
   },
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     flex: 1,
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: colors.text,
     fontFamily: 'Roboto_700Bold',
@@ -334,54 +337,70 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   timestamp: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.text,
     fontFamily: 'Roboto_500Medium',
     fontWeight: '600',
   },
   time: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
     marginTop: 2,
   },
   scrollContainer: {
-    maxHeight: 300,
+    maxHeight: 320,
   },
   scrollContent: {
     flexGrow: 1,
   },
   forecastContainer: {
-    padding: 16,
+    padding: 20,
   },
   locationLabel: {
-    fontSize: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginBottom: 16,
+    backgroundColor: colors.backgroundAlt,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  locationText: {
+    fontSize: 14,
     color: colors.textMuted,
     fontFamily: 'Roboto_500Medium',
-    marginBottom: 12,
-    textAlign: 'center',
   },
   forecastText: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 24,
     color: colors.text,
     fontFamily: 'Roboto_400Regular',
     textAlign: 'justify',
   },
   footer: {
-    marginTop: 16,
+    marginTop: 20,
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: colors.divider,
-    gap: 8,
+    gap: 10,
+    backgroundColor: colors.backgroundAlt + '50',
+    marginHorizontal: -20,
+    paddingHorizontal: 20,
+    paddingBottom: 4,
   },
   footerItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   footerText: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
     flex: 1,
