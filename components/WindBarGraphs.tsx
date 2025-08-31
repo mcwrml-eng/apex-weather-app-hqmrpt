@@ -2,7 +2,7 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { BarChart, YAxis, XAxis } from 'react-native-svg-charts';
-import Svg, { Polygon, Line } from 'react-native-svg';
+import Svg, { Polygon, Line, Circle } from 'react-native-svg';
 import { colors } from '../styles/commonStyles';
 import { validateWindSpeed, validateWindDirection } from '../hooks/useWeather';
 
@@ -89,6 +89,84 @@ function WindDirectionArrow({ direction, size = 20 }: { direction: number; size?
         />
       </Svg>
     </View>
+  );
+}
+
+// Custom Scatter Plot Component for Wind Direction
+function WindDirectionScatterPlot({ data, width, height }: { data: any[], width: number, height: number }) {
+  console.log('WindDirectionScatterPlot: Rendering scatter plot with', data.length, 'points');
+  
+  const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+  const chartWidth = width - margin.left - margin.right;
+  const chartHeight = height - margin.top - margin.bottom;
+  
+  // Calculate scales
+  const xScale = (index: number) => (index / (data.length - 1)) * chartWidth + margin.left;
+  const yScale = (value: number) => chartHeight - ((value / 360) * chartHeight) + margin.top;
+  
+  return (
+    <Svg width={width} height={height}>
+      {/* Grid lines for better readability */}
+      {[0, 90, 180, 270, 360].map((value) => (
+        <Line
+          key={value}
+          x1={margin.left}
+          y1={yScale(value)}
+          x2={width - margin.right}
+          y2={yScale(value)}
+          stroke={colors.divider}
+          strokeWidth="1"
+          strokeOpacity="0.3"
+        />
+      ))}
+      
+      {/* Vertical grid lines */}
+      {data.map((_, index) => {
+        if (index % 3 === 0) { // Show grid lines every 3 hours
+          return (
+            <Line
+              key={index}
+              x1={xScale(index)}
+              y1={margin.top}
+              x2={xScale(index)}
+              y2={height - margin.bottom}
+              stroke={colors.divider}
+              strokeWidth="1"
+              strokeOpacity="0.2"
+            />
+          );
+        }
+        return null;
+      })}
+      
+      {/* Scatter plot points */}
+      {data.map((point, index) => (
+        <Circle
+          key={index}
+          cx={xScale(index)}
+          cy={yScale(point.value)}
+          r="4"
+          fill={colors.text}
+          fillOpacity="0.8"
+          stroke={colors.primary}
+          strokeWidth="1"
+        />
+      ))}
+      
+      {/* Connect points with a line for trend visibility */}
+      {data.length > 1 && (
+        <Line
+          x1={xScale(0)}
+          y1={yScale(data[0].value)}
+          x2={xScale(data.length - 1)}
+          y2={yScale(data[data.length - 1].value)}
+          stroke={colors.textMuted}
+          strokeWidth="1"
+          strokeOpacity="0.4"
+          strokeDasharray="5,5"
+        />
+      )}
+    </Svg>
   );
 }
 
@@ -374,11 +452,11 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
           </View>
         </View>
 
-        {/* Enhanced Wind Direction Chart */}
+        {/* Enhanced Wind Direction Scatter Plot Chart */}
         <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>Wind Direction Analysis (Degrees)</Text>
+          <Text style={styles.chartTitle}>Wind Direction Analysis (Degrees) - Scatter Plot</Text>
           <Text style={styles.chartSubtitle}>
-            0°=North, 90°=East, 180°=South, 270°=West
+            0°=North, 90°=East, 180°=South, 270°=West | Scatter plot shows direction trends over time
           </Text>
           <View style={styles.chartWrapper}>
             <YAxis
@@ -396,15 +474,10 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
               max={360}
             />
             <View style={styles.chartContent}>
-              <BarChart
-                style={styles.chart}
-                data={windDirectionValues}
-                svg={{ fill: colors.text, fillOpacity: 0.7 }}
-                contentInset={{ top: 20, bottom: 20 }}
-                spacingInner={0.2}
-                spacingOuter={0.1}
-                yMax={360}
-                yMin={0}
+              <WindDirectionScatterPlot 
+                data={windDirectionData}
+                width={300}
+                height={200}
               />
             </View>
           </View>
@@ -431,6 +504,17 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
               ))}
             </View>
             <Text style={styles.xAxisTitle}>Time Scale (3-hour intervals)</Text>
+          </View>
+          
+          <View style={styles.legendContainer}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendColor, { backgroundColor: colors.text }]} />
+              <Text style={styles.legendText}>Wind Direction Points</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendColor, { backgroundColor: colors.primary }]} />
+              <Text style={styles.legendText}>Point Outline</Text>
+            </View>
           </View>
           
           {/* Enhanced Wind Direction Arrows with 3-hour interval spacing */}
@@ -543,6 +627,7 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
           </View>
           <Text style={styles.summaryNote}>
             Enhanced accuracy: Wind speed and gusts now displayed in separate charts for better visibility. 
+            Wind direction now shown as a scatter plot for better trend analysis and pattern recognition.
             Wind direction arrows show precise direction wind is blowing TO. 
             All measurements validated and normalized for motorsport analysis. 
             Gust factor indicates wind turbulence level - higher values mean more gusty conditions.
