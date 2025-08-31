@@ -399,7 +399,7 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
               <BarChart
                 style={styles.chart}
                 data={windDirectionValues}
-                svg={{ fill: colors.accent, fillOpacity: 0.7 }}
+                svg={{ fill: colors.text, fillOpacity: 0.7 }}
                 contentInset={{ top: 20, bottom: 20 }}
                 spacingInner={0.2}
                 spacingOuter={0.1}
