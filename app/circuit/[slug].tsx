@@ -198,7 +198,34 @@ function DetailScreen() {
           </View>
         )}
 
-        {/* 1. SUNRISE & SUNSET TIMES - TOP PRIORITY */}
+        {/* 1. WEEKEND SCHEDULE - TOP PRIORITY */}
+        {daily && (
+          <View style={styles.scheduleCard}>
+            <View style={styles.scheduleHeader}>
+              <Icon name="calendar" size={20} color={colors.primary} />
+              <Text style={styles.scheduleTitle}>Weekend Schedule</Text>
+              <TouchableOpacity onPress={openSchedule} style={styles.viewScheduleBtn}>
+                <Text style={styles.viewScheduleText}>View All</Text>
+                <Icon name="chevron-forward" size={16} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.scheduleList}>
+              {schedule.slice(0, 4).map((s) => (
+                <View key={s.key} style={styles.sessionRow}>
+                  <View style={styles.sessionDot} />
+                  <View style={styles.sessionContent}>
+                    <Text style={styles.sessionTitle}>{s.title}</Text>
+                    <Text style={styles.sessionDetails}>
+                      {s.day} • {s.time}{s.date ? ` • ${new Date(s.date + 'T00:00:00').toLocaleDateString()}` : ''}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* 2. SUNRISE & SUNSET TIMES */}
         {!loading && todaySunTimes && (
           <View style={styles.sunTimesCard}>
             <View style={styles.sunTimesHeader}>
@@ -267,7 +294,7 @@ function DetailScreen() {
           </View>
         )}
 
-        {/* 2. WEATHER FORECASTS AND CURRENT CONDITIONS */}
+        {/* 3. WEATHER FORECASTS AND CURRENT CONDITIONS */}
         
         {/* Written Text Weather Forecast */}
         {!loading && current && hourly.length > 0 && (
@@ -544,7 +571,7 @@ function DetailScreen() {
           </>
         )}
 
-        {/* 3. RAINFALL RADAR - MIDDLE TO BOTTOM */}
+        {/* 4. LIVE RAINFALL RADAR - BELOW WEATHER FORECAST */}
         <RainfallRadar
           latitude={circuit.latitude}
           longitude={circuit.longitude}
@@ -573,28 +600,6 @@ function DetailScreen() {
         {!loading && windData.length === 0 && (
           <View style={styles.card}>
             <Text style={styles.muted}>No wind data available</Text>
-          </View>
-        )}
-
-        {/* Weekend Schedule - Bottom */}
-        {daily && (
-          <View style={styles.scheduleCard}>
-            <Text style={styles.cardLabel}>Weekend Schedule</Text>
-            <View style={{ height: 8 }} />
-            <View>
-              {schedule.slice(0, 4).map((s) => (
-                <View key={s.key} style={styles.sessionRow}>
-                  <View style={styles.sessionDot} />
-                  <Text style={styles.sessionText}>
-                    {s.day} • {s.title} — {s.time}{s.date ? ` • ${new Date(s.date + 'T00:00:00').toLocaleDateString()}` : ''}
-                  </Text>
-                </View>
-              ))}
-            </View>
-            <View style={{ height: 10 }} />
-            <TouchableOpacity onPress={openSchedule} activeOpacity={0.8} style={styles.moreBtn}>
-              <Text style={styles.moreBtnText}>View full schedule</Text>
-            </TouchableOpacity>
           </View>
         )}
 
@@ -775,6 +780,73 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
+  },
+  // Weekend Schedule Styles - TOP PRIORITY
+  scheduleCard: {
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+    marginBottom: 16,
+  },
+  scheduleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  scheduleTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    fontFamily: 'Roboto_700Bold',
+    marginLeft: 8,
+    flex: 1,
+  },
+  viewScheduleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.backgroundAlt,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  viewScheduleText: {
+    fontSize: 13,
+    color: colors.primary,
+    fontFamily: 'Roboto_500Medium',
+  },
+  scheduleList: {
+    gap: 12,
+  },
+  sessionRow: { 
+    flexDirection: 'row', 
+    alignItems: 'flex-start', 
+    gap: 12,
+  },
+  sessionDot: { 
+    width: 8, 
+    height: 8, 
+    borderRadius: 4, 
+    backgroundColor: colors.primary,
+    marginTop: 6,
+  },
+  sessionContent: {
+    flex: 1,
+  },
+  sessionTitle: { 
+    color: colors.text, 
+    fontFamily: 'Roboto_700Bold',
+    fontSize: 15,
+    marginBottom: 2,
+  },
+  sessionDetails: { 
+    color: colors.textMuted, 
+    fontFamily: 'Roboto_400Regular',
+    fontSize: 13,
   },
   // Sunrise & Sunset Times Styles
   sunTimesCard: {
@@ -1053,18 +1125,6 @@ const styles = StyleSheet.create({
     color: colors.precipitation,
     fontFamily: 'Roboto_400Regular',
   },
-  // Schedule card with proper spacing
-  scheduleCard: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
-    marginBottom: 12,
-    marginTop: 8,
-  },
   metricsGrid: {
     flexDirection: 'row',
     gap: 12,
@@ -1212,7 +1272,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   sheetTitle: { fontSize: 18, fontWeight: '700', color: colors.text, fontFamily: 'Roboto_700Bold' },
-  sessionRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   sessionText: { color: colors.text, fontFamily: 'Roboto_400Regular' },
   moreBtn: {
     alignSelf: 'flex-start',
@@ -1232,8 +1291,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.divider,
   },
-  sessionDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent, marginRight: 8 },
   sessionDotLarge: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent },
-  sessionTitle: { color: colors.text, fontFamily: 'Roboto_700Bold' },
   sessionSub: { color: colors.textMuted, fontFamily: 'Roboto_400Regular', marginTop: 2 },
 });
