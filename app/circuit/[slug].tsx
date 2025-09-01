@@ -24,17 +24,22 @@ import WeatherTextForecast from '../../components/WeatherTextForecast';
 import ErrorBoundary from '../../components/ErrorBoundary';
 
 const DetailScreen: React.FC = () => {
-  const { slug, category } = useLocalSearchParams<{ slug: string; category?: string }>();
+  const params = useLocalSearchParams<{ slug: string; category?: string }>();
   const { unit } = useUnit();
   const bottomSheetRef = useRef<BottomSheet>(null);
 
+  console.log('DetailScreen: Received params:', params);
+
   const circuit = useMemo(() => {
-    if (!slug) {
-      console.log('DetailScreen: No slug provided');
-      return null;
-    }
-    
     try {
+      const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
+      const category = Array.isArray(params.category) ? params.category[0] : params.category;
+      
+      if (!slug) {
+        console.log('DetailScreen: No slug provided in params');
+        return null;
+      }
+      
       // Determine category from route or default to f1
       const circuitCategory = (category as 'f1' | 'motogp') || 'f1';
       console.log('DetailScreen: Looking up circuit', slug, 'in category', circuitCategory);
@@ -50,14 +55,18 @@ const DetailScreen: React.FC = () => {
           console.log('DetailScreen: Found circuit in fallback category');
           return fallbackCircuit;
         }
+        console.log('DetailScreen: Circuit not found in either category');
+        return null;
       }
+      console.log('DetailScreen: Found circuit:', foundCircuit.name);
       return foundCircuit;
     } catch (error) {
       console.error('DetailScreen: Error looking up circuit:', error);
       return null;
     }
-  }, [slug, category]);
+  }, [params.slug, params.category]);
 
+  // Only call weather hook if we have a valid circuit
   const { data: weather, loading, error } = useWeather(
     circuit?.latitude || 0,
     circuit?.longitude || 0,
@@ -66,11 +75,26 @@ const DetailScreen: React.FC = () => {
 
   const weekendSchedule = useMemo(() => {
     if (!circuit) return [];
-    return getWeekendSchedule(circuit.slug);
+    try {
+      return getWeekendSchedule(circuit.slug);
+    } catch (error) {
+      console.error('DetailScreen: Error getting weekend schedule:', error);
+      return [];
+    }
   }, [circuit]);
 
   const handleSheetChanges = useCallback((index: number) => {
     console.log('Bottom sheet changed to index:', index);
+  }, []);
+
+  const handleBackPress = useCallback(() => {
+    console.log('DetailScreen: Back button pressed');
+    try {
+      router.back();
+    } catch (error) {
+      console.error('DetailScreen: Error navigating back:', error);
+      router.push('/');
+    }
   }, []);
 
   if (!circuit) {
@@ -78,7 +102,7 @@ const DetailScreen: React.FC = () => {
       <ErrorBoundary>
         <View style={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
               <Icon name="arrow-back" size={24} color={colors.text} />
             </TouchableOpacity>
             <Text style={styles.title}>Circuit Not Found</Text>
@@ -86,10 +110,12 @@ const DetailScreen: React.FC = () => {
           <View style={styles.errorContainer}>
             <Icon name="warning" size={48} color={colors.error} />
             <Text style={styles.errorText}>Circuit not found</Text>
-            <Text style={styles.errorSubtext}>The requested circuit could not be loaded.</Text>
+            <Text style={styles.errorSubtext}>
+              The requested circuit could not be loaded. Please check the URL or try again.
+            </Text>
             <Button 
               title="Go Back" 
-              onPress={() => router.back()} 
+              onPress={handleBackPress} 
               style={styles.backButtonStyle}
             />
           </View>
@@ -133,7 +159,7 @@ const DetailScreen: React.FC = () => {
   };
 
   const getSessionTypeStyle = (sessionKey: string) => {
-    const category = circuit.category;
+    const category = circuit.category || 'f1';
     
     if (category === 'f1') {
       switch (sessionKey.toLowerCase()) {
@@ -205,33 +231,43 @@ const DetailScreen: React.FC = () => {
   };
 
   const formatDateForDisplay = (dateStr: string): string => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    });
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.error('DetailScreen: Error formatting date:', error);
+      return dateStr;
+    }
   };
 
   const getRelativeDate = (dateStr: string): string => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffTime = date.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Tomorrow';
-    if (diffDays === -1) return 'Yesterday';
-    if (diffDays > 1) return `In ${diffDays} days`;
-    if (diffDays < -1) return `${Math.abs(diffDays)} days ago`;
-    return formatDateForDisplay(dateStr);
+    try {
+      const date = new Date(dateStr);
+      const now = new Date();
+      const diffTime = date.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return 'Tomorrow';
+      if (diffDays === -1) return 'Yesterday';
+      if (diffDays > 1) return `In ${diffDays} days`;
+      if (diffDays < -1) return `${Math.abs(diffDays)} days ago`;
+      return formatDateForDisplay(dateStr);
+    } catch (error) {
+      console.error('DetailScreen: Error calculating relative date:', error);
+      return formatDateForDisplay(dateStr);
+    }
   };
 
   return (
     <ErrorBoundary>
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
             <Icon name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <View style={styles.headerContent}>

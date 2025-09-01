@@ -62,6 +62,35 @@ export default function CircuitCard({ circuit, category }: Props) {
     ]).start();
   };
 
+  const handlePress = () => {
+    try {
+      console.log('CircuitCard: Navigating to', circuit.slug, category);
+      
+      if (!circuit.slug) {
+        console.error('CircuitCard: No slug available for circuit');
+        return;
+      }
+
+      if (!category) {
+        console.error('CircuitCard: No category provided');
+        return;
+      }
+
+      const path = `/circuit/${circuit.slug}?category=${category}`;
+      console.log('CircuitCard: Navigation path:', path);
+      
+      router.push(path);
+    } catch (error) {
+      console.error('CircuitCard: Navigation error:', error);
+      // Fallback navigation without category parameter
+      try {
+        router.push(`/circuit/${circuit.slug}`);
+      } catch (fallbackError) {
+        console.error('CircuitCard: Fallback navigation also failed:', fallbackError);
+      }
+    }
+  };
+
   const tempUnit = unit === 'metric' ? '°C' : '°F';
   const windUnit = unit === 'metric' ? 'km/h' : 'mph';
 
@@ -88,10 +117,7 @@ export default function CircuitCard({ circuit, category }: Props) {
       <TouchableOpacity
         style={styles.cardContainer}
         activeOpacity={1}
-        onPress={() => {
-          console.log('CircuitCard: Navigating to', circuit.slug, category);
-          router.push(`/circuit/${circuit.slug}?category=${category}`);
-        }}
+        onPress={handlePress}
         onPressIn={onPressIn}
         onPressOut={onPressOut}
       >
