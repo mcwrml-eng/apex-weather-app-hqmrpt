@@ -191,32 +191,59 @@ class ErrorLogger {
 // Create a singleton instance
 const errorLogger = new ErrorLogger();
 
-// Global error handlers
-if (typeof window !== 'undefined') {
-  window.addEventListener('error', (event) => {
-    errorLogger.log(
-      'Global',
-      event.error || event.message,
-      'critical',
-      {
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno
-      }
-    );
-  });
+// Setup function to initialize global error handlers
+export const setupErrorLogging = () => {
+  console.log('setupErrorLogging: Initializing global error handlers');
+  
+  // Global error handlers for web
+  if (typeof window !== 'undefined') {
+    window.addEventListener('error', (event) => {
+      errorLogger.log(
+        'Global',
+        event.error || event.message,
+        'critical',
+        {
+          filename: event.filename,
+          lineno: event.lineno,
+          colno: event.colno
+        }
+      );
+    });
 
-  window.addEventListener('unhandledrejection', (event) => {
-    errorLogger.log(
-      'Global',
-      event.reason,
-      'critical',
-      {
-        type: 'unhandled_promise_rejection'
+    window.addEventListener('unhandledrejection', (event) => {
+      errorLogger.log(
+        'Global',
+        event.reason,
+        'critical',
+        {
+          type: 'unhandled_promise_rejection'
+        }
+      );
+    });
+  }
+
+  // React Native global error handler
+  if (typeof global !== 'undefined' && global.ErrorUtils) {
+    const originalHandler = global.ErrorUtils.getGlobalHandler();
+    
+    global.ErrorUtils.setGlobalHandler((error, isFatal) => {
+      errorLogger.log(
+        'Global',
+        error,
+        'critical',
+        {
+          isFatal,
+          type: 'react_native_error'
+        }
+      );
+      
+      // Call the original handler
+      if (originalHandler) {
+        originalHandler(error, isFatal);
       }
-    );
-  });
-}
+    });
+  }
+};
 
 export default errorLogger;
 

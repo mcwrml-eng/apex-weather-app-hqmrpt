@@ -326,29 +326,47 @@ function useWeatherAnimation(animationType: string) {
 }
 
 export default function WeatherSymbol({ weatherCode, size = 24, color, isNight, latitude, longitude, time }: Props) {
-  // Determine if it's night time with enhanced detection
-  const nightTime = isNight !== undefined ? isNight : isNightTime(latitude, longitude, time);
-  
-  const symbol = getWeatherSymbol(weatherCode, nightTime);
-  const iconColor = color || symbol.color;
-  
-  // Get animation style based on weather type
-  const animatedStyle = useWeatherAnimation(symbol.animationType);
-  
-  console.log('WeatherSymbol: Rendering animated', symbol.name, 'for code', weatherCode, 'isNight:', nightTime, 'animation:', symbol.animationType);
-  
-  return (
-    <View style={styles.container}>
-      <Animated.View style={[animatedStyle]}>
+  try {
+    // Validate and sanitize inputs
+    const validatedCode = typeof weatherCode === 'number' && !isNaN(weatherCode) ? weatherCode : 0;
+    const validatedSize = typeof size === 'number' && size > 0 ? size : 24;
+    
+    // Determine if it's night time with enhanced detection
+    const nightTime = isNight !== undefined ? isNight : isNightTime(latitude, longitude, time);
+    
+    const symbol = getWeatherSymbol(validatedCode, nightTime);
+    const iconColor = color || symbol.color;
+    
+    // Get animation style based on weather type
+    const animatedStyle = useWeatherAnimation(symbol.animationType);
+    
+    console.log('WeatherSymbol: Rendering animated', symbol.name, 'for code', validatedCode, 'isNight:', nightTime, 'animation:', symbol.animationType);
+    
+    return (
+      <View style={styles.container}>
+        <Animated.View style={[animatedStyle]}>
+          <Ionicons 
+            name={symbol.name} 
+            size={validatedSize} 
+            color={iconColor}
+            accessibilityLabel={symbol.description}
+          />
+        </Animated.View>
+      </View>
+    );
+  } catch (error) {
+    console.error('WeatherSymbol: Error rendering symbol:', error);
+    // Fallback to a simple cloud icon
+    return (
+      <View style={styles.container}>
         <Ionicons 
-          name={symbol.name} 
-          size={size} 
-          color={iconColor}
-          accessibilityLabel={symbol.description}
+          name="cloud-outline" 
+          size={size || 24} 
+          color={color || colors.textMuted} 
         />
-      </Animated.View>
-    </View>
-  );
+      </View>
+    );
+  }
 }
 
 const styles = StyleSheet.create({

@@ -24,19 +24,45 @@ import WeatherTextForecast from '../../components/WeatherTextForecast';
 import ErrorBoundary from '../../components/ErrorBoundary';
 
 const DetailScreen: React.FC = () => {
-  const { slug } = useLocalSearchParams<{ slug: string }>();
-  const { data: weather, loading, error } = useWeather(
-    parseFloat(slug?.split('-')[1] || '0'),
-    parseFloat(slug?.split('-')[2] || '0'),
-    'metric'
-  );
+  const { slug, category } = useLocalSearchParams<{ slug: string; category?: string }>();
   const { unit } = useUnit();
   const bottomSheetRef = useRef<BottomSheet>(null);
 
   const circuit = useMemo(() => {
-    if (!slug) return null;
-    return getCircuitBySlug(slug);
-  }, [slug]);
+    if (!slug) {
+      console.log('DetailScreen: No slug provided');
+      return null;
+    }
+    
+    try {
+      // Determine category from route or default to f1
+      const circuitCategory = (category as 'f1' | 'motogp') || 'f1';
+      console.log('DetailScreen: Looking up circuit', slug, 'in category', circuitCategory);
+      
+      const foundCircuit = getCircuitBySlug(slug, circuitCategory);
+      if (!foundCircuit) {
+        console.log('DetailScreen: Circuit not found for slug:', slug, 'category:', circuitCategory);
+        // Try the other category as fallback
+        const fallbackCategory = circuitCategory === 'f1' ? 'motogp' : 'f1';
+        console.log('DetailScreen: Trying fallback category:', fallbackCategory);
+        const fallbackCircuit = getCircuitBySlug(slug, fallbackCategory);
+        if (fallbackCircuit) {
+          console.log('DetailScreen: Found circuit in fallback category');
+          return fallbackCircuit;
+        }
+      }
+      return foundCircuit;
+    } catch (error) {
+      console.error('DetailScreen: Error looking up circuit:', error);
+      return null;
+    }
+  }, [slug, category]);
+
+  const { data: weather, loading, error } = useWeather(
+    circuit?.latitude || 0,
+    circuit?.longitude || 0,
+    unit
+  );
 
   const weekendSchedule = useMemo(() => {
     if (!circuit) return [];
@@ -210,7 +236,7 @@ const DetailScreen: React.FC = () => {
           </TouchableOpacity>
           <View style={styles.headerContent}>
             <Text style={styles.title}>{circuit.name}</Text>
-            <Text style={styles.subtitle}>{circuit.location}</Text>
+            <Text style={styles.subtitle}>{circuit.country}</Text>
           </View>
         </View>
 
