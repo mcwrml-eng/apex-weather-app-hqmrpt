@@ -326,20 +326,20 @@ function useWeatherAnimation(animationType: string) {
 }
 
 export default function WeatherSymbol({ weatherCode, size = 24, color, isNight, latitude, longitude, time }: Props) {
+  // Validate and sanitize inputs
+  const validatedCode = typeof weatherCode === 'number' && !isNaN(weatherCode) ? weatherCode : 0;
+  const validatedSize = typeof size === 'number' && size > 0 ? size : 24;
+  
+  // Determine if it's night time with enhanced detection
+  const nightTime = isNight !== undefined ? isNight : isNightTime(latitude, longitude, time);
+  
+  const symbol = getWeatherSymbol(validatedCode, nightTime);
+  const iconColor = color || symbol.color;
+  
+  // Always call the hook unconditionally - Fixed: moved outside of try-catch
+  const animatedStyle = useWeatherAnimation(symbol.animationType);
+  
   try {
-    // Validate and sanitize inputs
-    const validatedCode = typeof weatherCode === 'number' && !isNaN(weatherCode) ? weatherCode : 0;
-    const validatedSize = typeof size === 'number' && size > 0 ? size : 24;
-    
-    // Determine if it's night time with enhanced detection
-    const nightTime = isNight !== undefined ? isNight : isNightTime(latitude, longitude, time);
-    
-    const symbol = getWeatherSymbol(validatedCode, nightTime);
-    const iconColor = color || symbol.color;
-    
-    // Always call the hook unconditionally
-    const animatedStyle = useWeatherAnimation(symbol.animationType);
-    
     console.log('WeatherSymbol: Rendering animated', symbol.name, 'for code', validatedCode, 'isNight:', nightTime, 'animation:', symbol.animationType);
     
     return (

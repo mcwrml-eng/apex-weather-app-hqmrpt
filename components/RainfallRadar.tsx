@@ -81,11 +81,11 @@ const RainfallRadar: React.FC<Props> = ({
     lastSuccessfulLoad: state.lastSuccessfulLoad?.toISOString()
   });
 
-  // Cleanup on unmount
+  // Cleanup on unmount - Fixed to capture ref values in local variables
   useEffect(() => {
     return () => {
       mountedRef.current = false;
-      // Store the current value to avoid stale closure
+      // Capture the current values to avoid stale closure
       const currentRetryTimeout = retryTimeoutRef.current;
       const currentDebounceTimeout = debounceTimeoutRef.current;
       
