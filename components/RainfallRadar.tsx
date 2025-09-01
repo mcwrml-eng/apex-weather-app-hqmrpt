@@ -85,8 +85,10 @@ const RainfallRadar: React.FC<Props> = ({
   useEffect(() => {
     return () => {
       mountedRef.current = false;
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
+      // Store the current value to avoid stale closure
+      const currentRetryTimeout = retryTimeoutRef.current;
+      if (currentRetryTimeout) {
+        clearTimeout(currentRetryTimeout);
       }
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current);
@@ -109,6 +111,13 @@ const RainfallRadar: React.FC<Props> = ({
     }, 100); // Small debounce to prevent rapid updates
   }, []);
 
+  // Toggle animation function
+  const toggleAnimation = useCallback(() => {
+    if (webViewRef.current) {
+      webViewRef.current.postMessage(JSON.stringify({ type: 'toggleAnimation' }));
+    }
+  }, []);
+
   // Auto-start animation when frames are loaded
   useEffect(() => {
     if (autoStartAnimation && state.totalFrames > 1 && !state.isAnimating && 
@@ -121,7 +130,7 @@ const RainfallRadar: React.FC<Props> = ({
       }, 2000);
       return () => clearTimeout(timeoutId);
     }
-  }, [state.totalFrames, state.showRadar, autoStartAnimation, state.hasError, state.isLoading]);
+  }, [state.totalFrames, state.showRadar, autoStartAnimation, state.hasError, state.isLoading, state.isAnimating, toggleAnimation]);
 
   // Animation effects
   useEffect(() => {
@@ -137,14 +146,14 @@ const RainfallRadar: React.FC<Props> = ({
     } else {
       pulseAnimation.value = withTiming(0, { duration: 300 });
     }
-  }, [state.isLoading]);
+  }, [state.isLoading, pulseAnimation]);
 
   useEffect(() => {
     playButtonRotation.value = withTiming(state.isAnimating ? 1 : 0, {
       duration: 300,
       easing: Easing.inOut(Easing.ease)
     });
-  }, [state.isAnimating]);
+  }, [state.isAnimating, playButtonRotation]);
 
   useEffect(() => {
     if (state.totalFrames > 0) {
@@ -153,7 +162,7 @@ const RainfallRadar: React.FC<Props> = ({
         easing: Easing.out(Easing.ease)
       });
     }
-  }, [state.currentFrame, state.totalFrames]);
+  }, [state.currentFrame, state.totalFrames, progressAnimation]);
 
   // Animated styles
   const pulseStyle = useAnimatedStyle(() => ({
@@ -1053,12 +1062,6 @@ const RainfallRadar: React.FC<Props> = ({
       });
     }
   }, [updateState]);
-
-  const toggleAnimation = useCallback(() => {
-    if (webViewRef.current) {
-      webViewRef.current.postMessage(JSON.stringify({ type: 'toggleAnimation' }));
-    }
-  }, []);
 
   // Validate props
   if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {

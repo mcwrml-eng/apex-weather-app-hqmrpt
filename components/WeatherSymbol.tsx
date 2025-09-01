@@ -308,7 +308,7 @@ function useWeatherAnimation(animationType: string) {
         // No animation
         break;
     }
-  }, [animationType]);
+  }, [animationType, animationValue, rotationValue, scaleValue, translateY, opacity]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -337,7 +337,7 @@ export default function WeatherSymbol({ weatherCode, size = 24, color, isNight, 
     const symbol = getWeatherSymbol(validatedCode, nightTime);
     const iconColor = color || symbol.color;
     
-    // Get animation style based on weather type
+    // Always call the hook, but conditionally use the animation
     const animatedStyle = useWeatherAnimation(symbol.animationType);
     
     console.log('WeatherSymbol: Rendering animated', symbol.name, 'for code', validatedCode, 'isNight:', nightTime, 'animation:', symbol.animationType);

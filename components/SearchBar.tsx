@@ -24,7 +24,7 @@ export default function SearchBar({ value, onChangeText, onClear, placeholder = 
       duration: 200,
       useNativeDriver: false,
     }).start();
-  }, [isFocused]);
+  }, [isFocused, focusAnimation]);
 
   const handleFocus = () => {
     Animated.parallel([
