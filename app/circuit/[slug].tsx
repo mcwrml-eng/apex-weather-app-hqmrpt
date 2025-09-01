@@ -2,128 +2,198 @@
 import React, { useMemo, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { useWeather } from '../../hooks/useWeather';
-import { useUnit } from '../../state/UnitContext';
-import { getCircuitBySlug } from '../../data/circuits';
-import { getWeekendSchedule, WeekendSession } from '../../data/schedules';
 import { colors, buttonStyles } from '../../styles/commonStyles';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-
-// Components
-import Button from '../../components/Button';
-import EnhancedWeatherForecast from '../../components/EnhancedWeatherForecast';
+import { getCircuitBySlug } from '../../data/circuits';
+import { useWeather } from '../../hooks/useWeather';
+import ChartDoughnut from '../../components/ChartDoughnut';
+import WindBarGraphs from '../../components/WindBarGraphs';
 import WindRadarGraph from '../../components/WindRadarGraph';
+import WeatherChart from '../../components/WeatherChart';
 import WeatherSymbol from '../../components/WeatherSymbol';
+import EnhancedWeatherForecast from '../../components/EnhancedWeatherForecast';
+import WeatherTextForecast from '../../components/WeatherTextForecast';
 import WeatherAlerts from '../../components/WeatherAlerts';
 import RainfallRadar from '../../components/RainfallRadar';
-import WindBarGraphs from '../../components/WindBarGraphs';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
-import WeatherChart from '../../components/WeatherChart';
-import ChartDoughnut from '../../components/ChartDoughnut';
-import WeatherTextForecast from '../../components/WeatherTextForecast';
-import ErrorBoundary from '../../components/ErrorBoundary';
+import Button from '../../components/Button';
+import { useUnit } from '../../state/UnitContext';
+import { getWeekendSchedule, WeekendSession } from '../../data/schedules';
 
-const DetailScreen: React.FC = () => {
-  const params = useLocalSearchParams<{ slug: string; category?: string }>();
-  const { unit } = useUnit();
-  const bottomSheetRef = useRef<BottomSheet>(null);
+function DetailScreen() {
+  const params = useLocalSearchParams<{ slug?: string; category?: 'f1' | 'motogp' }>();
+  const slug = params.slug as string;
+  const category = (params.category as 'f1' | 'motogp') || 'f1';
 
-  console.log('DetailScreen: Received params:', params);
+  const circuit = getCircuitBySlug(slug, category);
+  const { unit, toggleUnit } = useUnit();
 
-  const circuit = useMemo(() => {
-    try {
-      const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
-      const category = Array.isArray(params.category) ? params.category[0] : params.category;
-      
-      if (!slug) {
-        console.log('DetailScreen: No slug provided in params');
-        return null;
+  const { current, daily, hourly, alerts, loading, error, lastUpdated } = useWeather(circuit.latitude, circuit.longitude, unit);
+
+  const settingsRef = useRef<BottomSheet>(null);
+  const chartsRef = useRef<BottomSheet>(null);
+  const forecastRef = useRef<BottomSheet>(null);
+  const settingsSnap = useMemo(() => ['32%', '60%'], []);
+  const chartsSnap = useMemo(() => ['50%', '90%'], []);
+  const forecastSnap = useMemo(() => ['60%', '95%'], []);
+  const openSettings = useCallback(() => settingsRef.current?.expand(), []);
+  const openCharts = useCallback(() => chartsRef.current?.expand(), []);
+  const openForecast = useCallback(() => forecastRef.current?.expand(), []);
+
+  const schedule: WeekendSession[] = useMemo(() => getWeekendSchedule(slug, category), [slug, category]);
+
+  // Convert hourly data for charts
+  const chartData = useMemo(() => {
+    return hourly.map(h => ({
+      time: h.time,
+      temperature: h.temperature,
+      windSpeed: h.windSpeed,
+      humidity: h.humidity,
+      precipitation: h.precipitation,
+    }));
+  }, [hourly]);
+
+  // Convert hourly data for wind graphs - now includes wind gusts
+  const windData = useMemo(() => {
+    return hourly.map(h => ({
+      time: h.time,
+      windSpeed: h.windSpeed,
+      windDirection: h.windDirection,
+      windGusts: h.windGusts,
+    }));
+  }, [hourly]);
+
+  // Get 72-hour forecast data (3 days)
+  const forecast72Hours = useMemo(() => {
+    return hourly.slice(0, 72);
+  }, [hourly]);
+
+  // Get today's sunrise and sunset times
+  const todaySunTimes = useMemo(() => {
+    if (!daily?.days || daily.days.length === 0) return null;
+    console.log('DetailScreen: Today sun times raw data:', daily.days[0]);
+    return {
+      sunrise: daily.days[0].sunrise,
+      sunset: daily.days[0].sunset,
+    };
+  }, [daily]);
+
+  // Enhanced time parsing function
+  const parseTimeString = useCallback((timeStr: string): number => {
+    console.log('DetailScreen: Parsing time string:', timeStr);
+    
+    if (!timeStr) {
+      console.log('DetailScreen: Empty time string, returning 0');
+      return 0;
+    }
+
+    // Handle different time formats
+    let cleanTimeStr = timeStr.trim();
+    
+    // If it's an ISO datetime string, extract just the time part
+    if (cleanTimeStr.includes('T')) {
+      const timePart = cleanTimeStr.split('T')[1];
+      if (timePart) {
+        cleanTimeStr = timePart.split('.')[0]; // Remove milliseconds if present
+        cleanTimeStr = cleanTimeStr.split('+')[0]; // Remove timezone if present
+        cleanTimeStr = cleanTimeStr.split('Z')[0]; // Remove Z if present
       }
-      
-      // Determine category from route or default to f1
-      const circuitCategory = (category as 'f1' | 'motogp') || 'f1';
-      console.log('DetailScreen: Looking up circuit', slug, 'in category', circuitCategory);
-      
-      const foundCircuit = getCircuitBySlug(slug, circuitCategory);
-      if (!foundCircuit) {
-        console.log('DetailScreen: Circuit not found for slug:', slug, 'category:', circuitCategory);
-        // Try the other category as fallback
-        const fallbackCategory = circuitCategory === 'f1' ? 'motogp' : 'f1';
-        console.log('DetailScreen: Trying fallback category:', fallbackCategory);
-        const fallbackCircuit = getCircuitBySlug(slug, fallbackCategory);
-        if (fallbackCircuit) {
-          console.log('DetailScreen: Found circuit in fallback category');
-          return fallbackCircuit;
-        }
-        console.log('DetailScreen: Circuit not found in either category');
-        return null;
-      }
-      console.log('DetailScreen: Found circuit:', foundCircuit.name);
-      return foundCircuit;
-    } catch (error) {
-      console.error('DetailScreen: Error looking up circuit:', error);
+    }
+    
+    // Now parse HH:MM or HH:MM:SS format
+    const timeParts = cleanTimeStr.split(':');
+    if (timeParts.length >= 2) {
+      const hours = parseInt(timeParts[0], 10) || 0;
+      const minutes = parseInt(timeParts[1], 10) || 0;
+      const totalMinutes = hours * 60 + minutes;
+      console.log('DetailScreen: Parsed time', cleanTimeStr, 'to', totalMinutes, 'minutes');
+      return totalMinutes;
+    }
+    
+    console.log('DetailScreen: Could not parse time string:', timeStr);
+    return 0;
+  }, []);
+
+  // Calculate daylight duration with enhanced error handling
+  const daylightDuration = useMemo(() => {
+    if (!todaySunTimes) {
+      console.log('DetailScreen: No sun times available for daylight calculation');
       return null;
     }
-  }, [params.slug, params.category]);
-
-  // Only call weather hook if we have a valid circuit
-  const { data: weather, loading, error } = useWeather(
-    circuit?.latitude || 0,
-    circuit?.longitude || 0,
-    unit
-  );
-
-  const weekendSchedule = useMemo(() => {
-    if (!circuit) return [];
-    try {
-      return getWeekendSchedule(circuit.slug);
-    } catch (error) {
-      console.error('DetailScreen: Error getting weekend schedule:', error);
-      return [];
+    
+    console.log('DetailScreen: Calculating daylight duration with sunrise:', todaySunTimes.sunrise, 'sunset:', todaySunTimes.sunset);
+    
+    const sunriseMinutes = parseTimeString(todaySunTimes.sunrise);
+    const sunsetMinutes = parseTimeString(todaySunTimes.sunset);
+    
+    if (sunriseMinutes === 0 && sunsetMinutes === 0) {
+      console.log('DetailScreen: Both sunrise and sunset parsed to 0, returning null');
+      return null;
     }
-  }, [circuit]);
+    
+    let durationMinutes = sunsetMinutes - sunriseMinutes;
+    
+    // Handle case where sunset is next day (rare but possible in polar regions)
+    if (durationMinutes < 0) {
+      durationMinutes += 24 * 60; // Add 24 hours
+    }
+    
+    // Sanity check - daylight should be between 0 and 24 hours
+    if (durationMinutes < 0 || durationMinutes > 24 * 60) {
+      console.log('DetailScreen: Invalid daylight duration calculated:', durationMinutes, 'minutes');
+      return null;
+    }
+    
+    const hours = Math.floor(durationMinutes / 60);
+    const minutes = durationMinutes % 60;
+    
+    const result = `${hours}h ${minutes}m`;
+    console.log('DetailScreen: Calculated daylight duration:', result);
+    return result;
+  }, [todaySunTimes, parseTimeString]);
 
-  const handleSheetChanges = useCallback((index: number) => {
-    console.log('Bottom sheet changed to index:', index);
+  // Get current time status (day/night) with enhanced parsing
+  const currentTimeStatus = useMemo(() => {
+    if (!todaySunTimes) return 'unknown';
+    
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    
+    const sunriseMinutes = parseTimeString(todaySunTimes.sunrise);
+    const sunsetMinutes = parseTimeString(todaySunTimes.sunset);
+    
+    if (sunriseMinutes === 0 && sunsetMinutes === 0) return 'unknown';
+    
+    if (currentTime < sunriseMinutes) return 'night';
+    if (currentTime > sunsetMinutes) return 'night';
+    return 'day';
+  }, [todaySunTimes, parseTimeString]);
+
+  // Format time for display
+  const formatTimeForDisplay = useCallback((timeStr: string): string => {
+    if (!timeStr) return '--:--';
+    
+    // If it's an ISO datetime string, extract just the time part
+    let cleanTimeStr = timeStr.trim();
+    if (cleanTimeStr.includes('T')) {
+      const timePart = cleanTimeStr.split('T')[1];
+      if (timePart) {
+        cleanTimeStr = timePart.split('.')[0]; // Remove milliseconds if present
+        cleanTimeStr = cleanTimeStr.split('+')[0]; // Remove timezone if present
+        cleanTimeStr = cleanTimeStr.split('Z')[0]; // Remove Z if present
+      }
+    }
+    
+    // Extract HH:MM from HH:MM:SS if needed
+    const timeParts = cleanTimeStr.split(':');
+    if (timeParts.length >= 2) {
+      return `${timeParts[0]}:${timeParts[1]}`;
+    }
+    
+    return timeStr; // Return original if we can't parse it
   }, []);
 
-  const handleBackPress = useCallback(() => {
-    console.log('DetailScreen: Back button pressed');
-    try {
-      router.back();
-    } catch (error) {
-      console.error('DetailScreen: Error navigating back:', error);
-      router.push('/');
-    }
-  }, []);
-
-  if (!circuit) {
-    return (
-      <ErrorBoundary>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-              <Icon name="arrow-back" size={24} color={colors.text} />
-            </TouchableOpacity>
-            <Text style={styles.title}>Circuit Not Found</Text>
-          </View>
-          <View style={styles.errorContainer}>
-            <Icon name="warning" size={48} color={colors.error} />
-            <Text style={styles.errorText}>Circuit not found</Text>
-            <Text style={styles.errorSubtext}>
-              The requested circuit could not be loaded. Please check the URL or try again.
-            </Text>
-            <Button 
-              title="Go Back" 
-              onPress={handleBackPress} 
-              style={styles.backButtonStyle}
-            />
-          </View>
-        </View>
-      </ErrorBoundary>
-    );
-  }
-
+  // Get weather condition description
   const getWeatherDescription = (code: number): string => {
     const descriptions: { [key: number]: string } = {
       0: 'Clear sky',
@@ -135,589 +205,1511 @@ const DetailScreen: React.FC = () => {
       51: 'Light drizzle',
       53: 'Moderate drizzle',
       55: 'Dense drizzle',
-      56: 'Light freezing drizzle',
-      57: 'Dense freezing drizzle',
       61: 'Slight rain',
       63: 'Moderate rain',
       65: 'Heavy rain',
-      66: 'Light freezing rain',
-      67: 'Heavy freezing rain',
-      71: 'Slight snow fall',
-      73: 'Moderate snow fall',
-      75: 'Heavy snow fall',
-      77: 'Snow grains',
+      71: 'Slight snow',
+      73: 'Moderate snow',
+      75: 'Heavy snow',
       80: 'Slight rain showers',
       81: 'Moderate rain showers',
       82: 'Violent rain showers',
-      85: 'Slight snow showers',
-      86: 'Heavy snow showers',
       95: 'Thunderstorm',
-      96: 'Thunderstorm with slight hail',
-      99: 'Thunderstorm with heavy hail'
+      96: 'Thunderstorm with hail',
+      99: 'Thunderstorm with heavy hail',
     };
-    return descriptions[code] || 'Unknown';
+    return descriptions[code] || 'Unknown conditions';
   };
 
+  // Helper function to get session type styling - ENHANCED FOR MOTOGP
   const getSessionTypeStyle = (sessionKey: string) => {
-    const category = circuit.category || 'f1';
+    console.log('DetailScreen: Getting session type style for:', sessionKey);
     
-    if (category === 'f1') {
-      switch (sessionKey.toLowerCase()) {
-        case 'practice1':
-        case 'fp1':
-          return { backgroundColor: colors.primary + '20', color: colors.primary };
-        case 'practice2':
-        case 'fp2':
-          return { backgroundColor: colors.secondary + '20', color: colors.secondary };
-        case 'practice3':
-        case 'fp3':
-          return { backgroundColor: colors.accent + '20', color: colors.accent };
-        case 'qualifying':
-        case 'quali':
-          return { backgroundColor: colors.warning + '20', color: colors.warning };
-        case 'sprint':
-          return { backgroundColor: colors.success + '20', color: colors.success };
-        case 'race':
-          return { backgroundColor: colors.error + '20', color: colors.error };
-        default:
-          return { backgroundColor: colors.textMuted + '20', color: colors.textMuted };
-      }
-    } else if (category === 'motogp') {
-      switch (sessionKey.toLowerCase()) {
-        case 'practice1':
-        case 'fp1':
-          return { backgroundColor: '#FF6B35' + '20', color: '#FF6B35' };
-        case 'practice2':
-        case 'fp2':
-          return { backgroundColor: '#F7931E' + '20', color: '#F7931E' };
-        case 'qualifying':
-        case 'quali':
-          return { backgroundColor: '#FFD23F' + '20', color: '#FFD23F' };
-        case 'sprint':
-          return { backgroundColor: '#06FFA5' + '20', color: '#06FFA5' };
-        case 'race':
-          return { backgroundColor: '#FF073A' + '20', color: '#FF073A' };
-        default:
-          return { backgroundColor: colors.textMuted + '20', color: colors.textMuted };
-      }
+    // Race sessions (highest priority)
+    if (sessionKey.includes('race') || sessionKey === 'sprint') {
+      return { backgroundColor: colors.primary + '20', borderColor: colors.primary };
     }
     
-    return { backgroundColor: colors.textMuted + '20', color: colors.textMuted };
-  };
-
-  const getSessionIcon = (sessionKey: string): string => {
-    switch (sessionKey.toLowerCase()) {
-      case 'practice1':
-      case 'practice2':
-      case 'practice3':
-      case 'fp1':
-      case 'fp2':
-        return 'speedometer';
-      case 'qualifying':
-      case 'quali':
-        return 'timer';
-      case 'sprint':
-        return 'flash';
-      case 'race':
-        return 'trophy';
-      default:
-        return 'calendar';
+    // Qualifying sessions
+    if (sessionKey.includes('qualifying') || sessionKey.includes('qual') || 
+        sessionKey === 'q1' || sessionKey === 'q2' || sessionKey === 'sprint-qual') {
+      return { backgroundColor: colors.accent + '20', borderColor: colors.accent };
     }
+    
+    // Practice sessions (F1: fp1, fp2, fp3; MotoGP: p1, p2, p3)
+    if (sessionKey.includes('practice') || sessionKey.includes('fp') || 
+        sessionKey === 'p1' || sessionKey === 'p2' || sessionKey === 'p3') {
+      return { backgroundColor: colors.secondary + '20', borderColor: colors.secondary };
+    }
+    
+    // MotoGP specific sessions
+    if (sessionKey === 'warmup') {
+      return { backgroundColor: colors.warning + '20', borderColor: colors.warning };
+    }
+    
+    // Default fallback
+    return { backgroundColor: colors.backgroundAlt, borderColor: colors.divider };
   };
 
-  const getSessionIconColor = (sessionKey: string): string => {
-    const style = getSessionTypeStyle(sessionKey);
-    return style.color;
+  // Helper function to get session type icon - ENHANCED FOR MOTOGP
+  const getSessionIcon = (sessionKey: string) => {
+    console.log('DetailScreen: Getting session icon for:', sessionKey);
+    
+    // Race sessions
+    if (sessionKey.includes('race') || sessionKey === 'sprint') {
+      return 'trophy';
+    }
+    
+    // Qualifying sessions
+    if (sessionKey.includes('qualifying') || sessionKey.includes('qual') || 
+        sessionKey === 'q1' || sessionKey === 'q2' || sessionKey === 'sprint-qual') {
+      return 'stopwatch';
+    }
+    
+    // Practice sessions (F1: fp1, fp2, fp3; MotoGP: p1, p2, p3)
+    if (sessionKey.includes('practice') || sessionKey.includes('fp') || 
+        sessionKey === 'p1' || sessionKey === 'p2' || sessionKey === 'p3') {
+      return 'speedometer';
+    }
+    
+    // MotoGP specific sessions
+    if (sessionKey === 'warmup') {
+      return 'flame';
+    }
+    
+    return 'time';
   };
 
+  // Helper function to get session type color - ENHANCED FOR MOTOGP
+  const getSessionIconColor = (sessionKey: string) => {
+    console.log('DetailScreen: Getting session icon color for:', sessionKey);
+    
+    // Race sessions
+    if (sessionKey.includes('race') || sessionKey === 'sprint') {
+      return colors.primary;
+    }
+    
+    // Qualifying sessions
+    if (sessionKey.includes('qualifying') || sessionKey.includes('qual') || 
+        sessionKey === 'q1' || sessionKey === 'q2' || sessionKey === 'sprint-qual') {
+      return colors.accent;
+    }
+    
+    // Practice sessions (F1: fp1, fp2, fp3; MotoGP: p1, p2, p3)
+    if (sessionKey.includes('practice') || sessionKey.includes('fp') || 
+        sessionKey === 'p1' || sessionKey === 'p2' || sessionKey === 'p3') {
+      return colors.secondary;
+    }
+    
+    // MotoGP specific sessions
+    if (sessionKey === 'warmup') {
+      return colors.warning;
+    }
+    
+    return colors.textMuted;
+  };
+
+  // Helper function to format date for display
   const formatDateForDisplay = (dateStr: string): string => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric'
-      });
-    } catch (error) {
-      console.error('DetailScreen: Error formatting date:', error);
-      return dateStr;
-    }
+    if (!dateStr) return '';
+    const date = new Date(dateStr + 'T00:00:00');
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
+    });
   };
 
+  // Helper function to get relative date
   const getRelativeDate = (dateStr: string): string => {
-    try {
-      const date = new Date(dateStr);
-      const now = new Date();
-      const diffTime = date.getTime() - now.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
-      if (diffDays === 0) return 'Today';
-      if (diffDays === 1) return 'Tomorrow';
-      if (diffDays === -1) return 'Yesterday';
-      if (diffDays > 1) return `In ${diffDays} days`;
-      if (diffDays < -1) return `${Math.abs(diffDays)} days ago`;
-      return formatDateForDisplay(dateStr);
-    } catch (error) {
-      console.error('DetailScreen: Error calculating relative date:', error);
-      return formatDateForDisplay(dateStr);
-    }
+    if (!dateStr) return '';
+    const sessionDate = new Date(dateStr + 'T00:00:00');
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    // Reset time to compare dates only
+    today.setHours(0, 0, 0, 0);
+    tomorrow.setHours(0, 0, 0, 0);
+    yesterday.setHours(0, 0, 0, 0);
+    sessionDate.setHours(0, 0, 0, 0);
+
+    if (sessionDate.getTime() === today.getTime()) return 'Today';
+    if (sessionDate.getTime() === tomorrow.getTime()) return 'Tomorrow';
+    if (sessionDate.getTime() === yesterday.getTime()) return 'Yesterday';
+    
+    const diffTime = sessionDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays > 0 && diffDays <= 7) return `In ${diffDays} day${diffDays > 1 ? 's' : ''}`;
+    if (diffDays < 0 && diffDays >= -7) return `${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? 's' : ''} ago`;
+    
+    return formatDateForDisplay(dateStr);
   };
 
   return (
-    <ErrorBoundary>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-            <Icon name="arrow-back" size={24} color={colors.text} />
+    <View style={styles.wrapper}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          activeOpacity={0.8}
+        >
+          <Icon name="chevron-back" size={22} color="#fff" />
+          <Text style={styles.backText}>Back</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.title}>{circuit.name}</Text>
+        <Text style={styles.subtitle}>{circuit.country} • {category.toUpperCase()}</Text>
+
+        <View style={styles.actions}>
+          <TouchableOpacity onPress={openForecast} style={styles.actionBtn} activeOpacity={0.8}>
+            <Icon name="time-outline" size={22} color={colors.text} />
           </TouchableOpacity>
-          <View style={styles.headerContent}>
-            <Text style={styles.title}>{circuit.name}</Text>
-            <Text style={styles.subtitle}>{circuit.country}</Text>
-          </View>
+          <TouchableOpacity onPress={openCharts} style={styles.actionBtn} activeOpacity={0.8}>
+            <Icon name="analytics-outline" size={22} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={openSettings} style={styles.actionBtn} activeOpacity={0.8}>
+            <Icon name="settings-outline" size={22} color={colors.text} />
+          </TouchableOpacity>
         </View>
+      </View>
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {/* Current Weather */}
-          {weather.current && (
-            <ErrorBoundary fallback={
-              <View style={styles.errorCard}>
-                <Text style={styles.errorText}>Weather data unavailable</Text>
-              </View>
-            }>
-              <View style={styles.currentWeatherCard}>
-                <View style={styles.currentWeatherHeader}>
-                  <Text style={styles.currentWeatherTitle}>Current Conditions</Text>
-                  <WeatherSymbol 
-                    weatherCode={weather.current.weather_code} 
-                    size={32}
-                    latitude={circuit.latitude}
-                    longitude={circuit.longitude}
-                  />
-                </View>
-                <View style={styles.currentWeatherContent}>
-                  <Text style={styles.temperature}>
-                    {Math.round(weather.current.temperature)}°{unit === 'metric' ? 'C' : 'F'}
+      <ScrollView contentContainerStyle={styles.content}>
+        {loading && <Text style={styles.muted}>Loading enhanced weather data…</Text>}
+        {error && <Text style={styles.error}>Failed to load weather data. Please try again.</Text>}
+
+        {/* Weather Alerts */}
+        {!loading && alerts && alerts.length > 0 && (
+          <WeatherAlerts alerts={alerts} />
+        )}
+
+        {/* Last Updated Info */}
+        {!loading && lastUpdated && (
+          <View style={styles.updateInfo}>
+            <Icon name="refresh" size={14} color={colors.textMuted} />
+            <Text style={styles.updateText}>
+              Updated {lastUpdated.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+            </Text>
+          </View>
+        )}
+
+        {/* 1. ENHANCED WEEKEND SCHEDULE - COMPREHENSIVE SINGLE TAB VIEW */}
+        {daily && (
+          <View style={styles.scheduleCard}>
+            <View style={styles.scheduleHeader}>
+              <View style={styles.scheduleHeaderLeft}>
+                <Icon name="calendar" size={24} color={colors.primary} />
+                <View style={styles.scheduleHeaderText}>
+                  <Text style={styles.scheduleTitle}>Weekend Schedule</Text>
+                  <Text style={styles.scheduleSubtitle}>
+                    {category.toUpperCase()} • {schedule.length} sessions • Local times
                   </Text>
-                  <Text style={styles.weatherDescription}>
-                    {getWeatherDescription(weather.current.weather_code)}
-                  </Text>
-                  <Text style={styles.feelsLike}>
-                    Feels like {Math.round(weather.current.apparent_temperature)}°
-                  </Text>
-                </View>
-                <View style={styles.weatherDetails}>
-                  <View style={styles.weatherDetailItem}>
-                    <Icon name="water" size={16} color={colors.textMuted} />
-                    <Text style={styles.weatherDetailText}>{weather.current.humidity}%</Text>
-                  </View>
-                  <View style={styles.weatherDetailItem}>
-                    <Icon name="eye" size={16} color={colors.textMuted} />
-                    <Text style={styles.weatherDetailText}>
-                      {(weather.current.visibility / 1000).toFixed(1)}km
-                    </Text>
-                  </View>
-                  <View style={styles.weatherDetailItem}>
-                    <Icon name="speedometer" size={16} color={colors.textMuted} />
-                    <Text style={styles.weatherDetailText}>
-                      {Math.round(weather.current.wind_speed)} {unit === 'metric' ? 'km/h' : 'mph'}
-                    </Text>
-                  </View>
                 </View>
               </View>
-            </ErrorBoundary>
-          )}
-
-          {/* Weather Alerts */}
-          {weather.alerts && weather.alerts.length > 0 && (
-            <ErrorBoundary>
-              <WeatherAlerts alerts={weather.alerts} />
-            </ErrorBoundary>
-          )}
-
-          {/* Weather Text Forecast */}
-          {weather.current && weather.hourly.length > 0 && (
-            <ErrorBoundary>
-              <WeatherTextForecast
-                current={weather.current}
-                hourlyData={weather.hourly}
-                unit={unit}
-                circuitName={circuit.name}
-                latitude={circuit.latitude}
-                longitude={circuit.longitude}
-              />
-            </ErrorBoundary>
-          )}
-
-          {/* Weekend Schedule */}
-          {weekendSchedule.length > 0 && (
-            <ErrorBoundary fallback={
-              <View style={styles.errorCard}>
-                <Text style={styles.errorText}>Schedule unavailable</Text>
+              <View style={styles.categoryBadge}>
+                <Text style={styles.categoryBadgeText}>{category.toUpperCase()}</Text>
               </View>
-            }>
-              <View style={styles.scheduleCard}>
-                <Text style={styles.sectionTitle}>Weekend Schedule</Text>
-                {weekendSchedule.map((session: WeekendSession, index: number) => {
-                  const sessionStyle = getSessionTypeStyle(session.type);
-                  const sessionIcon = getSessionIcon(session.type);
-                  const sessionIconColor = getSessionIconColor(session.type);
-                  
-                  return (
-                    <View key={index} style={styles.sessionItem}>
-                      <View style={styles.sessionHeader}>
-                        <View style={styles.sessionTypeContainer}>
-                          <View style={[styles.sessionTypeIndicator, { backgroundColor: sessionStyle.backgroundColor }]}>
-                            <Icon name={sessionIcon} size={14} color={sessionIconColor} />
-                          </View>
-                          <Text style={[styles.sessionType, { color: sessionStyle.color }]}>
-                            {session.name}
-                          </Text>
+            </View>
+
+            {/* Enhanced Schedule List with Full Details */}
+            <View style={styles.enhancedScheduleList}>
+              {schedule.map((session, index) => {
+                const sessionStyle = getSessionTypeStyle(session.key);
+                const sessionIcon = getSessionIcon(session.key);
+                const sessionIconColor = getSessionIconColor(session.key);
+                const relativeDate = getRelativeDate(session.date || '');
+                const formattedDate = formatDateForDisplay(session.date || '');
+                
+                return (
+                  <View key={session.key} style={[styles.enhancedSessionRow, sessionStyle]}>
+                    <View style={styles.sessionIconContainer}>
+                      <Icon name={sessionIcon} size={18} color={sessionIconColor} />
+                    </View>
+                    
+                    <View style={styles.sessionMainContent}>
+                      <View style={styles.sessionTitleRow}>
+                        <Text style={styles.enhancedSessionTitle}>{session.title}</Text>
+                        <View style={styles.sessionTimeContainer}>
+                          <Icon name="time" size={12} color={colors.textMuted} />
+                          <Text style={styles.enhancedSessionTime}>{session.time}</Text>
                         </View>
-                        <Text style={styles.sessionDate}>
-                          {getRelativeDate(session.date)}
-                        </Text>
                       </View>
-                      <View style={styles.sessionDetails}>
-                        <Text style={styles.sessionTime}>{session.time}</Text>
-                        <Text style={styles.sessionDuration}>({session.duration})</Text>
+                      
+                      <View style={styles.sessionDetailsRow}>
+                        <View style={styles.sessionDayContainer}>
+                          <Icon name="calendar-outline" size={10} color={colors.textMuted} />
+                          <Text style={styles.sessionDay}>{session.day}</Text>
+                        </View>
+                        
+                        {session.date && (
+                          <View style={styles.sessionDateContainer}>
+                            <Text style={styles.sessionRelativeDate}>{relativeDate}</Text>
+                            <Text style={styles.sessionFormattedDate}>({formattedDate})</Text>
+                          </View>
+                        )}
                       </View>
                     </View>
-                  );
-                })}
-              </View>
-            </ErrorBoundary>
-          )}
-
-          {/* Enhanced Rainfall Radar */}
-          <ErrorBoundary fallback={
-            <View style={styles.errorCard}>
-              <Text style={styles.errorText}>Radar unavailable</Text>
-              <Text style={styles.errorSubtext}>The rainfall radar service is currently unavailable</Text>
+                    
+                    <View style={styles.sessionNumber}>
+                      <Text style={styles.sessionNumberText}>{index + 1}</Text>
+                    </View>
+                  </View>
+                );
+              })}
             </View>
-          }>
-            <RainfallRadar
-              latitude={circuit.latitude}
-              longitude={circuit.longitude}
-              circuitName={circuit.name}
-              alwaysVisible={false}
-              autoStartAnimation={true}
-            />
-          </ErrorBoundary>
 
-          {/* 72-Hour Forecast */}
-          {weather.hourly.length > 0 && (
-            <ErrorBoundary>
-              <EnhancedWeatherForecast
-                hourlyData={weather.hourly}
-                unit={unit}
+            {/* Schedule Summary */}
+            <View style={styles.scheduleSummary}>
+              <View style={styles.summaryItem}>
+                <Icon name="flag" size={14} color={colors.primary} />
+                <Text style={styles.summaryLabel}>Race Weekend</Text>
+                <Text style={styles.summaryValue}>
+                  {schedule.find(s => s.day === 'Fri')?.date ? 
+                    `${formatDateForDisplay(schedule.find(s => s.day === 'Fri')?.date || '')} - ${formatDateForDisplay(schedule.find(s => s.day === 'Sun')?.date || '')}` :
+                    'TBD'
+                  }
+                </Text>
+              </View>
+              
+              <View style={styles.summaryItem}>
+                <Icon name="location" size={14} color={colors.accent} />
+                <Text style={styles.summaryLabel}>Circuit</Text>
+                <Text style={styles.summaryValue}>{circuit.name}</Text>
+              </View>
+              
+              <View style={styles.summaryItem}>
+                <Icon name="globe" size={14} color={colors.secondary} />
+                <Text style={styles.summaryLabel}>Country</Text>
+                <Text style={styles.summaryValue}>{circuit.country}</Text>
+              </View>
+            </View>
+
+            {/* Session Type Legend - ENHANCED FOR MOTOGP */}
+            <View style={styles.sessionLegend}>
+              <Text style={styles.legendTitle}>Session Types</Text>
+              <View style={styles.legendItems}>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: colors.secondary }]} />
+                  <Text style={styles.legendText}>Practice</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: colors.accent }]} />
+                  <Text style={styles.legendText}>Qualifying</Text>
+                </View>
+                {category === 'motogp' && (
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: colors.warning }]} />
+                    <Text style={styles.legendText}>Warm Up</Text>
+                  </View>
+                )}
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
+                  <Text style={styles.legendText}>Race</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* 2. SUNRISE & SUNSET TIMES */}
+        {!loading && todaySunTimes && (
+          <View style={styles.sunTimesCard}>
+            <View style={styles.sunTimesHeader}>
+              <Icon name="sunny" size={20} color={colors.warning} />
+              <Text style={styles.sunTimesTitle}>Sunrise & Sunset</Text>
+              <View style={[styles.timeStatusBadge, { 
+                backgroundColor: currentTimeStatus === 'day' ? colors.warning + '20' : colors.primary + '20' 
+              }]}>
+                <Text style={[styles.timeStatusText, { 
+                  color: currentTimeStatus === 'day' ? colors.warning : colors.primary 
+                }]}>
+                  {currentTimeStatus === 'day' ? 'Daylight' : currentTimeStatus === 'night' ? 'Night' : 'Unknown'}
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.sunTimesGrid}>
+              <View style={styles.sunTimeItem}>
+                <View style={styles.sunTimeIconContainer}>
+                  <Icon name="arrow-up" size={16} color={colors.warning} />
+                </View>
+                <Text style={styles.sunTimeLabel}>Sunrise</Text>
+                <Text style={styles.sunTimeValue}>{formatTimeForDisplay(todaySunTimes.sunrise)}</Text>
+              </View>
+              
+              <View style={styles.sunTimeItem}>
+                <View style={styles.sunTimeIconContainer}>
+                  <Icon name="arrow-down" size={16} color={colors.primary} />
+                </View>
+                <Text style={styles.sunTimeLabel}>Sunset</Text>
+                <Text style={styles.sunTimeValue}>{formatTimeForDisplay(todaySunTimes.sunset)}</Text>
+              </View>
+              
+              <View style={styles.sunTimeItem}>
+                <View style={styles.sunTimeIconContainer}>
+                  <Icon name="time" size={16} color={colors.text} />
+                </View>
+                <Text style={styles.sunTimeLabel}>Daylight</Text>
+                <Text style={styles.sunTimeValue}>{daylightDuration || '--h --m'}</Text>
+              </View>
+            </View>
+
+            {/* Weekly Sunrise/Sunset Preview */}
+            <View style={styles.weeklySunTimes}>
+              <Text style={styles.weeklySunTimesTitle}>This Week</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weeklySunTimesScroll}>
+                {daily?.days.slice(0, 7).map((day, index) => (
+                  <View key={day.date} style={[styles.weeklySunTimeCard, index === 0 && styles.weeklySunTimeCardToday]}>
+                    <Text style={[styles.weeklySunTimeDay, index === 0 && styles.weeklySunTimeDayToday]}>
+                      {index === 0 ? 'Today' : day.weekday}
+                    </Text>
+                    <View style={styles.weeklySunTimeValues}>
+                      <View style={styles.weeklySunTimeRow}>
+                        <Icon name="arrow-up" size={12} color={colors.warning} />
+                        <Text style={styles.weeklySunTimeText}>{formatTimeForDisplay(day.sunrise)}</Text>
+                      </View>
+                      <View style={styles.weeklySunTimeRow}>
+                        <Icon name="arrow-down" size={12} color={colors.primary} />
+                        <Text style={styles.weeklySunTimeText}>{formatTimeForDisplay(day.sunset)}</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        )}
+
+        {/* 3. WEATHER FORECASTS AND CURRENT CONDITIONS */}
+        
+        {/* Written Text Weather Forecast */}
+        {!loading && current && hourly.length > 0 && (
+          <WeatherTextForecast
+            current={current}
+            hourlyData={hourly}
+            unit={unit}
+            circuitName={circuit.name}
+            latitude={circuit.latitude}
+            longitude={circuit.longitude}
+          />
+        )}
+
+        {/* Enhanced Current Weather Display */}
+        {!loading && current && (
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Current Conditions</Text>
+            <View style={styles.currentWeatherContainer}>
+              <WeatherSymbol 
+                weatherCode={current.weather_code} 
+                size={56}
                 latitude={circuit.latitude}
                 longitude={circuit.longitude}
-                showExtended={true}
               />
-            </ErrorBoundary>
-          )}
+              <View style={styles.currentWeatherText}>
+                <Text style={styles.cardValue}>{Math.round(current.temperature)}°{unit === 'metric' ? 'C' : 'F'}</Text>
+                <Text style={styles.feelsLike}>Feels {Math.round(current.apparent_temperature)}°</Text>
+                <Text style={styles.weatherDescription}>
+                  {getWeatherDescription(current.weather_code)}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
 
-          {/* Wind Analysis */}
-          {weather.hourly.length > 0 && (
-            <ErrorBoundary>
-              <WindRadarGraph
-                hourlyData={weather.hourly}
-                unit={unit}
+        {/* Enhanced Weather Details Grid */}
+        {!loading && current && (
+          <View style={styles.detailsGrid}>
+            <View style={styles.detailCard}>
+              <Icon name="thermometer" size={20} color={colors.temperature} />
+              <Text style={styles.detailLabel}>Temperature</Text>
+              <Text style={styles.detailValue}>{Math.round(current.temperature)}°{unit === 'metric' ? 'C' : 'F'}</Text>
+              <Text style={styles.detailSub}>Dew point: {Math.round(current.dew_point)}°</Text>
+            </View>
+
+            <View style={styles.detailCard}>
+              <Icon name="flag" size={20} color={colors.wind} />
+              <Text style={styles.detailLabel}>Wind & Gusts</Text>
+              <Text style={styles.detailValue}>{Math.round(current.wind_speed)} / {Math.round(current.wind_gusts)}</Text>
+              <Text style={styles.detailSub}>{unit === 'metric' ? 'km/h' : 'mph'} • {Math.round(current.wind_direction)}°</Text>
+            </View>
+
+            <View style={styles.detailCard}>
+              <Icon name="eye" size={20} color={colors.wind} />
+              <Text style={styles.detailLabel}>Visibility</Text>
+              <Text style={styles.detailValue}>{Math.round(current.visibility / 1000)}km</Text>
+              <Text style={styles.detailSub}>Cloud cover: {current.cloud_cover}%</Text>
+            </View>
+
+            <View style={styles.detailCard}>
+              <Icon name="speedometer" size={20} color={colors.textMuted} />
+              <Text style={styles.detailLabel}>Pressure</Text>
+              <Text style={styles.detailValue}>{Math.round(current.pressure)} hPa</Text>
+              <Text style={styles.detailSub}>Sea level</Text>
+            </View>
+
+            {current.uv_index > 0 && (
+              <View style={styles.detailCard}>
+                <Icon name="sunny" size={20} color={colors.warning} />
+                <Text style={styles.detailLabel}>UV Index</Text>
+                <Text style={styles.detailValue}>{Math.round(current.uv_index)}</Text>
+                <Text style={styles.detailSub}>
+                  {current.uv_index <= 2 ? 'Low' : 
+                   current.uv_index <= 5 ? 'Moderate' : 
+                   current.uv_index <= 7 ? 'High' : 'Very High'}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {!loading && daily && (
+          <>
+            <View style={styles.chartCard}>
+              <Text style={styles.cardLabel}>Precipitation Forecast</Text>
+              <ChartDoughnut
+                size={140}
+                strokeWidth={18}
+                progress={(daily.precipitation_probability_max ?? 0) / 100}
+                color={colors.precipitation}
+                backgroundColor={colors.divider}
+                centerText={`${daily.precipitation_probability_max ?? 0}%`}
+                subText="chance today"
+                showScale={true}
+                maxValue={100}
+                unit="%"
               />
-            </ErrorBoundary>
-          )}
+            </View>
 
-          {/* Wind Bar Graphs */}
-          {weather.hourly.length > 0 && (
-            <ErrorBoundary>
-              <WindBarGraphs
-                hourlyData={weather.hourly}
-                unit={unit}
-              />
-            </ErrorBoundary>
-          )}
+            {/* Additional Weather Metrics with Doughnut Charts */}
+            {current && (
+              <View style={styles.metricsGrid}>
+                <View style={styles.metricCard}>
+                  <Text style={styles.metricLabel}>Humidity</Text>
+                  <ChartDoughnut
+                    size={100}
+                    strokeWidth={12}
+                    progress={current.humidity / 100}
+                    color={colors.humidity}
+                    backgroundColor={colors.divider}
+                    centerText={`${current.humidity}%`}
+                    showScale={false}
+                  />
+                </View>
 
-          {/* Weather Charts */}
-          {weather.hourly.length > 0 && (
-            <ErrorBoundary>
-              <View style={styles.chartsContainer}>
+                <View style={styles.metricCard}>
+                  <Text style={styles.metricLabel}>Cloud Cover</Text>
+                  <ChartDoughnut
+                    size={100}
+                    strokeWidth={12}
+                    progress={current.cloud_cover / 100}
+                    color={colors.textMuted}
+                    backgroundColor={colors.divider}
+                    centerText={`${current.cloud_cover}%`}
+                    showScale={false}
+                  />
+                </View>
+              </View>
+            )}
+
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>7-Day Forecast</Text>
+              <View style={{ height: 8 }} />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+                {daily.days.map((d) => (
+                  <View key={d.date} style={styles.dayPill}>
+                    <Text style={styles.dayText}>{d.weekday}</Text>
+                    <View style={styles.daySymbolContainer}>
+                      <WeatherSymbol 
+                        weatherCode={d.weather_code} 
+                        size={24}
+                        latitude={circuit.latitude}
+                        longitude={circuit.longitude}
+                      />
+                    </View>
+                    <Text style={styles.dayTemp}>
+                      {Math.round(d.max)}° / {Math.round(d.min)}°
+                    </Text>
+                    {/* Always show precipitation totals */}
+                    <Text style={[styles.dayRain, { 
+                      color: d.precipitation_sum > 0 ? colors.precipitation : colors.textMuted 
+                    }]}>
+                      {d.precipitation_sum === 0 ? '0' : 
+                       unit === 'imperial' ? 
+                         (d.precipitation_sum < 0.01 ? '<0.01' : Math.round(d.precipitation_sum * 100) / 100) :
+                         (d.precipitation_sum < 0.1 ? '<0.1' : Math.round(d.precipitation_sum * 10) / 10)
+                      }{unit === 'metric' ? 'mm' : 'in'}
+                    </Text>
+                    {d.precipitation_probability > 0 && (
+                      <Text style={styles.dayRainProb}>
+                        {d.precipitation_probability}%
+                      </Text>
+                    )}
+                    {/* Show sunrise/sunset times in daily forecast */}
+                    <View style={styles.daySunTimes}>
+                      <Text style={styles.daySunTime}>
+                        ↑{formatTimeForDisplay(d.sunrise)} ↓{formatTimeForDisplay(d.sunset)}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+
+            {/* 72-Hour Forecast Section */}
+            {forecast72Hours.length > 0 && (
+              <View style={styles.forecast72Card}>
+                <View style={styles.forecast72Header}>
+                  <View style={styles.forecast72TitleContainer}>
+                    <Icon name="time" size={20} color={colors.primary} />
+                    <Text style={styles.forecast72Title}>72-Hour Forecast</Text>
+                  </View>
+                  <TouchableOpacity onPress={openForecast} style={styles.viewDetailedBtn}>
+                    <Text style={styles.viewDetailedText}>View Detailed</Text>
+                    <Icon name="chevron-forward" size={16} color={colors.primary} />
+                  </TouchableOpacity>
+                </View>
+                
+                <Text style={styles.forecast72Subtitle}>
+                  Next 3 days • {forecast72Hours.length} hours of data
+                </Text>
+
+                {/* Temperature Chart Preview */}
+                <View style={styles.chartPreviewContainer}>
+                  <Text style={styles.chartPreviewLabel}>Temperature Trend</Text>
+                  <WeatherChart
+                    data={chartData.slice(0, 72)}
+                    type="temperature"
+                    unit={unit}
+                    height={120}
+                  />
+                </View>
+
+                {/* Key Highlights from 72-hour data */}
+                <View style={styles.forecast72Highlights}>
+                  <Text style={styles.highlightsTitle}>Key Highlights</Text>
+                  <View style={styles.highlightsGrid}>
+                    <View style={styles.highlightItem}>
+                      <Icon name="thermometer" size={16} color={colors.temperature} />
+                      <Text style={styles.highlightLabel}>Temp Range</Text>
+                      <Text style={styles.highlightValue}>
+                        {Math.round(Math.min(...forecast72Hours.map(h => h.temperature)))}° - {Math.round(Math.max(...forecast72Hours.map(h => h.temperature)))}°
+                      </Text>
+                    </View>
+                    
+                    <View style={styles.highlightItem}>
+                      <Icon name="rainy" size={16} color={colors.precipitation} />
+                      <Text style={styles.highlightLabel}>Max Rain</Text>
+                      <Text style={styles.highlightValue}>
+                        {Math.round(Math.max(...forecast72Hours.map(h => h.precipitationProbability)))}%
+                      </Text>
+                    </View>
+                    
+                    <View style={styles.highlightItem}>
+                      <Icon name="flag" size={16} color={colors.wind} />
+                      <Text style={styles.highlightLabel}>Max Wind</Text>
+                      <Text style={styles.highlightValue}>
+                        {Math.round(Math.max(...forecast72Hours.map(h => h.windSpeed)))} {unit === 'metric' ? 'km/h' : 'mph'}
+                      </Text>
+                    </View>
+                    
+                    <View style={styles.highlightItem}>
+                      <Icon name="water" size={16} color={colors.humidity} />
+                      <Text style={styles.highlightLabel}>Humidity</Text>
+                      <Text style={styles.highlightValue}>
+                        {Math.round(forecast72Hours.reduce((sum, h) => sum + h.humidity, 0) / forecast72Hours.length)}%
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Quick hourly preview for next 12 hours */}
+                <View style={styles.quickHourlyPreview}>
+                  <Text style={styles.quickHourlyTitle}>Next 12 Hours</Text>
+                  <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.quickHourlyScroll}
+                  >
+                    {forecast72Hours.slice(0, 12).map((hour, index) => (
+                      <View key={hour.time} style={styles.quickHourCard}>
+                        <Text style={styles.quickHourTime}>
+                          {new Date(hour.time).toLocaleTimeString([], { hour: 'numeric' })}
+                        </Text>
+                        <WeatherSymbol 
+                          weatherCode={hour.weatherCode}
+                          size={24}
+                          latitude={circuit.latitude}
+                          longitude={circuit.longitude}
+                          time={hour.time}
+                        />
+                        <Text style={styles.quickHourTemp}>
+                          {Math.round(hour.temperature)}°
+                        </Text>
+                        <Text style={styles.quickHourRain}>
+                          {Math.round(hour.precipitationProbability)}%
+                        </Text>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+              </View>
+            )}
+          </>
+        )}
+
+        {/* 4. LIVE RAINFALL RADAR - BELOW WEATHER FORECAST */}
+        <RainfallRadar
+          latitude={circuit.latitude}
+          longitude={circuit.longitude}
+          circuitName={circuit.name}
+          alwaysVisible={true}
+          autoStartAnimation={true}
+        />
+
+        {/* Wind Analysis - After Radar */}
+        {!loading && windData.length > 0 && (
+          <WindBarGraphs
+            hourlyData={windData}
+            unit={unit}
+          />
+        )}
+
+        {/* Wind Direction Radar Analysis */}
+        {!loading && windData.length > 0 && (
+          <WindRadarGraph
+            hourlyData={windData}
+            unit={unit}
+          />
+        )}
+
+        {/* Debug info when no wind data */}
+        {!loading && windData.length === 0 && (
+          <View style={styles.card}>
+            <Text style={styles.muted}>No wind data available</Text>
+          </View>
+        )}
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+
+      {/* Settings Bottom Sheet */}
+      <BottomSheet 
+        ref={settingsRef} 
+        index={-1} 
+        snapPoints={settingsSnap} 
+        enablePanDownToClose
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.bottomSheetHandle}
+      >
+        <BottomSheetView style={styles.sheet}>
+          <Text style={styles.sheetTitle}>Settings</Text>
+          <View style={{ height: 8 }} />
+          <Text style={styles.muted}>Units</Text>
+          <View style={{ height: 10 }} />
+          <Button
+            text={`Switch to ${unit === 'metric' ? 'Imperial' : 'Metric'}`}
+            onPress={toggleUnit}
+            style={buttonStyles.secondary}
+          />
+          <View style={{ height: 18 }} />
+          <Text style={styles.muted}>
+            Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, written text summaries, sunrise/sunset times, and live rainfall radar.
+            Data updates every 10 minutes for accuracy. Rainfall radar is always visible and animated for real-time precipitation monitoring.
+          </Text>
+        </BottomSheetView>
+      </BottomSheet>
+
+      {/* Enhanced Weather Charts Bottom Sheet */}
+      <BottomSheet 
+        ref={chartsRef} 
+        index={-1} 
+        snapPoints={chartsSnap} 
+        enablePanDownToClose
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.bottomSheetHandle}
+      >
+        <BottomSheetView style={styles.sheet}>
+          <Text style={styles.sheetTitle}>Weather Analysis</Text>
+          <View style={{ height: 8 }} />
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {chartData.length > 0 && (
+              <>
                 <WeatherChart
-                  data={weather.hourly.slice(0, 24)}
+                  data={chartData}
                   type="temperature"
                   unit={unit}
-                  height={200}
+                  height={120}
                 />
                 <WeatherChart
-                  data={weather.hourly.slice(0, 24)}
+                  data={chartData}
+                  type="wind"
+                  unit={unit}
+                  height={120}
+                />
+                <WeatherChart
+                  data={chartData}
+                  type="humidity"
+                  unit={unit}
+                  height={120}
+                />
+                <WeatherChart
+                  data={chartData}
                   type="precipitation"
                   unit={unit}
-                  height={200}
+                  height={120}
                 />
-              </View>
-            </ErrorBoundary>
-          )}
-
-          {/* Humidity Doughnut Chart */}
-          {weather.current && (
-            <ErrorBoundary>
-              <View style={styles.humidityCard}>
-                <Text style={styles.sectionTitle}>Current Humidity</Text>
-                <ChartDoughnut
-                  percentage={weather.current.humidity}
-                  size={120}
-                  strokeWidth={12}
-                  color={colors.primary}
-                  backgroundColor={colors.backgroundAlt}
-                />
-                <Text style={styles.humidityText}>{weather.current.humidity}%</Text>
-              </View>
-            </ErrorBoundary>
-          )}
-
-          <View style={styles.bottomPadding} />
-        </ScrollView>
-
-        <BottomSheet
-          ref={bottomSheetRef}
-          index={-1}
-          snapPoints={['25%', '50%', '90%']}
-          onChange={handleSheetChanges}
-          enablePanDownToClose={true}
-        >
-          <BottomSheetView style={styles.bottomSheetContent}>
-            <Text style={styles.bottomSheetTitle}>Circuit Details</Text>
-            <Text style={styles.bottomSheetText}>
-              Additional information about {circuit.name} would be displayed here.
+              </>
+            )}
+            
+            {/* Wind Direction Radar Analysis in Weather Analysis section */}
+            {windData.length > 0 && (
+              <WindRadarGraph
+                hourlyData={windData}
+                unit={unit}
+              />
+            )}
+            
+            <View style={{ height: 20 }} />
+            <Text style={styles.muted}>
+              72-hour enhanced forecast data with number scales for precise readings. Charts update every 10 minutes with detailed atmospheric conditions. Wind radar analysis shows directional patterns and frequency distribution.
             </Text>
-          </BottomSheetView>
-        </BottomSheet>
-      </View>
-    </ErrorBoundary>
+          </ScrollView>
+        </BottomSheetView>
+      </BottomSheet>
+
+      {/* Enhanced Forecast Bottom Sheet */}
+      <BottomSheet 
+        ref={forecastRef} 
+        index={-1} 
+        snapPoints={forecastSnap} 
+        enablePanDownToClose
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.bottomSheetHandle}
+      >
+        <BottomSheetView style={styles.sheet}>
+          <Text style={styles.sheetTitle}>Detailed Forecast</Text>
+          <View style={{ height: 8 }} />
+          <EnhancedWeatherForecast
+            hourlyData={hourly}
+            unit={unit}
+            latitude={circuit.latitude}
+            longitude={circuit.longitude}
+            showExtended={true}
+          />
+        </BottomSheetView>
+      </BottomSheet>
+    </View>
   );
-};
+}
+
+export default DetailScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
+  wrapper: { flex: 1, backgroundColor: colors.background },
+  header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
+  backBtn: {
+    flexDirection: 'row',
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    alignItems: 'center',
+    gap: 6,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
   },
-  header: {
+  backText: { color: '#fff', fontWeight: '700', fontFamily: 'Roboto_700Bold' },
+  title: { fontSize: 26, fontWeight: '700', marginTop: 10, color: colors.text, fontFamily: 'Roboto_700Bold' },
+  subtitle: { color: colors.textMuted, marginTop: 4, fontFamily: 'Roboto_400Regular' },
+  actions: { position: 'absolute', right: 16, top: 8, flexDirection: 'row', gap: 4 },
+  actionBtn: { padding: 8, borderRadius: 10 },
+  content: { paddingHorizontal: 16, paddingTop: 8 },
+  updateInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    paddingTop: 60,
-    backgroundColor: colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
-  },
-  backButton: {
-    padding: 8,
-    marginRight: 12,
-    borderRadius: 8,
+    gap: 6,
     backgroundColor: colors.backgroundAlt,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 12,
   },
-  headerContent: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  subtitle: {
-    fontSize: 14,
+  updateText: {
+    fontSize: 12,
     color: colors.textMuted,
-    marginTop: 2,
+    fontFamily: 'Roboto_400Regular',
   },
-  scrollView: {
-    flex: 1,
-    padding: 16,
-  },
-  currentWeatherCard: {
+
+  // Enhanced Weekend Schedule Styles - CONDENSED VERSION
+  scheduleCard: {
     backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: 16,
+    padding: 16, // Reduced from 20
     borderWidth: 1,
     borderColor: colors.divider,
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+    boxShadow: '0 8px 32px rgba(16,24,40,0.08)',
+    marginBottom: 20,
   },
-  currentWeatherHeader: {
+  scheduleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14, // Reduced from 20
+  },
+  scheduleHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10, // Reduced from 12
+    flex: 1,
+  },
+  scheduleHeaderText: {
+    flex: 1,
+  },
+  scheduleTitle: {
+    fontSize: 18, // Reduced from 20
+    fontWeight: '700',
+    color: colors.text,
+    fontFamily: 'Roboto_700Bold',
+    marginBottom: 2,
+  },
+  scheduleSubtitle: {
+    fontSize: 12, // Reduced from 13
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+  },
+  categoryBadge: {
+    backgroundColor: colors.primary + '20',
+    paddingHorizontal: 10, // Reduced from 12
+    paddingVertical: 5, // Reduced from 6
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary + '40',
+  },
+  categoryBadgeText: {
+    fontSize: 11, // Reduced from 12
+    fontWeight: '700',
+    color: colors.primary,
+    fontFamily: 'Roboto_700Bold',
+  },
+
+  // Enhanced Schedule List - CONDENSED
+  enhancedScheduleList: {
+    gap: 10, // Reduced from 16
+    marginBottom: 16, // Reduced from 24
+  },
+  enhancedSessionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12, // Reduced from 16
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 10, // Reduced from 14
+    boxShadow: '0 4px 16px rgba(16,24,40,0.04)',
+  },
+  sessionIconContainer: {
+    width: 36, // Reduced from 44
+    height: 36, // Reduced from 44
+    borderRadius: 18, // Reduced from 22
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  sessionMainContent: {
+    flex: 1,
+    gap: 6, // Reduced from 8
+  },
+  sessionTitleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
   },
-  currentWeatherTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  currentWeatherContent: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  temperature: {
-    fontSize: 48,
+  enhancedSessionTitle: {
+    fontSize: 15, // Reduced from 16
     fontWeight: '700',
     color: colors.text,
+    fontFamily: 'Roboto_700Bold',
+    flex: 1,
   },
-  weatherDescription: {
-    fontSize: 16,
+  sessionTimeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3, // Reduced from 4
+    backgroundColor: colors.background,
+    paddingHorizontal: 6, // Reduced from 8
+    paddingVertical: 3, // Reduced from 4
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  enhancedSessionTime: {
+    fontSize: 13, // Reduced from 14
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: 'Roboto_500Medium',
+  },
+  sessionDetailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12, // Reduced from 16
+  },
+  sessionDayContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3, // Reduced from 4
+  },
+  sessionDay: {
+    fontSize: 11, // Reduced from 12
     color: colors.textMuted,
+    fontFamily: 'Roboto_500Medium',
+    fontWeight: '600',
+  },
+  sessionDateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4, // Reduced from 6
+  },
+  sessionRelativeDate: {
+    fontSize: 11, // Reduced from 12
+    color: colors.text,
+    fontFamily: 'Roboto_500Medium',
+    fontWeight: '600',
+  },
+  sessionFormattedDate: {
+    fontSize: 10, // Reduced from 11
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+  },
+  sessionNumber: {
+    width: 24, // Reduced from 28
+    height: 24, // Reduced from 28
+    borderRadius: 12, // Reduced from 14
+    backgroundColor: colors.backgroundAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  sessionNumberText: {
+    fontSize: 11, // Reduced from 12
+    fontWeight: '700',
+    color: colors.text,
+    fontFamily: 'Roboto_700Bold',
+  },
+
+  // Schedule Summary - CONDENSED
+  scheduleSummary: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    padding: 12, // Reduced from 16
+    marginBottom: 14, // Reduced from 20
+    borderWidth: 1,
+    borderColor: colors.divider,
+    gap: 8, // Reduced from 12
+  },
+  summaryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8, // Reduced from 10
+  },
+  summaryLabel: {
+    fontSize: 12, // Reduced from 13
+    color: colors.textMuted,
+    fontFamily: 'Roboto_500Medium',
+    fontWeight: '600',
+    minWidth: 55, // Reduced from 60
+  },
+  summaryValue: {
+    fontSize: 12, // Reduced from 13
+    color: colors.text,
+    fontFamily: 'Roboto_400Regular',
+    flex: 1,
+  },
+
+  // Session Type Legend - CONDENSED & ENHANCED FOR MOTOGP
+  sessionLegend: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    padding: 12, // Reduced from 16
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  legendTitle: {
+    fontSize: 13, // Reduced from 14
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: 'Roboto_500Medium',
+    marginBottom: 8, // Reduced from 12
+  },
+  legendItems: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16, // Reduced from 20
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5, // Reduced from 6
+  },
+  legendDot: {
+    width: 7, // Reduced from 8
+    height: 7, // Reduced from 8
+    borderRadius: 3.5, // Reduced from 4
+  },
+  legendText: {
+    fontSize: 11, // Reduced from 12
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+  },
+
+  // Sunrise & Sunset Times Styles
+  sunTimesCard: {
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+    marginBottom: 16,
+  },
+  sunTimesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  sunTimesTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    fontFamily: 'Roboto_700Bold',
+    marginLeft: 8,
+    flex: 1,
+  },
+  timeStatusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  timeStatusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'Roboto_500Medium',
+  },
+  sunTimesGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  sunTimeItem: {
+    flex: 1,
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  sunTimeIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  sunTimeLabel: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginBottom: 4,
+  },
+  sunTimeValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    fontFamily: 'Roboto_700Bold',
+  },
+  weeklySunTimes: {
     marginTop: 4,
+  },
+  weeklySunTimesTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: 'Roboto_500Medium',
+    marginBottom: 12,
+  },
+  weeklySunTimesScroll: {
+    paddingHorizontal: 4,
+    gap: 8,
+  },
+  weeklySunTimeCard: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 10,
+    padding: 10,
+    minWidth: 80,
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  weeklySunTimeCardToday: {
+    backgroundColor: colors.primary + '15',
+    borderColor: colors.primary + '30',
+  },
+  weeklySunTimeDay: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_500Medium',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  weeklySunTimeDayToday: {
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  weeklySunTimeValues: {
+    gap: 4,
+  },
+  weeklySunTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  weeklySunTimeText: {
+    fontSize: 10,
+    color: colors.text,
+    fontFamily: 'Roboto_400Regular',
+  },
+  card: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+    marginBottom: 12,
+  },
+  chartCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    marginBottom: 12,
+    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+  },
+  // 72-Hour Forecast section styles
+  forecast72Card: {
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  forecast72Header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  forecast72TitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  forecast72Title: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    fontFamily: 'Roboto_700Bold',
+  },
+  forecast72Subtitle: {
+    fontSize: 14,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginBottom: 16,
+  },
+  viewDetailedBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.backgroundAlt,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  viewDetailedText: {
+    fontSize: 13,
+    color: colors.primary,
+    fontFamily: 'Roboto_500Medium',
+  },
+  chartPreviewContainer: {
+    marginBottom: 16,
+  },
+  chartPreviewLabel: {
+    fontSize: 14,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_500Medium',
+    marginBottom: 8,
+  },
+  forecast72Highlights: {
+    marginBottom: 16,
+  },
+  highlightsTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: 'Roboto_500Medium',
+    marginBottom: 12,
+  },
+  highlightsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  highlightItem: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 10,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  highlightLabel: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginTop: 4,
+    marginBottom: 2,
+  },
+  highlightValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: 'Roboto_500Medium',
+  },
+  quickHourlyPreview: {
+    marginTop: 4,
+  },
+  quickHourlyTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: 'Roboto_500Medium',
+    marginBottom: 12,
+  },
+  quickHourlyScroll: {
+    paddingHorizontal: 4,
+    gap: 8,
+  },
+  quickHourCard: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 10,
+    padding: 10,
+    alignItems: 'center',
+    minWidth: 70,
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  quickHourTime: {
+    fontSize: 10,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginBottom: 6,
+  },
+  quickHourTemp: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: 'Roboto_500Medium',
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  quickHourRain: {
+    fontSize: 10,
+    color: colors.precipitation,
+    fontFamily: 'Roboto_400Regular',
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  metricCard: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    alignItems: 'center',
+    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+  },
+  metricLabel: {
+    fontSize: 14,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_500Medium',
+    marginBottom: 8,
+  },
+  currentWeatherContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginTop: 12,
+  },
+  currentWeatherText: {
+    flex: 1,
   },
   feelsLike: {
     fontSize: 14,
     color: colors.textMuted,
-    marginTop: 4,
+    fontFamily: 'Roboto_400Regular',
+    marginTop: 2,
   },
-  weatherDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.divider,
-  },
-  weatherDetailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  weatherDetailText: {
-    fontSize: 14,
+  weatherDescription: {
+    fontSize: 13,
     color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginTop: 4,
+    fontStyle: 'italic',
   },
-  scheduleCard: {
+  detailsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 12,
+  },
+  detailCard: {
+    flex: 1,
+    minWidth: '45%',
     backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 12,
+    padding: 12,
     borderWidth: 1,
     borderColor: colors.divider,
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+    alignItems: 'center',
+    boxShadow: '0 4px 16px rgba(16,24,40,0.04)',
   },
-  sectionTitle: {
+  detailLabel: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  detailValue: {
     fontSize: 18,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 16,
+    fontFamily: 'Roboto_700Bold',
   },
-  sessionItem: {
+  detailSub: {
+    fontSize: 10,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginTop: 2,
+  },
+  cardLabel: { color: colors.textMuted, fontFamily: 'Roboto_500Medium' },
+  cardValue: { fontSize: 28, color: colors.text, fontWeight: '700', marginTop: 6, fontFamily: 'Roboto_700Bold' },
+  dayPill: {
+    backgroundColor: colors.backgroundAlt,
     paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    minWidth: 110,
+    alignItems: 'center',
+  },
+  dayText: { 
+    color: colors.text, 
+    fontFamily: 'Roboto_500Medium',
+    fontSize: 13,
+    marginBottom: 6,
+  },
+  daySymbolContainer: {
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  dayTemp: { 
+    color: colors.textMuted, 
+    fontFamily: 'Roboto_400Regular',
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  dayRain: {
+    color: colors.precipitation,
+    fontFamily: 'Roboto_500Medium',
+    fontSize: 11,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  dayRainProb: {
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    fontSize: 10,
+    marginBottom: 4,
+  },
+  // Sunrise/sunset times in daily forecast
+  daySunTimes: {
+    marginTop: 2,
+  },
+  daySunTime: {
+    fontSize: 9,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    textAlign: 'center',
+  },
+  muted: { color: colors.textMuted, fontFamily: 'Roboto_400Regular' },
+  error: { color: '#C62828', fontWeight: '600', fontFamily: 'Roboto_500Medium' },
+  // BottomSheet styling
+  bottomSheetBackground: {
+    backgroundColor: colors.background,
+  },
+  bottomSheetHandle: {
+    backgroundColor: colors.divider,
+  },
+  sheet: { 
+    padding: 16, 
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  sheetTitle: { fontSize: 18, fontWeight: '700', color: colors.text, fontFamily: 'Roboto_700Bold' },
+  sessionText: { color: colors.text, fontFamily: 'Roboto_400Regular' },
+  moreBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.backgroundAlt,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  moreBtnText: { color: colors.text, fontFamily: 'Roboto_500Medium' },
+  sessionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: colors.divider,
   },
-  sessionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  sessionTypeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  sessionTypeIndicator: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sessionType: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  sessionDate: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  sessionDetails: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginLeft: 36,
-  },
-  sessionTime: {
-    fontSize: 14,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  sessionDuration: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  chartsContainer: {
-    gap: 16,
-    marginBottom: 16,
-  },
-  humidityCard: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 20,
-    marginBottom: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.divider,
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
-  },
-  humidityText: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    marginTop: 12,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorCard: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 20,
-    marginBottom: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.error + '20',
-    boxShadow: '0 6px 24px rgba(255,59,48,0.06)',
-  },
-  errorText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.error,
-    textAlign: 'center',
-  },
-  errorSubtext: {
-    fontSize: 14,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  backButtonStyle: {
-    marginTop: 16,
-  },
-  bottomPadding: {
-    height: 100,
-  },
-  bottomSheetContent: {
-    flex: 1,
-    padding: 20,
-  },
-  bottomSheetTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  bottomSheetText: {
-    fontSize: 14,
-    color: colors.textMuted,
-    lineHeight: 20,
-  },
+  sessionDotLarge: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent },
+  sessionSub: { color: colors.textMuted, fontFamily: 'Roboto_400Regular', marginTop: 2 },
 });
-
-export default DetailScreen;

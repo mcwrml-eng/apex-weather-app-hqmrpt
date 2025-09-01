@@ -54,62 +54,11 @@ export const motogpCircuits: Circuit[] = [
 ];
 
 export function getCircuitBySlug(slug: string, category: 'f1' | 'motogp') {
-  try {
-    console.log('getCircuitBySlug: Looking for', slug, 'in', category);
-    
-    if (!slug || typeof slug !== 'string') {
-      console.error('getCircuitBySlug: Invalid slug provided:', slug);
-      return null;
-    }
-
-    if (!category || (category !== 'f1' && category !== 'motogp')) {
-      console.error('getCircuitBySlug: Invalid category provided:', category);
-      return null;
-    }
-
-    const list = category === 'f1' ? f1Circuits : motogpCircuits;
-    const circuit = list.find((c) => c.slug === slug);
-    
-    if (!circuit) {
-      console.log('getCircuitBySlug: Circuit not found for slug:', slug, 'in category:', category);
-      return null;
-    }
-    
-    console.log('getCircuitBySlug: Found circuit:', circuit.name);
-    return circuit;
-  } catch (error) {
-    console.error('getCircuitBySlug: Error during lookup:', error);
-    return null;
+  const list = category === 'f1' ? f1Circuits : motogpCircuits;
+  const hit = list.find((c) => c.slug === slug);
+  if (!hit) {
+    console.log('Circuit not found', slug, category);
+    return list[0];
   }
-}
-
-// Helper function to get all circuits
-export function getAllCircuits(): { f1: Circuit[], motogp: Circuit[] } {
-  return {
-    f1: f1Circuits,
-    motogp: motogpCircuits
-  };
-}
-
-// Helper function to search circuits by name
-export function searchCircuits(query: string, category?: 'f1' | 'motogp'): Circuit[] {
-  try {
-    if (!query || typeof query !== 'string') {
-      return [];
-    }
-
-    const searchTerm = query.toLowerCase().trim();
-    const circuits = category ? 
-      (category === 'f1' ? f1Circuits : motogpCircuits) : 
-      [...f1Circuits, ...motogpCircuits];
-
-    return circuits.filter(circuit => 
-      circuit.name.toLowerCase().includes(searchTerm) ||
-      circuit.country.toLowerCase().includes(searchTerm) ||
-      circuit.slug.toLowerCase().includes(searchTerm)
-    );
-  } catch (error) {
-    console.error('searchCircuits: Error during search:', error);
-    return [];
-  }
+  return hit;
 }

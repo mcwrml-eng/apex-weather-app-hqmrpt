@@ -10,7 +10,6 @@ import { setupErrorLogging } from '../utils/errorLogger';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, Roboto_400Regular, Roboto_500Medium, Roboto_700Bold } from '@expo-google-fonts/roboto';
 import { UnitProvider } from '../state/UnitContext';
-import ErrorBoundary from '../components/ErrorBoundary';
 
 const STORAGE_KEY = 'emulated_device';
 
@@ -57,32 +56,25 @@ export default function RootLayout() {
   console.log('RootLayout: Rendering app with insets:', insetsToUse);
 
   return (
-    <ErrorBoundary
-      onError={(error, errorInfo) => {
-        console.error('RootLayout: Global error caught:', error);
-        console.error('RootLayout: Error info:', errorInfo);
-      }}
-    >
-      <SafeAreaProvider>
-        <UnitProvider>
-          <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
-            <SafeAreaView style={[commonStyles.wrapper, {
-                paddingTop: insetsToUse.top,
-                paddingBottom: insetsToUse.bottom,
-                paddingLeft: insetsToUse.left,
-                paddingRight: insetsToUse.right,
-             }]}>
-              <StatusBar style="auto" />
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  animation: 'default',
-                }}
-              />
-            </SafeAreaView>
-          </GestureHandlerRootView>
-        </UnitProvider>
-      </SafeAreaProvider>
-    </ErrorBoundary>
+    <SafeAreaProvider>
+      <UnitProvider>
+        <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+          <SafeAreaView style={[commonStyles.wrapper, {
+              paddingTop: insetsToUse.top,
+              paddingBottom: insetsToUse.bottom,
+              paddingLeft: insetsToUse.left,
+              paddingRight: insetsToUse.right,
+           }]}>
+            <StatusBar style="auto" />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                animation: 'default',
+              }}
+            />
+          </SafeAreaView>
+        </GestureHandlerRootView>
+      </UnitProvider>
+    </SafeAreaProvider>
   );
 }

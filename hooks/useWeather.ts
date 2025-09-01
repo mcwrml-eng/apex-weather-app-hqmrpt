@@ -286,21 +286,6 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
   useEffect(() => {
     let cancelled = false;
     
-    // Validate inputs first
-    if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
-      console.error('useWeather: Invalid coordinates provided:', { latitude, longitude });
-      setErr('Invalid coordinates');
-      setLoading(false);
-      return;
-    }
-
-    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-      console.error('useWeather: Coordinates out of range:', { latitude, longitude });
-      setErr('Coordinates out of range');
-      setLoading(false);
-      return;
-    }
-    
     async function run() {
       try {
         console.log('useWeather: Starting enhanced accurate fetch for', latitude, longitude, unit);
@@ -329,30 +314,13 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
           `&temperature_unit=${unitParams.temperature_unit}&wind_speed_unit=${unitParams.wind_speed_unit}&precipitation_unit=${unitParams.precipitation_unit}`;
 
         console.log('useWeather: Fetching enhanced accurate data from API');
-        
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-        
-        const res = await fetch(url, {
-          signal: controller.signal,
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'WeatherApp/1.0'
-          }
-        });
-        
-        clearTimeout(timeoutId);
+        const res = await fetch(url);
         
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         }
         
         const json = await res.json();
-        
-        if (!json) {
-          throw new Error('Empty response from weather API');
-        }
-        
         console.log('useWeather: Enhanced API response received', Object.keys(json));
 
         if (cancelled) {
@@ -459,25 +427,8 @@ export function useWeather(latitude: number, longitude: number, unit: Unit): Wea
         setLoading(false);
         console.log('useWeather: Successfully loaded enhanced accurate weather data');
       } catch (e: any) {
-        if (cancelled) {
-          console.log('useWeather: Request was cancelled');
-          return;
-        }
-        
-        console.error('useWeather: Error fetching enhanced weather:', e?.message || e);
-        
-        let errorMessage = 'Failed to fetch weather data';
-        if (e?.name === 'AbortError') {
-          errorMessage = 'Request timed out';
-        } else if (e?.message?.includes('Network')) {
-          errorMessage = 'Network error - check connection';
-        } else if (e?.message?.includes('HTTP')) {
-          errorMessage = `Service error: ${e.message}`;
-        } else if (e?.message) {
-          errorMessage = e.message;
-        }
-        
-        setErr(errorMessage);
+        console.log('useWeather: Error fetching enhanced weather:', e?.message || e);
+        setErr('fetch_failed');
         setLoading(false);
       }
     }
