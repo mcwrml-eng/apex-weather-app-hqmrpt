@@ -40,6 +40,7 @@ const RainfallRadar: React.FC<Props> = ({
   const [totalFrames, setTotalFrames] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
   const [lastSuccessfulLoad, setLastSuccessfulLoad] = useState<Date | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const webViewRef = useRef<WebView>(null);
   
   // Animation values
@@ -47,7 +48,7 @@ const RainfallRadar: React.FC<Props> = ({
   const playButtonRotation = useSharedValue(0);
   const progressAnimation = useSharedValue(0);
 
-  console.log('RainfallRadar: Rendering with enhanced error handling:', { 
+  console.log('RainfallRadar: Rendering with improved error handling:', { 
     latitude, 
     longitude, 
     circuitName, 
@@ -57,6 +58,7 @@ const RainfallRadar: React.FC<Props> = ({
     totalFrames,
     retryCount,
     hasError,
+    errorMessage,
     lastSuccessfulLoad: lastSuccessfulLoad?.toISOString()
   });
 
@@ -126,9 +128,9 @@ const RainfallRadar: React.FC<Props> = ({
     };
   });
 
-  // Enhanced HTML generation with better error handling and caching
+  // Improved HTML generation with better error handling and fallback options
   const generateRadarHTML = useCallback(() => {
-    console.log('RainfallRadar: Generating enhanced HTML with improved error handling');
+    console.log('RainfallRadar: Generating improved HTML with better network handling');
     
     const safeCircuitName = circuitName.replace(/[<>"'&]/g, '');
     const cacheKey = `radar_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -143,7 +145,6 @@ const RainfallRadar: React.FC<Props> = ({
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Rainfall Radar - ${safeCircuitName}</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * {
             box-sizing: border-box;
@@ -165,6 +166,7 @@ const RainfallRadar: React.FC<Props> = ({
             height: 100vh;
             width: 100%;
             position: relative;
+            background-color: #f0f0f0;
         }
         .radar-controls {
             position: absolute;
@@ -318,6 +320,7 @@ const RainfallRadar: React.FC<Props> = ({
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             box-shadow: 0 8px 32px rgba(255, 59, 48, 0.3);
+            max-width: 300px;
         }
         .retry-btn {
             background: rgba(255, 255, 255, 0.2);
@@ -351,32 +354,73 @@ const RainfallRadar: React.FC<Props> = ({
         .status-online { background: rgba(52, 199, 89, 0.9); }
         .status-offline { background: rgba(255, 59, 48, 0.9); }
         .status-loading { background: rgba(255, 149, 0, 0.9); }
+        .fallback-map {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+        }
+        .fallback-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        .fallback-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .fallback-description {
+            font-size: 14px;
+            opacity: 0.8;
+            max-width: 250px;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
     <div id="connectionStatus" class="connection-status status-loading">
-        Connecting...
+        Initializing...
     </div>
     
     <div id="loading" class="loading">
         <div style="font-size: 16px; margin-bottom: 8px;">🌧️</div>
         <div>Loading rainfall radar...</div>
-        <div style="font-size: 12px; margin-top: 8px; opacity: 0.7;">Powered by RainViewer</div>
+        <div style="font-size: 12px; margin-top: 8px; opacity: 0.7;">Connecting to RainViewer</div>
         <div style="font-size: 10px; margin-top: 4px; opacity: 0.5;">Cache: ${cacheKey}</div>
     </div>
     
     <div id="error" class="error-message" style="display: none;">
         <div style="font-size: 16px; margin-bottom: 8px;">⚠️</div>
-        <div id="errorTitle">Failed to load radar data</div>
-        <div id="errorMessage" style="font-size: 12px; margin-top: 8px;">Please check your connection</div>
-        <button class="retry-btn" onclick="retryLoad()">Retry</button>
+        <div id="errorTitle">Radar Service Unavailable</div>
+        <div id="errorMessage" style="font-size: 12px; margin-top: 8px;">Unable to connect to radar data service</div>
+        <button class="retry-btn" onclick="retryLoad()">Try Again</button>
+        <div style="font-size: 10px; margin-top: 8px; opacity: 0.7;">
+            Fallback map will be shown if service remains unavailable
+        </div>
     </div>
     
-    <div id="map"></div>
+    <div id="map">
+        <div id="fallbackMap" class="fallback-map" style="display: none;">
+            <div class="fallback-icon">🗺️</div>
+            <div class="fallback-title">Radar Service Unavailable</div>
+            <div class="fallback-description">
+                The rainfall radar service is currently unavailable. 
+                This may be due to network connectivity issues or temporary service outages.
+                <br><br>
+                <strong>${safeCircuitName}</strong><br>
+                Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}
+            </div>
+        </div>
+    </div>
     
-    <div class="radar-controls">
+    <div class="radar-controls" id="radarControls" style="display: none;">
         <button id="radarToggle" class="radar-toggle active">Radar Active</button>
-        <button id="satelliteToggle" class="radar-toggle">Satellite</button>
+        <button id="satelliteToggle" class="radar-toggle">Satellite View</button>
         
         <div class="animation-controls" id="animationControls">
             <button id="playPauseBtn" class="animation-btn">▶</button>
@@ -388,7 +432,7 @@ const RainfallRadar: React.FC<Props> = ({
         <div id="frameInfo" class="frame-info">Frame 1 of 12</div>
     </div>
     
-    <div class="legend" id="legend">
+    <div class="legend" id="legend" style="display: none;">
         <div class="legend-title">Rainfall Intensity</div>
         <div class="legend-item">
             <div class="legend-color" style="background: #00ff00;"></div>
@@ -412,11 +456,10 @@ const RainfallRadar: React.FC<Props> = ({
         </div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        console.log('RainfallRadar: Starting enhanced map initialization');
+        console.log('RainfallRadar: Starting improved radar initialization');
         
-        let map;
+        let map = null;
         let radarLayer = null;
         let radarData = [];
         let currentFrame = 0;
@@ -430,8 +473,10 @@ const RainfallRadar: React.FC<Props> = ({
         let autoStartRequested = ${autoStartAnimation ? 'true' : 'false'};
         let retryCount = 0;
         let maxRetries = 3;
-        let connectionTimeout = 15000; // 15 seconds
+        let connectionTimeout = 20000; // 20 seconds
         let isOnline = navigator.onLine;
+        let leafletLoaded = false;
+        let usesFallback = false;
         
         // Enhanced error tracking
         let lastError = null;
@@ -464,7 +509,7 @@ const RainfallRadar: React.FC<Props> = ({
                 console.error(errorMessage, error);
                 errorCount++;
                 lastError = error;
-                showError(errorMessage + ': ' + error.message);
+                showError(errorMessage, error.message);
                 sendMessage({
                     type: 'error',
                     error: errorMessage,
@@ -487,17 +532,48 @@ const RainfallRadar: React.FC<Props> = ({
                 error.style.display = 'block';
                 if (errorTitle) errorTitle.textContent = message;
                 if (errorMessage) {
-                    errorMessage.textContent = details || 'Please check your internet connection and try again.';
+                    errorMessage.textContent = details || 'The radar service may be temporarily unavailable. Please try again later.';
                 }
             }
             
-            updateConnectionStatus('offline', 'Connection failed');
+            updateConnectionStatus('offline', 'Service unavailable');
+            
+            // Show fallback after multiple failures
+            if (retryCount >= 2) {
+                showFallbackMap();
+            }
         }
         
         function hideError() {
             const error = document.getElementById('error');
             if (error) error.style.display = 'none';
             updateConnectionStatus('online', 'Connected');
+        }
+        
+        function showFallbackMap() {
+            console.log('RainfallRadar: Showing fallback map');
+            const fallbackMap = document.getElementById('fallbackMap');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            
+            if (fallbackMap) fallbackMap.style.display = 'flex';
+            if (loading) loading.style.display = 'none';
+            if (error) error.style.display = 'none';
+            
+            usesFallback = true;
+            updateConnectionStatus('offline', 'Using fallback map');
+            
+            sendMessage({
+                type: 'fallbackShown',
+                reason: 'Service unavailable after retries',
+                retryCount: retryCount
+            });
+        }
+        
+        function hideFallbackMap() {
+            const fallbackMap = document.getElementById('fallbackMap');
+            if (fallbackMap) fallbackMap.style.display = 'none';
+            usesFallback = false;
         }
         
         // Enhanced message sending with error handling
@@ -509,7 +585,8 @@ const RainfallRadar: React.FC<Props> = ({
                         timestamp: Date.now(),
                         cacheKey: '${cacheKey}',
                         retryCount: retryCount,
-                        errorCount: errorCount
+                        errorCount: errorCount,
+                        usesFallback: usesFallback
                     });
                     window.ReactNativeWebView.postMessage(message);
                     console.log('RainfallRadar: Sent message to React Native:', data.type);
@@ -521,12 +598,13 @@ const RainfallRadar: React.FC<Props> = ({
             }
         }
         
-        // Retry mechanism
+        // Retry mechanism with progressive delays
         function retryLoad() {
             if (retryCount < maxRetries) {
                 retryCount++;
                 console.log('RainfallRadar: Retrying load attempt', retryCount);
                 hideError();
+                hideFallbackMap();
                 
                 const loading = document.getElementById('loading');
                 if (loading) {
@@ -544,12 +622,18 @@ const RainfallRadar: React.FC<Props> = ({
                     radarLayer = null;
                 }
                 
-                // Retry after a delay
+                // Progressive retry delay
+                const delay = Math.min(2000 * retryCount, 8000);
                 setTimeout(() => {
-                    loadRadarData();
-                }, 2000);
+                    if (leafletLoaded) {
+                        loadRadarData();
+                    } else {
+                        initMap();
+                    }
+                }, delay);
             } else {
-                showError('Maximum retry attempts reached', 'Please refresh the page or check your internet connection.');
+                showError('Service Unavailable', 'The radar service is currently unavailable. Please try again later.');
+                showFallbackMap();
                 sendMessage({
                     type: 'maxRetriesReached',
                     retryCount: retryCount,
@@ -558,11 +642,51 @@ const RainfallRadar: React.FC<Props> = ({
             }
         }
         
+        // Load Leaflet dynamically with fallback
+        function loadLeaflet() {
+            return new Promise((resolve, reject) => {
+                console.log('RainfallRadar: Loading Leaflet library');
+                
+                // Check if Leaflet is already loaded
+                if (window.L) {
+                    leafletLoaded = true;
+                    resolve();
+                    return;
+                }
+                
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+                link.onload = () => {
+                    const script = document.createElement('script');
+                    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+                    script.onload = () => {
+                        leafletLoaded = true;
+                        console.log('RainfallRadar: Leaflet loaded successfully');
+                        resolve();
+                    };
+                    script.onerror = () => {
+                        console.error('RainfallRadar: Failed to load Leaflet script');
+                        reject(new Error('Failed to load Leaflet script'));
+                    };
+                    document.head.appendChild(script);
+                };
+                link.onerror = () => {
+                    console.error('RainfallRadar: Failed to load Leaflet CSS');
+                    reject(new Error('Failed to load Leaflet CSS'));
+                };
+                document.head.appendChild(link);
+            });
+        }
+        
         // Initialize map with enhanced error handling
-        function initMap() {
-            console.log('RainfallRadar: Initializing enhanced map');
+        async function initMap() {
+            console.log('RainfallRadar: Initializing improved map');
             
-            return safeExecute(() => {
+            try {
+                // Load Leaflet first
+                await loadLeaflet();
+                
                 const lat = parseFloat(${latitude});
                 const lng = parseFloat(${longitude});
                 
@@ -582,12 +706,12 @@ const RainfallRadar: React.FC<Props> = ({
                     minZoom: 3
                 });
                 
-                // Enhanced tile layers with error handling
+                // Enhanced tile layers with better error handling
                 const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '© OpenStreetMap contributors',
                     maxZoom: 18,
-                    timeout: 10000,
-                    retryDelay: 1000,
+                    timeout: 15000,
+                    retryDelay: 2000,
                     retryLimit: 3,
                     errorTileUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgZmlsbD0iIzMzMyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSIjNjY2IiBmb250LXNpemU9IjE0IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+Tm8gSW1hZ2U8L3RleHQ+PC9zdmc+'
                 });
@@ -595,8 +719,8 @@ const RainfallRadar: React.FC<Props> = ({
                 const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                     attribution: '© Esri, Maxar, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, and the GIS User Community',
                     maxZoom: 18,
-                    timeout: 10000,
-                    retryDelay: 1000,
+                    timeout: 15000,
+                    retryDelay: 2000,
                     retryLimit: 3,
                     errorTileUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgZmlsbD0iIzMzMyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSIjNjY2IiBmb250LXNpemU9IjE0IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+Tm8gSW1hZ2U8L3RleHQ+PC9zdmc+'
                 });
@@ -641,16 +765,17 @@ const RainfallRadar: React.FC<Props> = ({
                 });
                 
                 // Load radar data
-                loadRadarData();
+                await loadRadarData();
                 
                 // Hide loading
                 const loading = document.getElementById('loading');
                 if (loading) loading.style.display = 'none';
                 
                 hideError();
+                hideFallbackMap();
                 updateConnectionStatus('online', 'Map loaded');
                 
-                console.log('RainfallRadar: Enhanced map initialized successfully');
+                console.log('RainfallRadar: Improved map initialized successfully');
                 
                 // Layer switching functions
                 window.switchToSatellite = function() {
@@ -673,14 +798,24 @@ const RainfallRadar: React.FC<Props> = ({
                         isSatelliteView = false;
                         const btn = document.getElementById('satelliteToggle');
                         if (btn) {
-                            btn.textContent = 'Satellite';
+                            btn.textContent = 'Satellite View';
                             btn.classList.remove('active');
                         }
                     }, 'Failed to switch to street view');
                 };
                 
                 return true;
-            }, 'Failed to initialize map');
+            } catch (error) {
+                console.error('RainfallRadar: Failed to initialize map:', error);
+                showError('Map Initialization Failed', error.message);
+                
+                // Show fallback after map init failure
+                setTimeout(() => {
+                    showFallbackMap();
+                }, 3000);
+                
+                return false;
+            }
         }
         
         function toggleSatellite() {
@@ -693,127 +828,148 @@ const RainfallRadar: React.FC<Props> = ({
             }, 'Failed to toggle satellite view');
         }
         
-        // Enhanced radar data loading with better error handling
+        // Enhanced radar data loading with multiple fallback strategies
         async function loadRadarData() {
-            console.log('RainfallRadar: Loading radar data with enhanced error handling');
+            console.log('RainfallRadar: Loading radar data with improved error handling');
             updateConnectionStatus('loading', 'Loading radar data...');
             
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => {
-                    controller.abort();
-                    console.warn('RainfallRadar: Request timed out after', connectionTimeout, 'ms');
-                }, connectionTimeout);
-                
-                console.log('RainfallRadar: Fetching from RainViewer API...');
-                const response = await fetch('https://api.rainviewer.com/public/weather-maps.json', {
-                    signal: controller.signal,
-                    headers: {
-                        'Accept': 'application/json',
-                        'Cache-Control': 'no-cache',
-                        'Pragma': 'no-cache'
-                    },
-                    mode: 'cors',
-                    credentials: 'omit'
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (!response.ok) {
-                    throw new Error(\`Network response was not ok: \${response.status} \${response.statusText}\`);
-                }
-                
-                const data = await response.json();
-                console.log('RainfallRadar: Received radar data:', data);
-                
-                if (data && data.radar && data.radar.past) {
-                    radarData = data.radar.past.concat(data.radar.nowcast || []);
-                    console.log('RainfallRadar: Loaded radar frames:', radarData.length);
+            const apiUrls = [
+                'https://api.rainviewer.com/public/weather-maps.json',
+                'https://tilecache.rainviewer.com/api/maps.json'
+            ];
+            
+            for (let i = 0; i < apiUrls.length; i++) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => {
+                        controller.abort();
+                        console.warn('RainfallRadar: Request timed out after', connectionTimeout, 'ms');
+                    }, connectionTimeout);
                     
-                    if (radarData.length > 0) {
-                        currentFrame = radarData.length - 1;
-                        const slider = document.getElementById('timeSlider');
-                        if (slider) {
-                            slider.max = radarData.length - 1;
-                            slider.value = currentFrame;
+                    console.log('RainfallRadar: Trying API endpoint', i + 1, ':', apiUrls[i]);
+                    const response = await fetch(apiUrls[i], {
+                        signal: controller.signal,
+                        headers: {
+                            'Accept': 'application/json',
+                            'Cache-Control': 'no-cache, no-store, must-revalidate',
+                            'Pragma': 'no-cache'
+                        },
+                        mode: 'cors',
+                        credentials: 'omit'
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (!response.ok) {
+                        throw new Error(\`HTTP \${response.status}: \${response.statusText}\`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('RainfallRadar: Received radar data from endpoint', i + 1, ':', data);
+                    
+                    if (data && data.radar && data.radar.past) {
+                        radarData = data.radar.past.concat(data.radar.nowcast || []);
+                        console.log('RainfallRadar: Loaded radar frames:', radarData.length);
+                        
+                        if (radarData.length > 0) {
+                            currentFrame = radarData.length - 1;
+                            const slider = document.getElementById('timeSlider');
+                            if (slider) {
+                                slider.max = radarData.length - 1;
+                                slider.value = currentFrame;
+                            }
+                            updateFrameInfo();
+                            
+                            // Show radar
+                            showRadarFrame(currentFrame);
+                            isRadarVisible = true;
+                            
+                            // Show controls
+                            const legend = document.getElementById('legend');
+                            const animationControls = document.getElementById('animationControls');
+                            const frameInfo = document.getElementById('frameInfo');
+                            const timeSlider = document.getElementById('timeSlider');
+                            const radarControls = document.getElementById('radarControls');
+                            
+                            if (legend) legend.style.display = 'block';
+                            if (animationControls) animationControls.style.display = 'flex';
+                            if (frameInfo) frameInfo.style.display = 'block';
+                            if (timeSlider) timeSlider.style.display = 'block';
+                            if (radarControls) radarControls.style.display = 'block';
+                            
+                            // Send success message
+                            sendMessage({
+                                type: 'framesLoaded',
+                                totalFrames: radarData.length,
+                                currentFrame: currentFrame,
+                                loadTime: Date.now() - loadStartTime,
+                                apiEndpoint: i + 1
+                            });
+                            
+                            updateConnectionStatus('online', \`\${radarData.length} frames loaded\`);
+                            
+                            // Auto-start animation if requested
+                            if (autoStartRequested && radarData.length > 1) {
+                                console.log('RainfallRadar: Auto-starting animation as requested');
+                                setTimeout(() => {
+                                    startAnimation();
+                                }, 1500);
+                            }
+                            
+                            // Reset retry count on success
+                            retryCount = 0;
+                            errorCount = 0;
+                            
+                            return; // Success, exit the loop
+                        } else {
+                            throw new Error('No radar data available in response');
                         }
-                        updateFrameInfo();
+                    } else {
+                        throw new Error('Invalid radar data structure received');
+                    }
+                } catch (error) {
+                    console.error('RainfallRadar: Failed to load from endpoint', i + 1, ':', error);
+                    
+                    // If this was the last endpoint, handle the error
+                    if (i === apiUrls.length - 1) {
+                        let errorMessage = 'Radar Service Unavailable';
+                        let errorDetails = 'Unable to connect to any radar data service';
                         
-                        // Show radar
-                        showRadarFrame(currentFrame);
-                        isRadarVisible = true;
+                        if (error.name === 'AbortError') {
+                            errorMessage = 'Connection Timeout';
+                            errorDetails = \`Request timed out after \${connectionTimeout/1000} seconds\`;
+                        } else if (error.message.includes('HTTP')) {
+                            errorMessage = 'Service Error';
+                            errorDetails = error.message;
+                        } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+                            errorMessage = 'Network Error';
+                            errorDetails = 'Please check your internet connection';
+                        } else if (error.message.includes('CORS')) {
+                            errorMessage = 'Access Blocked';
+                            errorDetails = 'Radar service access is restricted';
+                        }
                         
-                        // Show controls
-                        const legend = document.getElementById('legend');
-                        const animationControls = document.getElementById('animationControls');
-                        const frameInfo = document.getElementById('frameInfo');
-                        const timeSlider = document.getElementById('timeSlider');
+                        showError(errorMessage, errorDetails);
                         
-                        if (legend) legend.style.display = 'block';
-                        if (animationControls) animationControls.style.display = 'flex';
-                        if (frameInfo) frameInfo.style.display = 'block';
-                        if (timeSlider) timeSlider.style.display = 'block';
-                        
-                        // Send success message
                         sendMessage({
-                            type: 'framesLoaded',
-                            totalFrames: radarData.length,
-                            currentFrame: currentFrame,
-                            loadTime: Date.now() - loadStartTime
+                            type: 'loadError',
+                            error: errorMessage,
+                            details: errorDetails,
+                            retryCount: retryCount,
+                            canRetry: retryCount < maxRetries,
+                            allEndpointsFailed: true
                         });
                         
-                        updateConnectionStatus('online', \`\${radarData.length} frames loaded\`);
-                        
-                        // Auto-start animation if requested
-                        if (autoStartRequested && radarData.length > 1) {
-                            console.log('RainfallRadar: Auto-starting animation as requested');
+                        // Auto-retry if we haven't exceeded max retries
+                        if (retryCount < maxRetries) {
                             setTimeout(() => {
-                                startAnimation();
-                            }, 1500);
+                                retryLoad();
+                            }, 5000);
+                        } else {
+                            showFallbackMap();
                         }
-                        
-                        // Reset retry count on success
-                        retryCount = 0;
-                        errorCount = 0;
-                        
-                    } else {
-                        throw new Error('No radar data available in response');
                     }
-                } else {
-                    throw new Error('Invalid radar data structure received');
-                }
-            } catch (error) {
-                console.error('RainfallRadar: Failed to load radar data:', error);
-                
-                let errorMessage = 'Failed to load radar data';
-                let errorDetails = error.message;
-                
-                if (error.name === 'AbortError') {
-                    errorMessage = 'Request timed out';
-                    errorDetails = \`Connection timeout after \${connectionTimeout/1000} seconds\`;
-                } else if (error.message.includes('Network')) {
-                    errorMessage = 'Network error';
-                    errorDetails = 'Please check your internet connection';
-                } else if (error.message.includes('CORS')) {
-                    errorMessage = 'Access blocked';
-                    errorDetails = 'Radar service may be temporarily unavailable';
-                }
-                
-                showError(errorMessage, errorDetails);
-                
-                sendMessage({
-                    type: 'loadError',
-                    error: errorMessage,
-                    details: errorDetails,
-                    retryCount: retryCount,
-                    canRetry: retryCount < maxRetries
-                });
-                
-                // Auto-retry if we haven't exceeded max retries
-                if (retryCount < maxRetries) {
-                    setTimeout(() => {
-                        retryLoad();
-                    }, 3000);
+                    // Continue to next endpoint
                 }
             }
         }
@@ -839,8 +995,8 @@ const RainfallRadar: React.FC<Props> = ({
                     opacity: 0.6,
                     attribution: 'Radar data © RainViewer',
                     className: 'radar-layer',
-                    timeout: 8000,
-                    retryDelay: 1000,
+                    timeout: 10000,
+                    retryDelay: 2000,
                     retryLimit: 2,
                     errorTileUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgZmlsbD0idHJhbnNwYXJlbnQiLz48L3N2Zz4='
                 });
@@ -995,11 +1151,11 @@ const RainfallRadar: React.FC<Props> = ({
             isOnline = true;
             updateConnectionStatus('online', 'Connection restored');
             
-            // Retry loading if we had errors
-            if (errorCount > 0 && retryCount < maxRetries) {
+            // Retry loading if we had errors and are using fallback
+            if ((errorCount > 0 || usesFallback) && retryCount < maxRetries) {
                 setTimeout(() => {
                     retryLoad();
-                }, 1000);
+                }, 2000);
             }
         });
         
@@ -1011,24 +1167,27 @@ const RainfallRadar: React.FC<Props> = ({
         
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('RainfallRadar: DOM loaded, initializing enhanced radar map');
+            console.log('RainfallRadar: DOM loaded, initializing improved radar map');
             loadStartTime = Date.now();
             
             if (!isOnline) {
-                showError('No internet connection', 'Please check your connection and try again.');
+                showError('No Internet Connection', 'Please check your connection and try again.');
+                setTimeout(() => {
+                    showFallbackMap();
+                }, 3000);
                 return;
             }
             
             initMap();
         });
         
-        // Auto-refresh radar data every 10 minutes
+        // Auto-refresh radar data every 15 minutes (less frequent to reduce load)
         setInterval(function() {
-            if (isOnline && errorCount < 5) {
+            if (isOnline && errorCount < 3 && !usesFallback && radarData.length > 0) {
                 console.log('RainfallRadar: Auto-refreshing radar data');
                 loadRadarData();
             }
-        }, 10 * 60 * 1000);
+        }, 15 * 60 * 1000);
         
         // Enhanced global error handlers
         window.addEventListener('error', function(event) {
@@ -1066,6 +1225,7 @@ const RainfallRadar: React.FC<Props> = ({
     setIsLoading(false);
     setHasError(false);
     setLastSuccessfulLoad(new Date());
+    setErrorMessage('');
   }, []);
 
   const handleWebViewError = useCallback((syntheticEvent: any) => {
@@ -1073,6 +1233,7 @@ const RainfallRadar: React.FC<Props> = ({
     setIsLoading(false);
     setHasError(true);
     setRetryCount(prev => prev + 1);
+    setErrorMessage('WebView failed to load');
   }, []);
 
   const handleWebViewMessage = useCallback((event: any) => {
@@ -1088,12 +1249,15 @@ const RainfallRadar: React.FC<Props> = ({
           console.error('RainfallRadar: Error from WebView:', message);
           setHasError(true);
           setRetryCount(message.retryCount || 0);
+          setErrorMessage(message.error || 'Unknown error');
           break;
         case 'framesLoaded':
           setTotalFrames(message.totalFrames);
           setCurrentFrame(message.currentFrame);
           setHasError(false);
           setLastSuccessfulLoad(new Date());
+          setErrorMessage('');
+          console.log('RainfallRadar: Successfully loaded', message.totalFrames, 'frames');
           break;
         case 'frameChanged':
           setCurrentFrame(message.currentFrame);
@@ -1108,6 +1272,11 @@ const RainfallRadar: React.FC<Props> = ({
         case 'maxRetriesReached':
           setHasError(true);
           setRetryCount(message.retryCount);
+          setErrorMessage('Service unavailable after multiple attempts');
+          break;
+        case 'fallbackShown':
+          setHasError(true);
+          setErrorMessage('Using fallback map - service unavailable');
           break;
       }
     } catch (error) {
@@ -1123,6 +1292,7 @@ const RainfallRadar: React.FC<Props> = ({
         setIsLoading(true);
         setHasError(false);
         setRetryCount(0);
+        setErrorMessage('');
       }
     }
   }, [showRadar, alwaysVisible]);
@@ -1137,6 +1307,7 @@ const RainfallRadar: React.FC<Props> = ({
       setCurrentFrame(0);
       setTotalFrames(0);
       setRetryCount(0);
+      setErrorMessage('');
     }
   }, []);
 
@@ -1198,8 +1369,9 @@ const RainfallRadar: React.FC<Props> = ({
             • Adjustable playback speed{'\n'}
             • Loop and timeline controls{'\n'}
             • Satellite view option{'\n'}
-            • Enhanced error handling{'\n'}
-            • Automatic retry on failure
+            • Improved error handling{'\n'}
+            • Automatic retry with fallback{'\n'}
+            • Multiple API endpoints
           </Text>
         </View>
       </View>
@@ -1274,7 +1446,7 @@ const RainfallRadar: React.FC<Props> = ({
             {retryCount > 0 ? `Retrying... (${retryCount}/3)` : 'Loading radar data...'}
           </Text>
           <Text style={styles.loadingSubtext}>
-            {alwaysVisible ? 'Enhanced always-on radar' : 'Powered by RainViewer'}
+            {alwaysVisible ? 'Enhanced always-on radar' : 'Connecting to RainViewer'}
           </Text>
           {lastSuccessfulLoad && (
             <Text style={styles.lastUpdateText}>
@@ -1288,12 +1460,12 @@ const RainfallRadar: React.FC<Props> = ({
         <View style={styles.errorContainer}>
           <Icon name="cloud-offline" size={32} color={colors.error} />
           <Text style={styles.errorText}>
-            {retryCount >= 3 ? 'Max retries reached' : 'Failed to load radar'}
+            {retryCount >= 3 ? 'Service Unavailable' : 'Connection Error'}
           </Text>
           <Text style={styles.errorSubtext}>
-            {retryCount >= 3 
-              ? 'Please check your internet connection and refresh' 
-              : 'Checking connection and retrying...'}
+            {errorMessage || (retryCount >= 3 
+              ? 'Radar service is temporarily unavailable. A fallback map may be shown.' 
+              : 'Attempting to reconnect...')}
           </Text>
           {retryCount < 3 && (
             <TouchableOpacity onPress={refreshRadar} style={styles.retryButton}>
@@ -1308,7 +1480,7 @@ const RainfallRadar: React.FC<Props> = ({
         </View>
       )}
 
-      <View style={[styles.webViewContainer, { opacity: isLoading || hasError ? 0 : 1 }]}>
+      <View style={[styles.webViewContainer, { opacity: isLoading ? 0.3 : 1 }]}>
         <WebView
           ref={webViewRef}
           source={{ html: generateRadarHTML() }}
@@ -1330,9 +1502,9 @@ const RainfallRadar: React.FC<Props> = ({
           allowsProtectedMedia={false}
           dataDetectorTypes="none"
           cacheEnabled={false}
-          incognito={true}
-          thirdPartyCookiesEnabled={false}
-          sharedCookiesEnabled={false}
+          incognito={false}
+          thirdPartyCookiesEnabled={true}
+          sharedCookiesEnabled={true}
           textZoom={100}
           allowsLinkPreview={false}
           allowFileAccess={false}
@@ -1344,17 +1516,18 @@ const RainfallRadar: React.FC<Props> = ({
           keyboardDisplayRequiresUserAction={false}
           hideKeyboardAccessoryView={true}
           allowsBackForwardNavigationGestures={false}
+          userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1"
         />
       </View>
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          {alwaysVisible ? 'Enhanced always-on radar' : 'Real-time radar data'} • Updates every 10 minutes
+          {alwaysVisible ? 'Enhanced always-on radar' : 'Real-time radar data'} • Updates every 15 minutes
           {isAnimating && ` • Speed: ${animationSpeed}ms/frame`}
           {retryCount > 0 && ` • Retries: ${retryCount}`}
         </Text>
         <Text style={styles.attribution}>
-          Powered by RainViewer & OpenStreetMap • Enhanced error handling
+          Powered by RainViewer & OpenStreetMap • Improved reliability
         </Text>
       </View>
     </View>
@@ -1542,6 +1715,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.backgroundAlt,
+    padding: 20,
   },
   errorSubtext: {
     fontSize: 12,
@@ -1549,6 +1723,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 16,
     textAlign: 'center',
+    lineHeight: 18,
   },
   retryButton: {
     backgroundColor: colors.primary,
