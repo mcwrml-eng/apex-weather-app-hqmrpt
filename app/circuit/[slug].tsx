@@ -861,13 +861,19 @@ function DetailScreen() {
           </>
         )}
 
-        {/* 4. LIVE RAINFALL RADAR - BELOW WEATHER FORECAST */}
+
+
+        {/* 4. ENHANCED LIVE RAINFALL RADAR - IMPROVED VERSION */}
         <RainfallRadar
           latitude={circuit.latitude}
           longitude={circuit.longitude}
           circuitName={circuit.name}
           alwaysVisible={true}
           autoStartAnimation={true}
+          showIntensityLegend={true}
+          enableSatelliteView={true}
+          radarOpacity={0.7}
+          refreshInterval={10}
         />
 
         {/* Wind Analysis - After Radar */}
