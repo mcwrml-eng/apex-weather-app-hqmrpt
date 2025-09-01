@@ -140,7 +140,7 @@ const RainfallRadar: React.FC<Props> = ({
       setIsLoading(true);
       updateConnectionStatus('connecting', 'Reconnecting...');
     }, delay);
-  }, [retryCount, updateConnectionStatus]);
+  }, [retryCount, updateConnectionStatus, RETRY_DELAYS]);
 
   // Connection timeout handler
   const startConnectionTimeout = useCallback(() => {
@@ -157,6 +157,17 @@ const RainfallRadar: React.FC<Props> = ({
     }, CONNECTION_TIMEOUT);
   }, [connectionStatus, updateConnectionStatus, retryConnection]);
 
+  // Enhanced toggle animation function
+  const toggleAnimation = useCallback(() => {
+    console.log('RainfallRadar: Enhanced toggle animation from React Native');
+    if (webViewRef.current && connectionStatus === 'connected') {
+      webViewRef.current.postMessage(JSON.stringify({
+        type: 'toggleAnimation',
+        timestamp: new Date().toISOString()
+      }));
+    }
+  }, [connectionStatus]);
+
   // Enhanced auto-start animation with better timing
   useEffect(() => {
     if (autoStartAnimation && totalFrames > 1 && !isAnimating && showRadar && !hasError && connectionStatus === 'connected') {
@@ -167,9 +178,27 @@ const RainfallRadar: React.FC<Props> = ({
       
       return () => clearTimeout(timer);
     }
-  }, [totalFrames, showRadar, autoStartAnimation, hasError, connectionStatus]);
+  }, [totalFrames, showRadar, autoStartAnimation, hasError, connectionStatus, isAnimating, toggleAnimation]);
 
   // Auto-refresh radar data at specified intervals
+  const refreshRadar = useCallback(() => {
+    console.log('RainfallRadar: Enhanced refresh radar');
+    if (webViewRef.current) {
+      setWebViewKey(prev => prev + 1); // Force WebView reload
+      setIsLoading(true);
+      setHasError(false);
+      setIsAnimating(false);
+      setCurrentFrame(0);
+      setTotalFrames(0);
+      setLastUpdateTime(null);
+      setRetryCount(0);
+      setConnectionAttempts(0);
+      setErrorMessage('');
+      updateConnectionStatus('connecting');
+      startConnectionTimeout();
+    }
+  }, [updateConnectionStatus, startConnectionTimeout]);
+
   useEffect(() => {
     if (!showRadar || connectionStatus === 'error') return;
     
@@ -179,7 +208,7 @@ const RainfallRadar: React.FC<Props> = ({
     }, refreshInterval * 60 * 1000);
     
     return () => clearInterval(refreshTimer);
-  }, [showRadar, refreshInterval, connectionStatus]);
+  }, [showRadar, refreshInterval, connectionStatus, refreshRadar]);
 
   // Enhanced loading animations
   useEffect(() => {
@@ -202,7 +231,7 @@ const RainfallRadar: React.FC<Props> = ({
       pulseAnimation.value = withTiming(0, { duration: 300 });
       loadingRotation.value = withTiming(0, { duration: 300 });
     }
-  }, [isLoading]);
+  }, [isLoading, loadingRotation, pulseAnimation]);
 
   // Error shake animation
   useEffect(() => {
@@ -219,7 +248,7 @@ const RainfallRadar: React.FC<Props> = ({
         false
       );
     }
-  }, [hasError]);
+  }, [hasError, errorShake]);
 
   // Retry pulse animation
   useEffect(() => {
@@ -235,7 +264,7 @@ const RainfallRadar: React.FC<Props> = ({
     } else {
       retryPulse.value = withTiming(0, { duration: 300 });
     }
-  }, [isRetrying]);
+  }, [isRetrying, retryPulse]);
 
   // Intensity pulse animation for active radar
   useEffect(() => {
@@ -251,7 +280,7 @@ const RainfallRadar: React.FC<Props> = ({
     } else {
       intensityPulse.value = withTiming(0, { duration: 300 });
     }
-  }, [isAnimating, isLoading, connectionStatus]);
+  }, [isAnimating, isLoading, connectionStatus, intensityPulse]);
 
   // Enhanced play button animation
   useEffect(() => {
@@ -260,7 +289,7 @@ const RainfallRadar: React.FC<Props> = ({
       stiffness: 150,
       mass: 1,
     });
-  }, [isAnimating]);
+  }, [isAnimating, playButtonRotation]);
 
   // Smooth progress animation
   useEffect(() => {
@@ -271,7 +300,7 @@ const RainfallRadar: React.FC<Props> = ({
         mass: 1,
       });
     }
-  }, [currentFrame, totalFrames]);
+  }, [currentFrame, totalFrames, progressAnimation]);
 
   // Fullscreen animation
   useEffect(() => {
@@ -280,7 +309,7 @@ const RainfallRadar: React.FC<Props> = ({
       stiffness: 200,
       mass: 1,
     });
-  }, [isFullscreen]);
+  }, [isFullscreen, fullscreenScale]);
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -1170,34 +1199,6 @@ const RainfallRadar: React.FC<Props> = ({
     }
   }, [showRadar, alwaysVisible, updateConnectionStatus, startConnectionTimeout]);
 
-  const refreshRadar = useCallback(() => {
-    console.log('RainfallRadar: Enhanced refresh radar');
-    if (webViewRef.current) {
-      setWebViewKey(prev => prev + 1); // Force WebView reload
-      setIsLoading(true);
-      setHasError(false);
-      setIsAnimating(false);
-      setCurrentFrame(0);
-      setTotalFrames(0);
-      setLastUpdateTime(null);
-      setRetryCount(0);
-      setConnectionAttempts(0);
-      setErrorMessage('');
-      updateConnectionStatus('connecting');
-      startConnectionTimeout();
-    }
-  }, [updateConnectionStatus, startConnectionTimeout]);
-
-  const toggleAnimation = useCallback(() => {
-    console.log('RainfallRadar: Enhanced toggle animation from React Native');
-    if (webViewRef.current && connectionStatus === 'connected') {
-      webViewRef.current.postMessage(JSON.stringify({
-        type: 'toggleAnimation',
-        timestamp: new Date().toISOString()
-      }));
-    }
-  }, [connectionStatus]);
-
   const showRadarAlert = useCallback(() => {
     if (radarIntensity === 'extreme') {
       Alert.alert(
@@ -1233,7 +1234,7 @@ const RainfallRadar: React.FC<Props> = ({
     );
   }
 
-  // Show extreme weather alert
+  // Show extreme weather alert - moved to avoid conditional hook call
   useEffect(() => {
     if (radarIntensity === 'extreme' && isAnimating) {
       showRadarAlert();

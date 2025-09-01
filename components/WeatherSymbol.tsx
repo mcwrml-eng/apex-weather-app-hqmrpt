@@ -308,7 +308,7 @@ function useWeatherAnimation(animationType: string) {
         // No animation
         break;
     }
-  }, [animationType]);
+  }, [animationType, animationValue, opacity, rotationValue, scaleValue, translateY]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
