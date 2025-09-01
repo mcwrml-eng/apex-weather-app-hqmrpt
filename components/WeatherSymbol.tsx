@@ -337,7 +337,7 @@ export default function WeatherSymbol({ weatherCode, size = 24, color, isNight, 
     const symbol = getWeatherSymbol(validatedCode, nightTime);
     const iconColor = color || symbol.color;
     
-    // Always call the hook, but conditionally use the animation
+    // Always call the hook unconditionally
     const animatedStyle = useWeatherAnimation(symbol.animationType);
     
     console.log('WeatherSymbol: Rendering animated', symbol.name, 'for code', validatedCode, 'isNight:', nightTime, 'animation:', symbol.animationType);

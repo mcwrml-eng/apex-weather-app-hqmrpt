@@ -87,11 +87,13 @@ const RainfallRadar: React.FC<Props> = ({
       mountedRef.current = false;
       // Store the current value to avoid stale closure
       const currentRetryTimeout = retryTimeoutRef.current;
+      const currentDebounceTimeout = debounceTimeoutRef.current;
+      
       if (currentRetryTimeout) {
         clearTimeout(currentRetryTimeout);
       }
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
+      if (currentDebounceTimeout) {
+        clearTimeout(currentDebounceTimeout);
       }
     };
   }, []);
