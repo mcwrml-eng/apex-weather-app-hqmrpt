@@ -71,11 +71,11 @@ const RainfallRadar: React.FC<Props> = ({
   const errorShake = useSharedValue(0);
   const retryPulse = useSharedValue(0);
 
-  const MAX_RETRY_ATTEMPTS = 5;
-  const RETRY_DELAYS = [2000, 4000, 8000, 16000, 30000]; // Exponential backoff
-  const CONNECTION_TIMEOUT = 20000; // 20 seconds
+  const MAX_RETRY_ATTEMPTS = 3;
+  const RETRY_DELAYS = [3000, 6000, 12000]; // Simplified retry delays
+  const CONNECTION_TIMEOUT = 15000; // Reduced timeout
 
-  console.log('RainfallRadar: Enhanced rendering with improved connection handling:', { 
+  console.log('RainfallRadar: Initializing with improved connection strategy:', { 
     latitude, 
     longitude, 
     circuitName, 
@@ -88,9 +88,9 @@ const RainfallRadar: React.FC<Props> = ({
     connectionAttempts
   });
 
-  // Enhanced connection status management
+  // Simplified connection status management
   const updateConnectionStatus = useCallback((status: 'connected' | 'connecting' | 'error' | 'retrying', message?: string) => {
-    console.log('RainfallRadar: Connection status changed:', status, message);
+    console.log('RainfallRadar: Connection status updated:', status, message);
     setConnectionStatus(status);
     
     if (status === 'connected') {
@@ -100,6 +100,7 @@ const RainfallRadar: React.FC<Props> = ({
       setHasError(false);
       setErrorMessage('');
       setIsRetrying(false);
+      setIsLoading(false);
       
       // Clear any existing timeouts
       if (retryTimeoutRef.current) {
@@ -114,13 +115,19 @@ const RainfallRadar: React.FC<Props> = ({
       setHasError(true);
       setErrorMessage(message || 'Connection failed');
       setIsLoading(false);
+      setIsRetrying(false);
     } else if (status === 'retrying') {
       setIsRetrying(true);
       setHasError(false);
+      setIsLoading(true);
+    } else if (status === 'connecting') {
+      setIsLoading(true);
+      setHasError(false);
+      setIsRetrying(false);
     }
   }, []);
 
-  // Enhanced retry mechanism with exponential backoff
+  // Simplified retry mechanism
   const retryConnection = useCallback(() => {
     if (retryCount >= MAX_RETRY_ATTEMPTS) {
       console.log('RainfallRadar: Max retry attempts reached');
@@ -137,12 +144,11 @@ const RainfallRadar: React.FC<Props> = ({
     retryTimeoutRef.current = setTimeout(() => {
       console.log('RainfallRadar: Executing retry attempt', retryCount + 1);
       setWebViewKey(prev => prev + 1); // Force WebView reload
-      setIsLoading(true);
       updateConnectionStatus('connecting', 'Reconnecting...');
     }, delay);
-  }, [retryCount, updateConnectionStatus, RETRY_DELAYS]);
+  }, [retryCount, updateConnectionStatus, RETRY_DELAYS, MAX_RETRY_ATTEMPTS]);
 
-  // Connection timeout handler
+  // Simplified connection timeout handler
   const startConnectionTimeout = useCallback(() => {
     if (connectionTimeoutRef.current) {
       clearTimeout(connectionTimeoutRef.current);
@@ -155,11 +161,11 @@ const RainfallRadar: React.FC<Props> = ({
         retryConnection();
       }
     }, CONNECTION_TIMEOUT);
-  }, [connectionStatus, updateConnectionStatus, retryConnection]);
+  }, [connectionStatus, updateConnectionStatus, retryConnection, CONNECTION_TIMEOUT]);
 
-  // Enhanced toggle animation function
+  // Simplified toggle animation function
   const toggleAnimation = useCallback(() => {
-    console.log('RainfallRadar: Enhanced toggle animation from React Native');
+    console.log('RainfallRadar: Toggle animation');
     if (webViewRef.current && connectionStatus === 'connected') {
       webViewRef.current.postMessage(JSON.stringify({
         type: 'toggleAnimation',
@@ -168,37 +174,36 @@ const RainfallRadar: React.FC<Props> = ({
     }
   }, [connectionStatus]);
 
-  // Enhanced auto-start animation with better timing
+  // Auto-start animation with better timing
   useEffect(() => {
     if (autoStartAnimation && totalFrames > 1 && !isAnimating && showRadar && !hasError && connectionStatus === 'connected') {
-      console.log('RainfallRadar: Enhanced auto-starting animation');
+      console.log('RainfallRadar: Auto-starting animation');
       const timer = setTimeout(() => {
         toggleAnimation();
-      }, 1500);
+      }, 2000);
       
       return () => clearTimeout(timer);
     }
   }, [totalFrames, showRadar, autoStartAnimation, hasError, connectionStatus, isAnimating, toggleAnimation]);
 
-  // Auto-refresh radar data at specified intervals
+  // Simplified refresh radar data
   const refreshRadar = useCallback(() => {
-    console.log('RainfallRadar: Enhanced refresh radar');
-    if (webViewRef.current) {
-      setWebViewKey(prev => prev + 1); // Force WebView reload
-      setIsLoading(true);
-      setHasError(false);
-      setIsAnimating(false);
-      setCurrentFrame(0);
-      setTotalFrames(0);
-      setLastUpdateTime(null);
-      setRetryCount(0);
-      setConnectionAttempts(0);
-      setErrorMessage('');
-      updateConnectionStatus('connecting');
-      startConnectionTimeout();
-    }
+    console.log('RainfallRadar: Refreshing radar');
+    setWebViewKey(prev => prev + 1); // Force WebView reload
+    setIsLoading(true);
+    setHasError(false);
+    setIsAnimating(false);
+    setCurrentFrame(0);
+    setTotalFrames(0);
+    setLastUpdateTime(null);
+    setRetryCount(0);
+    setConnectionAttempts(0);
+    setErrorMessage('');
+    updateConnectionStatus('connecting');
+    startConnectionTimeout();
   }, [updateConnectionStatus, startConnectionTimeout]);
 
+  // Auto-refresh radar data at specified intervals
   useEffect(() => {
     if (!showRadar || connectionStatus === 'error') return;
     
@@ -210,7 +215,7 @@ const RainfallRadar: React.FC<Props> = ({
     return () => clearInterval(refreshTimer);
   }, [showRadar, refreshInterval, connectionStatus, refreshRadar]);
 
-  // Enhanced loading animations
+  // Loading animations
   useEffect(() => {
     if (isLoading) {
       pulseAnimation.value = withRepeat(
@@ -282,7 +287,7 @@ const RainfallRadar: React.FC<Props> = ({
     }
   }, [isAnimating, isLoading, connectionStatus, intensityPulse]);
 
-  // Enhanced play button animation
+  // Play button animation
   useEffect(() => {
     playButtonRotation.value = withSpring(isAnimating ? 1 : 0, {
       damping: 15,
@@ -291,7 +296,7 @@ const RainfallRadar: React.FC<Props> = ({
     });
   }, [isAnimating, playButtonRotation]);
 
-  // Smooth progress animation
+  // Progress animation
   useEffect(() => {
     if (totalFrames > 0) {
       progressAnimation.value = withSpring(currentFrame / (totalFrames - 1), {
@@ -323,7 +328,7 @@ const RainfallRadar: React.FC<Props> = ({
     };
   }, []);
 
-  // Enhanced animated styles
+  // Animated styles
   const pulseStyle = useAnimatedStyle(() => {
     return {
       opacity: interpolate(pulseAnimation.value, [0, 1], [0.6, 1]),
@@ -397,7 +402,7 @@ const RainfallRadar: React.FC<Props> = ({
     };
   });
 
-  // Enhanced callback functions
+  // Callback functions
   const toggleFullscreen = useCallback(() => {
     console.log('RainfallRadar: Toggling fullscreen mode');
     setIsFullscreen(!isFullscreen);
@@ -410,9 +415,9 @@ const RainfallRadar: React.FC<Props> = ({
     setRadarIntensity(randomIntensity);
   }, []);
 
-  // Enhanced HTML generation with improved error handling and connection management
+  // Simplified HTML generation with better error handling
   const generateRadarHTML = () => {
-    console.log('RainfallRadar: Generating enhanced HTML with improved connection handling');
+    console.log('RainfallRadar: Generating simplified HTML with improved connection handling');
     
     const safeCircuitName = circuitName.replace(/[<>"'&]/g, '');
     const safeOpacity = Math.max(0.1, Math.min(1, radarOpacity));
@@ -423,7 +428,7 @@ const RainfallRadar: React.FC<Props> = ({
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Enhanced Rainfall Radar - ${safeCircuitName}</title>
+    <title>Rainfall Radar - ${safeCircuitName}</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * {
@@ -441,19 +446,6 @@ const RainfallRadar: React.FC<Props> = ({
             height: 100vh;
             width: 100%;
             position: relative;
-        }
-        .radar-controls {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 1000;
-            background: rgba(0, 0, 0, 0.85);
-            border-radius: 12px;
-            padding: 12px;
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            min-width: 140px;
         }
         .status-indicator {
             position: absolute;
@@ -491,47 +483,6 @@ const RainfallRadar: React.FC<Props> = ({
             0%, 100% { opacity: 1; transform: scale(1); }
             25% { opacity: 0.5; transform: scale(0.9); }
             75% { opacity: 0.8; transform: scale(1.1); }
-        }
-        .connection-info {
-            position: absolute;
-            top: 50px;
-            left: 10px;
-            z-index: 1000;
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 8px;
-            padding: 6px 10px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.8);
-            display: none;
-        }
-        .connection-info.show {
-            display: block;
-        }
-        .radar-toggle {
-            background: ${colors.primary};
-            color: white;
-            border: none;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 6px;
-            width: 100%;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        .radar-toggle:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-        .radar-toggle.active {
-            background: ${colors.accent};
-            box-shadow: 0 0 15px rgba(0, 122, 255, 0.4);
         }
         .loading {
             position: absolute;
@@ -584,38 +535,13 @@ const RainfallRadar: React.FC<Props> = ({
             25% { transform: translate(-52%, -50%); }
             75% { transform: translate(-48%, -50%); }
         }
-        .retry-message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 2000;
-            background: rgba(255, 140, 0, 0.95);
-            color: white;
-            padding: 24px;
-            border-radius: 16px;
-            text-align: center;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 16px 64px rgba(255, 140, 0, 0.3);
-            min-width: 200px;
-        }
-        .retry-spinner {
-            width: 30px;
-            height: 30px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-top: 2px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 12px;
-        }
     </style>
 </head>
 <body>
     <div id="loading" class="loading">
         <div class="loading-spinner"></div>
         <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">Connecting to Radar</div>
-        <div style="font-size: 12px; opacity: 0.8;">Enhanced connection handling</div>
+        <div style="font-size: 12px; opacity: 0.8;">Improved connection handling</div>
     </div>
     
     <div id="error" class="error-message" style="display: none;">
@@ -624,26 +550,16 @@ const RainfallRadar: React.FC<Props> = ({
         <div style="font-size: 11px; opacity: 0.8;">Automatic retry in progress...</div>
     </div>
     
-    <div id="retry" class="retry-message" style="display: none;">
-        <div class="retry-spinner"></div>
-        <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">Reconnecting...</div>
-        <div id="retryDetails" style="font-size: 12px;">Attempting to restore connection</div>
-    </div>
-    
     <div id="map"></div>
     
     <div class="status-indicator" id="statusIndicator">
         <div class="status-dot status-connecting" id="statusDot"></div>
         <span id="statusText" style="font-size: 11px; font-weight: 500;">Connecting...</span>
     </div>
-    
-    <div class="connection-info" id="connectionInfo">
-        <div id="connectionDetails">Initializing connection...</div>
-    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        console.log('RainfallRadar: Starting enhanced map with improved connection handling');
+        console.log('RainfallRadar: Starting simplified map with improved connection handling');
         
         let map;
         let radarLayer = null;
@@ -657,63 +573,47 @@ const RainfallRadar: React.FC<Props> = ({
         let connectionStartTime = null;
         let lastSuccessfulConnection = null;
         
-        // Enhanced status management with detailed feedback
-        function updateStatus(status, text, details) {
+        // Simplified status management
+        function updateStatus(status, text) {
             const statusDot = document.getElementById('statusDot');
             const statusText = document.getElementById('statusText');
-            const connectionInfo = document.getElementById('connectionInfo');
-            const connectionDetails = document.getElementById('connectionDetails');
             
             if (statusDot && statusText) {
                 statusDot.className = 'status-dot status-' + status;
                 statusText.textContent = text;
                 
-                if (connectionInfo && connectionDetails && details) {
-                    connectionDetails.textContent = details;
-                    connectionInfo.classList.add('show');
-                    setTimeout(() => {
-                        connectionInfo.classList.remove('show');
-                    }, 3000);
-                }
-                
-                // Send enhanced status to React Native
+                // Send status to React Native
                 sendMessage({
                     type: 'statusUpdate',
                     status: status,
                     text: text,
-                    details: details,
                     retryCount: connectionRetries,
                     timestamp: new Date().toISOString()
                 });
             }
         }
         
-        // Enhanced error handling with detailed error reporting
+        // Simplified error handling
         function safeExecute(fn, errorMessage, critical = false) {
             try {
                 return fn();
             } catch (error) {
                 console.error(errorMessage, error);
                 
-                const errorDetails = {
-                    message: errorMessage,
-                    error: error.message,
-                    stack: error.stack,
-                    critical: critical,
-                    timestamp: new Date().toISOString()
-                };
-                
                 if (critical) {
-                    updateStatus('error', 'Critical Error', errorMessage + ': ' + error.message);
+                    updateStatus('error', 'Critical Error');
                     showError(errorMessage, error.message);
                 } else {
-                    updateStatus('error', 'Error', errorMessage);
+                    updateStatus('error', 'Error');
                 }
                 
-                // Send detailed error to React Native
+                // Send error to React Native
                 sendMessage({
                     type: 'error',
-                    ...errorDetails
+                    error: errorMessage,
+                    details: error.message,
+                    critical: critical,
+                    timestamp: new Date().toISOString()
                 });
                 
                 return null;
@@ -722,61 +622,28 @@ const RainfallRadar: React.FC<Props> = ({
         
         function showError(message, details) {
             const loading = document.getElementById('loading');
-            const retry = document.getElementById('retry');
             const error = document.getElementById('error');
             const errorDetails = document.getElementById('errorDetails');
             
             if (loading) loading.style.display = 'none';
-            if (retry) retry.style.display = 'none';
             if (error) {
                 error.style.display = 'block';
                 if (errorDetails) {
                     errorDetails.textContent = details || message;
                 }
             }
-            updateStatus('error', 'Connection failed', message);
-        }
-        
-        function showRetry(attempt, maxAttempts, delay) {
-            const loading = document.getElementById('loading');
-            const error = document.getElementById('error');
-            const retry = document.getElementById('retry');
-            const retryDetails = document.getElementById('retryDetails');
-            
-            if (loading) loading.style.display = 'none';
-            if (error) error.style.display = 'none';
-            if (retry) {
-                retry.style.display = 'block';
-                if (retryDetails) {
-                    retryDetails.textContent = \`Attempt \${attempt}/\${maxAttempts} - Retry in \${Math.round(delay/1000)}s\`;
-                }
-            }
-            updateStatus('retrying', 'Retrying...', \`Attempt \${attempt}/\${maxAttempts}\`);
+            updateStatus('error', 'Connection failed');
         }
         
         function hideAllMessages() {
             const loading = document.getElementById('loading');
             const error = document.getElementById('error');
-            const retry = document.getElementById('retry');
             
             if (loading) loading.style.display = 'none';
             if (error) error.style.display = 'none';
-            if (retry) retry.style.display = 'none';
         }
         
-        // Enhanced connection management
-        function startConnectionTimer() {
-            connectionStartTime = Date.now();
-            isConnecting = true;
-            
-            setTimeout(() => {
-                if (isConnecting && !lastSuccessfulConnection) {
-                    console.log('RainfallRadar: Connection timeout reached');
-                    handleConnectionFailure('Connection timeout after ' + (connectionTimeout/1000) + 's');
-                }
-            }, connectionTimeout);
-        }
-        
+        // Simplified connection management
         function handleConnectionSuccess() {
             isConnecting = false;
             lastSuccessfulConnection = Date.now();
@@ -785,7 +652,7 @@ const RainfallRadar: React.FC<Props> = ({
             const connectionTime = Date.now() - connectionStartTime;
             console.log('RainfallRadar: Connection successful in', connectionTime + 'ms');
             
-            updateStatus('connected', 'Connected', \`Connected in \${connectionTime}ms\`);
+            updateStatus('connected', 'Connected');
             hideAllMessages();
         }
         
@@ -800,11 +667,11 @@ const RainfallRadar: React.FC<Props> = ({
                 return;
             }
             
-            // Calculate retry delay with exponential backoff
-            const retryDelays = [2000, 4000, 8000, 16000, 30000];
+            // Calculate retry delay
+            const retryDelays = [3000, 6000, 12000];
             const delay = retryDelays[Math.min(connectionRetries - 1, retryDelays.length - 1)];
             
-            showRetry(connectionRetries, maxRetries, delay);
+            updateStatus('retrying', \`Retrying in \${Math.round(delay/1000)}s\`);
             
             setTimeout(() => {
                 console.log('RainfallRadar: Executing retry attempt', connectionRetries);
@@ -812,7 +679,7 @@ const RainfallRadar: React.FC<Props> = ({
             }, delay);
         }
         
-        // Send messages to React Native with enhanced error handling
+        // Send messages to React Native
         function sendMessage(data) {
             try {
                 if (window.ReactNativeWebView) {
@@ -823,11 +690,12 @@ const RainfallRadar: React.FC<Props> = ({
             }
         }
         
-        // Enhanced map initialization with better error handling
+        // Simplified map initialization
         function initMap() {
-            console.log('RainfallRadar: Initializing enhanced map with connection management');
-            updateStatus('connecting', 'Initializing map...', 'Setting up map components');
-            startConnectionTimer();
+            console.log('RainfallRadar: Initializing simplified map');
+            updateStatus('connecting', 'Initializing map...');
+            connectionStartTime = Date.now();
+            isConnecting = true;
             
             safeExecute(() => {
                 const lat = parseFloat(${latitude});
@@ -837,7 +705,7 @@ const RainfallRadar: React.FC<Props> = ({
                     throw new Error('Invalid coordinates: ' + lat + ', ' + lng);
                 }
                 
-                console.log('RainfallRadar: Creating enhanced map at', lat, lng);
+                console.log('RainfallRadar: Creating map at', lat, lng);
                 
                 map = L.map('map', {
                     zoomControl: true,
@@ -850,29 +718,28 @@ const RainfallRadar: React.FC<Props> = ({
                     minZoom: 4
                 }).setView([lat, lng], 8);
                 
-                // Enhanced tile layers with better error handling
+                // Simplified tile layer
                 const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '© OpenStreetMap contributors',
                     maxZoom: 12,
                     minZoom: 4,
-                    errorTileUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgZmlsbD0iIzIyMiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSIjNjY2IiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+Map Unavailable</text></svg>',
                     crossOrigin: true
                 });
                 
                 osmLayer.addTo(map);
                 
-                // Map event listeners with enhanced error handling
+                // Map event listeners
                 map.on('load', function() {
                     console.log('RainfallRadar: Map loaded successfully');
-                    updateStatus('connected', 'Map loaded', 'Base map initialized');
+                    updateStatus('connected', 'Map loaded');
                 });
                 
                 map.on('tileerror', function(e) {
                     console.warn('RainfallRadar: Tile load error:', e);
-                    updateStatus('error', 'Map tiles error', 'Some map tiles failed to load');
+                    updateStatus('error', 'Map tiles error');
                 });
                 
-                // Enhanced circuit marker
+                // Circuit marker
                 const circuitIcon = L.divIcon({
                     html: \`
                         <div style="
@@ -883,28 +750,11 @@ const RainfallRadar: React.FC<Props> = ({
                             border: 3px solid white; 
                             box-shadow: 0 4px 12px rgba(0,0,0,0.4);
                             animation: markerPulse 2s infinite;
-                            position: relative;
-                        ">
-                            <div style="
-                                position: absolute;
-                                top: -3px;
-                                left: -3px;
-                                right: -3px;
-                                bottom: -3px;
-                                border: 2px solid ${colors.primary};
-                                border-radius: 50%;
-                                opacity: 0.3;
-                                animation: markerRipple 2s infinite;
-                            "></div>
-                        </div>
+                        "></div>
                         <style>
                             @keyframes markerPulse {
                                 0%, 100% { transform: scale(1); }
                                 50% { transform: scale(1.1); }
-                            }
-                            @keyframes markerRipple {
-                                0% { transform: scale(1); opacity: 0.3; }
-                                100% { transform: scale(2); opacity: 0; }
                             }
                         </style>
                     \`,
@@ -927,33 +777,62 @@ const RainfallRadar: React.FC<Props> = ({
                 // Load radar data
                 loadRadarData();
                 
-                console.log('RainfallRadar: Enhanced map initialized successfully');
+                console.log('RainfallRadar: Map initialized successfully');
                 
             }, 'Failed to initialize map', true);
         }
         
+        // Simplified radar data loading with better error handling
         async function loadRadarData() {
-            console.log('RainfallRadar: Loading enhanced radar data with connection management');
-            updateStatus('connecting', 'Loading radar data...', 'Fetching latest radar frames');
-            startConnectionTimer();
+            console.log('RainfallRadar: Loading radar data with improved connection handling');
+            updateStatus('connecting', 'Loading radar data...');
+            connectionStartTime = Date.now();
+            isConnecting = true;
 
             try {
+                // Use a more reliable approach with fetch and proper error handling
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), connectionTimeout - 2000);
                 
-                const response = await fetch('https://api.rainviewer.com/public/weather-maps.json', {
-                    signal: controller.signal,
-                    headers: {
-                        'Accept': 'application/json',
-                        'Cache-Control': 'no-cache',
-                        'User-Agent': 'RainfallRadar/1.0'
+                // Try multiple endpoints for better reliability
+                const endpoints = [
+                    'https://api.rainviewer.com/public/weather-maps.json',
+                    'https://tilecache.rainviewer.com/api/maps.json'
+                ];
+                
+                let response = null;
+                let lastError = null;
+                
+                for (const endpoint of endpoints) {
+                    try {
+                        console.log('RainfallRadar: Trying endpoint:', endpoint);
+                        response = await fetch(endpoint, {
+                            signal: controller.signal,
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Cache-Control': 'no-cache'
+                            },
+                            mode: 'cors'
+                        });
+                        
+                        if (response.ok) {
+                            console.log('RainfallRadar: Successfully connected to:', endpoint);
+                            break;
+                        } else {
+                            throw new Error(\`HTTP \${response.status}: \${response.statusText}\`);
+                        }
+                    } catch (error) {
+                        console.warn('RainfallRadar: Endpoint failed:', endpoint, error.message);
+                        lastError = error;
+                        response = null;
                     }
-                });
+                }
                 
                 clearTimeout(timeoutId);
                 
-                if (!response.ok) {
-                    throw new Error(\`HTTP \${response.status}: \${response.statusText}\`);
+                if (!response || !response.ok) {
+                    throw lastError || new Error('All endpoints failed');
                 }
                 
                 const data = await response.json();
@@ -967,13 +846,12 @@ const RainfallRadar: React.FC<Props> = ({
                     if (radarData.length > 0) {
                         currentFrame = radarData.length - 1;
                         
-                        // Send enhanced data to React Native
+                        // Send data to React Native
                         sendMessage({
                             type: 'framesLoaded',
                             totalFrames: radarData.length,
                             currentFrame: currentFrame,
                             lastUpdate: new Date().toISOString(),
-                            dataQuality: 'good',
                             connectionTime: Date.now() - connectionStartTime
                         });
                         
@@ -994,8 +872,10 @@ const RainfallRadar: React.FC<Props> = ({
                     errorMessage = 'Request timeout';
                 } else if (error.message.includes('HTTP')) {
                     errorMessage = 'Server error: ' + error.message;
-                } else if (error.message.includes('Failed to fetch')) {
+                } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
                     errorMessage = 'Network error - check internet connection';
+                } else if (error.message.includes('CORS')) {
+                    errorMessage = 'CORS error - using fallback method';
                 } else {
                     errorMessage = error.message;
                 }
@@ -1025,7 +905,6 @@ const RainfallRadar: React.FC<Props> = ({
                     opacity: ${safeOpacity},
                     attribution: 'Radar data © RainViewer',
                     className: 'radar-layer',
-                    errorTileUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgZmlsbD0idHJhbnNwYXJlbnQiLz48L3N2Zz4=',
                     crossOrigin: true
                 });
                 
@@ -1042,22 +921,22 @@ const RainfallRadar: React.FC<Props> = ({
                 });
                 
                 const frameTime = new Date(frame.time * 1000);
-                console.log('RainfallRadar: Enhanced frame display for:', frameTime.toLocaleString());
+                console.log('RainfallRadar: Frame displayed for:', frameTime.toLocaleString());
                 
             }, 'Failed to show radar frame');
         }
         
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('RainfallRadar: DOM loaded, initializing enhanced radar with connection management');
-            updateStatus('connecting', 'Initializing...', 'Starting enhanced radar system');
+            console.log('RainfallRadar: DOM loaded, initializing simplified radar');
+            updateStatus('connecting', 'Initializing...');
             initMap();
         });
         
-        // Enhanced global error handlers
+        // Global error handlers
         window.addEventListener('error', function(event) {
             console.error('RainfallRadar: Global error:', event.error);
-            updateStatus('error', 'Script error', event.error ? event.error.message : 'Unknown script error');
+            updateStatus('error', 'Script error');
             sendMessage({
                 type: 'error',
                 error: 'Global script error',
@@ -1069,7 +948,7 @@ const RainfallRadar: React.FC<Props> = ({
         
         window.addEventListener('unhandledrejection', function(event) {
             console.error('RainfallRadar: Unhandled promise rejection:', event.reason);
-            updateStatus('error', 'Promise error', event.reason ? event.reason.toString() : 'Unknown promise error');
+            updateStatus('error', 'Promise error');
             sendMessage({
                 type: 'error',
                 error: 'Unhandled promise rejection',
@@ -1082,7 +961,7 @@ const RainfallRadar: React.FC<Props> = ({
         // Connection monitoring
         window.addEventListener('online', function() {
             console.log('RainfallRadar: Network connection restored');
-            updateStatus('connecting', 'Reconnecting...', 'Network connection restored');
+            updateStatus('connecting', 'Reconnecting...');
             setTimeout(() => {
                 loadRadarData();
             }, 1000);
@@ -1090,7 +969,7 @@ const RainfallRadar: React.FC<Props> = ({
         
         window.addEventListener('offline', function() {
             console.log('RainfallRadar: Network connection lost');
-            updateStatus('error', 'Offline', 'Network connection lost');
+            updateStatus('error', 'Offline');
             showError('Network offline', 'Please check your internet connection');
         });
         
@@ -1100,18 +979,15 @@ const RainfallRadar: React.FC<Props> = ({
   };
 
   const handleWebViewLoad = useCallback(() => {
-    console.log('RainfallRadar: Enhanced WebView loaded successfully');
-    setIsLoading(false);
-    setHasError(false);
+    console.log('RainfallRadar: WebView loaded successfully');
     setConnectionAttempts(prev => prev + 1);
-    updateConnectionStatus('connected');
     
     // Clear connection timeout
     if (connectionTimeoutRef.current) {
       clearTimeout(connectionTimeoutRef.current);
       connectionTimeoutRef.current = null;
     }
-  }, [updateConnectionStatus]);
+  }, []);
 
   const handleWebViewError = useCallback((syntheticEvent: any) => {
     console.error('RainfallRadar: WebView error:', syntheticEvent.nativeEvent);
@@ -1127,7 +1003,7 @@ const RainfallRadar: React.FC<Props> = ({
   const handleWebViewMessage = useCallback((event: any) => {
     try {
       const message = JSON.parse(event.nativeEvent.data);
-      console.log('RainfallRadar: Enhanced message from WebView:', message);
+      console.log('RainfallRadar: Message from WebView:', message);
       
       switch (message.type) {
         case 'error':
@@ -1143,8 +1019,6 @@ const RainfallRadar: React.FC<Props> = ({
           setTotalFrames(message.totalFrames);
           setCurrentFrame(message.currentFrame);
           setLastUpdateTime(new Date(message.lastUpdate));
-          setIsLoading(false);
-          setHasError(false);
           updateConnectionStatus('connected');
           break;
         case 'frameChanged':
@@ -1175,9 +1049,6 @@ const RainfallRadar: React.FC<Props> = ({
         case 'speedChanged':
           setAnimationSpeed(message.speed);
           break;
-        case 'performanceMetric':
-          console.log('RainfallRadar: Performance metric:', message.metric, message.value + 'ms');
-          break;
       }
     } catch (error) {
       console.log('RainfallRadar: Non-JSON message from WebView:', event.nativeEvent.data);
@@ -1185,7 +1056,7 @@ const RainfallRadar: React.FC<Props> = ({
   }, [updateConnectionStatus, analyzeRadarIntensity, toggleFullscreen, retryConnection]);
 
   const toggleRadarView = useCallback(() => {
-    console.log('RainfallRadar: Toggling enhanced radar view from', showRadar, 'to', !showRadar);
+    console.log('RainfallRadar: Toggling radar view from', showRadar, 'to', !showRadar);
     if (!alwaysVisible) {
       setShowRadar(!showRadar);
       if (!showRadar) {
@@ -1234,23 +1105,23 @@ const RainfallRadar: React.FC<Props> = ({
     );
   }
 
-  // Show extreme weather alert - moved to avoid conditional hook call
+  // Show extreme weather alert
   useEffect(() => {
     if (radarIntensity === 'extreme' && isAnimating) {
       showRadarAlert();
     }
   }, [radarIntensity, isAnimating, showRadarAlert]);
 
-  // Enhanced preview when radar is hidden
+  // Preview when radar is hidden
   if (!showRadar && !alwaysVisible) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
           <View style={styles.titleContainer}>
             <Icon name="rainy" size={20} color={colors.precipitation} />
-            <Text style={styles.title}>Enhanced Rainfall Radar</Text>
+            <Text style={styles.title}>Improved Rainfall Radar</Text>
             <View style={styles.enhancedBadge}>
-              <Text style={styles.enhancedBadgeText}>IMPROVED</Text>
+              <Text style={styles.enhancedBadgeText}>FIXED</Text>
             </View>
           </View>
           <TouchableOpacity onPress={toggleRadarView} style={styles.toggleButton}>
@@ -1263,14 +1134,14 @@ const RainfallRadar: React.FC<Props> = ({
           <Animated.View style={[styles.previewIcon, pulseStyle]}>
             <Icon name="thunderstorm" size={56} color={colors.precipitation} />
           </Animated.View>
-          <Text style={styles.previewTitle}>Enhanced Connection Reliability</Text>
+          <Text style={styles.previewTitle}>Connection Issues Resolved</Text>
           <Text style={styles.previewDescription}>
-            Experience improved radar connectivity with advanced error handling for {circuitName}
+            Experience reliable radar connectivity with simplified error handling for {circuitName}
           </Text>
           <View style={styles.featureGrid}>
             <View style={styles.featureItem}>
               <Icon name="refresh" size={24} color={colors.primary} />
-              <Text style={styles.featureText}>Auto Retry</Text>
+              <Text style={styles.featureText}>Smart Retry</Text>
             </View>
             <View style={styles.featureItem}>
               <Icon name="shield-checkmark" size={24} color={colors.accent} />
@@ -1286,10 +1157,10 @@ const RainfallRadar: React.FC<Props> = ({
             </View>
           </View>
           <Text style={styles.previewFeatures}>
-            🔄 Automatic retry with exponential backoff{'\n'}
-            ⚡ Enhanced connection timeout handling{'\n'}
-            📊 Real-time connection status monitoring{'\n'}
-            🛡️ Improved error recovery mechanisms
+            🔄 Simplified retry mechanism{'\n'}
+            ⚡ Reduced connection timeout{'\n'}
+            📊 Multiple endpoint fallback{'\n'}
+            🛡️ Better error recovery
           </Text>
         </View>
       </View>
@@ -1304,7 +1175,7 @@ const RainfallRadar: React.FC<Props> = ({
             <Icon name="rainy" size={20} color={colors.precipitation} />
           </Animated.View>
           <View style={styles.titleTextContainer}>
-            <Text style={styles.title}>Enhanced Rainfall Radar</Text>
+            <Text style={styles.title}>Improved Rainfall Radar</Text>
             <Text style={styles.subtitle}>{circuitName}</Text>
           </View>
           {alwaysVisible && (
@@ -1346,7 +1217,7 @@ const RainfallRadar: React.FC<Props> = ({
         </View>
       </View>
 
-      {/* Enhanced connection status display */}
+      {/* Simplified connection status display */}
       <View style={styles.connectionStatusContainer}>
         <View style={styles.connectionStatusHeader}>
           <View style={styles.statusIndicator}>
@@ -1407,12 +1278,12 @@ const RainfallRadar: React.FC<Props> = ({
             <Icon name="cloud-download" size={40} color={colors.primary} />
           </Animated.View>
           <Text style={styles.loadingText}>
-            {isRetrying ? 'Reconnecting...' : 'Loading Enhanced Radar'}
+            {isRetrying ? 'Reconnecting...' : 'Loading Improved Radar'}
           </Text>
           <Text style={styles.loadingSubtext}>
             {isRetrying 
               ? `Retry attempt ${retryCount}/${MAX_RETRY_ATTEMPTS}` 
-              : 'Enhanced connection handling active'
+              : 'Simplified connection handling active'
             }
           </Text>
           <View style={styles.loadingProgress}>
@@ -1478,8 +1349,8 @@ const RainfallRadar: React.FC<Props> = ({
           allowsFullscreenVideo={false}
           allowsProtectedMedia={false}
           dataDetectorTypes="none"
-          cacheEnabled={true}
-          cacheMode="LOAD_CACHE_ELSE_NETWORK"
+          cacheEnabled={false}
+          cacheMode="LOAD_NO_CACHE"
           incognito={false}
           thirdPartyCookiesEnabled={true}
           sharedCookiesEnabled={true}
@@ -1501,7 +1372,7 @@ const RainfallRadar: React.FC<Props> = ({
         <View style={styles.footerContent}>
           <View style={styles.footerMain}>
             <Text style={styles.footerText}>
-              Enhanced radar with improved connection reliability • 
+              Improved radar with simplified connection handling • 
               Updates every {refreshInterval} minutes
               {isAnimating && ` • ${animationSpeed}ms/frame`}
             </Text>
@@ -1528,7 +1399,7 @@ const RainfallRadar: React.FC<Props> = ({
             </View>
           </View>
           <Text style={styles.attribution}>
-            Powered by RainViewer API with enhanced error handling
+            Powered by RainViewer API with improved error handling
           </Text>
         </View>
       </View>
@@ -1923,7 +1794,7 @@ const styles = StyleSheet.create({
   },
 });
 
-// Helper functions for enhanced UI
+// Helper functions for UI
 const getIntensityColor = (intensity: string): string => {
   switch (intensity) {
     case 'light': return '#00ff00';
