@@ -631,7 +631,7 @@ const RainfallRadar: React.FC<Props> = ({
         <View style={styles.header}>
           <View style={styles.titleContainer}>
             <Icon name="rainy" size={20} color={colors.precipitation} />
-            <Text style={styles.title}>Simplified Rainfall Radar</Text>
+            <Text style={styles.title}>Rainfall Radar</Text>
           </View>
           <TouchableOpacity onPress={toggleRadarView} style={styles.toggleButton}>
             <Icon name="play" size={16} color="#fff" />
@@ -643,9 +643,9 @@ const RainfallRadar: React.FC<Props> = ({
           <Animated.View style={[styles.previewIcon, pulseStyle]}>
             <Icon name="thunderstorm" size={56} color={colors.precipitation} />
           </Animated.View>
-          <Text style={styles.previewTitle}>Simplified & Reliable</Text>
+          <Text style={styles.previewTitle}>Reliable & Fast</Text>
           <Text style={styles.previewDescription}>
-            Streamlined radar with improved connection stability for {circuitName}
+            Live radar with improved connection stability for {circuitName}
           </Text>
         </View>
       </View>
@@ -658,7 +658,7 @@ const RainfallRadar: React.FC<Props> = ({
         <View style={styles.titleContainer}>
           <Icon name="rainy" size={20} color={colors.precipitation} />
           <View style={styles.titleTextContainer}>
-            <Text style={styles.title}>Simplified Rainfall Radar</Text>
+            <Text style={styles.title}>Rainfall Radar</Text>
             <Text style={styles.subtitle}>{circuitName}</Text>
           </View>
           {alwaysVisible && (
@@ -787,7 +787,7 @@ const RainfallRadar: React.FC<Props> = ({
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          Simplified radar • Updates every {refreshInterval} minutes
+          Live radar • Updates every {refreshInterval} minutes
           {lastUpdateTime && ` • Last: ${lastUpdateTime.toLocaleTimeString()}`}
         </Text>
         <Text style={styles.attribution}>
