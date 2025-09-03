@@ -4,11 +4,12 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native
 import { router } from 'expo-router';
 import { useWeather } from '../hooks/useWeather';
 import { useUnit } from '../state/UnitContext';
-import { colors, animations } from '../styles/commonStyles';
+import { colors, animations, spacing, borderRadius, shadows, commonStyles } from '../styles/commonStyles';
 import WeatherSymbol from './WeatherSymbol';
 import { Circuit, Category } from './CircuitCard';
 import { getCurrentTrackOfWeek, getTrackStatusText } from '../utils/currentTrack';
 import { getCircuitBySlug } from '../data/circuits';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface Props {
   category: Category;
@@ -28,23 +29,38 @@ export default function FeaturedTrackCard({ category }: Props) {
   );
 
   const scaleValue = useMemo(() => new Animated.Value(1), []);
+  const opacityValue = useMemo(() => new Animated.Value(1), []);
 
   const onPressIn = () => {
-    Animated.spring(scaleValue, {
-      toValue: animations.scale.pressed,
-      tension: animations.spring.tension,
-      friction: animations.spring.friction,
-      useNativeDriver: true,
-    }).start();
+    Animated.parallel([
+      Animated.spring(scaleValue, {
+        toValue: animations.scale.pressed,
+        tension: animations.spring.tension,
+        friction: animations.spring.friction,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityValue, {
+        toValue: animations.opacity.pressed,
+        duration: animations.timingFast.duration,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const onPressOut = () => {
-    Animated.spring(scaleValue, {
-      toValue: animations.scale.normal,
-      tension: animations.spring.tension,
-      friction: animations.spring.friction,
-      useNativeDriver: true,
-    }).start();
+    Animated.parallel([
+      Animated.spring(scaleValue, {
+        toValue: animations.scale.normal,
+        tension: animations.spring.tension,
+        friction: animations.spring.friction,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityValue, {
+        toValue: animations.opacity.normal,
+        duration: animations.timingFast.duration,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   if (!trackOfWeek || !circuit) {
@@ -56,25 +72,55 @@ export default function FeaturedTrackCard({ category }: Props) {
   const windUnit = unit === 'metric' ? 'km/h' : 'mph';
   const statusText = getTrackStatusText(trackOfWeek);
   
-  // Get category-specific colors
-  const categoryColor = category === 'f1' ? colors.f1Red : colors.motogpBlue;
-  const categoryAccent = category === 'f1' ? colors.f1Gold : colors.motogpOrange;
+  // Enhanced category-specific styling
+  const categoryConfig = category === 'f1' ? {
+    primary: colors.f1Red,
+    accent: colors.f1Gold,
+    gradient: colors.gradientF1,
+    bgGradient: ['#2A0F0F', '#3A1A1A'],
+    label: 'FORMULA 1'
+  } : {
+    primary: colors.motogpBlue,
+    accent: colors.motogpOrange,
+    gradient: colors.gradientMotoGP,
+    bgGradient: ['#0F1A2A', '#1A2A3A'],
+    label: 'MOTOGP'
+  };
 
   console.log('FeaturedTrackCard: Rendering', circuit.name, 'status:', statusText);
 
   return (
     <View style={styles.container}>
+      {/* Enhanced header with better typography */}
       <View style={styles.headerContainer}>
-        <Text style={styles.sectionTitle}>Track of the Week</Text>
-        <View style={[styles.statusBadge, { backgroundColor: trackOfWeek.isRaceWeek ? categoryColor : colors.textMuted }]}>
+        <View style={styles.titleSection}>
+          <Text style={styles.sectionTitle}>Track of the Week</Text>
+          <View style={styles.categoryIndicator}>
+            <LinearGradient
+              colors={categoryConfig.gradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.categoryBadge}
+            >
+              <Text style={styles.categoryText}>{categoryConfig.label}</Text>
+            </LinearGradient>
+          </View>
+        </View>
+        <View style={[styles.statusBadge, { 
+          backgroundColor: trackOfWeek.isRaceWeek ? categoryConfig.primary : colors.textMuted,
+          boxShadow: trackOfWeek.isRaceWeek ? `0 4px 12px ${categoryConfig.primary}40` : 'none'
+        }]}>
           <Text style={styles.statusText}>{statusText}</Text>
         </View>
       </View>
       
-      <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
+      <Animated.View style={{ 
+        transform: [{ scale: scaleValue }], 
+        opacity: opacityValue 
+      }}>
         <TouchableOpacity
-          style={[styles.card, { borderLeftColor: categoryColor, backgroundColor: colors.cardHighlight || colors.card }]}
-          activeOpacity={0.9}
+          style={styles.card}
+          activeOpacity={1}
           onPress={() => {
             console.log('FeaturedTrackCard: Navigating to', circuit.slug, category);
             router.push(`/circuit/${circuit.slug}?category=${category}`);
@@ -82,16 +128,43 @@ export default function FeaturedTrackCard({ category }: Props) {
           onPressIn={onPressIn}
           onPressOut={onPressOut}
         >
-          {/* Featured indicator */}
-          <View style={[styles.featuredBadge, { backgroundColor: categoryColor }]}>
-            <Text style={styles.featuredText}>FEATURED</Text>
+          {/* Enhanced gradient background */}
+          <LinearGradient
+            colors={categoryConfig.bgGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.gradientBackground}
+          />
+
+          {/* Accent border with glow */}
+          <View style={[styles.accentBorder, { 
+            backgroundColor: categoryConfig.primary,
+            boxShadow: `0 0 16px ${categoryConfig.primary}50`
+          }]} />
+
+          {/* Featured badge */}
+          <View style={styles.featuredBadgeContainer}>
+            <LinearGradient
+              colors={[categoryConfig.accent, categoryConfig.primary]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.featuredBadge}
+            >
+              <Text style={styles.featuredText}>★ FEATURED</Text>
+            </LinearGradient>
           </View>
 
           <View style={styles.content}>
+            {/* Enhanced header section */}
             <View style={styles.header}>
-              <Text style={styles.name}>{circuit.name}</Text>
-              <Text style={styles.country}>{circuit.country}</Text>
-              <Text style={[styles.raceDate, { color: categoryColor }]}>
+              <Text style={styles.circuitName} numberOfLines={2}>
+                {circuit.name}
+              </Text>
+              <View style={styles.locationContainer}>
+                <View style={[styles.locationDot, { backgroundColor: categoryConfig.accent }]} />
+                <Text style={styles.countryText}>{circuit.country.toUpperCase()}</Text>
+              </View>
+              <Text style={[styles.raceDate, { color: categoryConfig.primary }]}>
                 Race: {new Date(trackOfWeek.raceDate).toLocaleDateString('en-US', { 
                   weekday: 'long', 
                   month: 'short', 
@@ -100,51 +173,99 @@ export default function FeaturedTrackCard({ category }: Props) {
               </Text>
             </View>
             
-            <View style={styles.weather}>
+            {/* Enhanced weather section */}
+            <View style={styles.weatherSection}>
               {loading ? (
                 <View style={styles.loadingContainer}>
-                  <View style={styles.loadingDot} />
-                  <Text style={styles.weatherText}>Loading...</Text>
+                  <View style={styles.loadingIndicator}>
+                    <Animated.View style={[styles.loadingDot, { backgroundColor: categoryConfig.primary }]} />
+                    <Animated.View style={[styles.loadingDot, { backgroundColor: categoryConfig.primary, opacity: 0.7 }]} />
+                    <Animated.View style={[styles.loadingDot, { backgroundColor: categoryConfig.primary, opacity: 0.4 }]} />
+                  </View>
+                  <Text style={styles.loadingText}>Loading weather...</Text>
                 </View>
               ) : current ? (
                 <>
-                  <View style={styles.weatherSymbolContainer}>
-                    <WeatherSymbol 
-                      weatherCode={current.weather_code} 
-                      size={36}
-                      latitude={circuit.latitude}
-                      longitude={circuit.longitude}
-                    />
-                    <Text style={styles.weatherLabel}>Current</Text>
+                  {/* Current weather display */}
+                  <View style={styles.weatherHeader}>
+                    <View style={styles.weatherSymbolSection}>
+                      <View style={[styles.weatherSymbolContainer, {
+                        backgroundColor: `${categoryConfig.primary}15`,
+                        borderColor: `${categoryConfig.primary}30`
+                      }]}>
+                        <WeatherSymbol 
+                          weatherCode={current.weather_code} 
+                          size={28}
+                          latitude={circuit.latitude}
+                          longitude={circuit.longitude}
+                        />
+                      </View>
+                      <Text style={styles.weatherLabel}>Current</Text>
+                    </View>
+                    
+                    <View style={styles.primaryMetric}>
+                      <Text style={[styles.primaryTemp, { color: colors.temperature }]}>
+                        {Math.round(current.temperature)}°
+                      </Text>
+                      <Text style={styles.tempUnit}>{tempUnit}</Text>
+                    </View>
                   </View>
-                  <View style={styles.tempContainer}>
-                    <Text style={[styles.temp, { color: colors.temperature }]}>
-                      {Math.round(current.temperature)}{tempUnit}
-                    </Text>
-                    <Text style={styles.tempLabel}>Temperature</Text>
-                  </View>
-                  <View style={styles.windContainer}>
-                    <Text style={[styles.wind, { color: colors.wind }]}>
-                      {Math.round(current.wind_speed)} {windUnit}
-                    </Text>
-                    <Text style={styles.windLabel}>Wind Speed</Text>
-                  </View>
-                  <View style={styles.humidityContainer}>
-                    <Text style={[styles.humidity, { color: colors.humidity }]}>
-                      {Math.round(current.humidity)}%
-                    </Text>
-                    <Text style={styles.humidityLabel}>Humidity</Text>
+
+                  {/* Weather metrics grid */}
+                  <View style={styles.metricsGrid}>
+                    <View style={styles.metricCard}>
+                      <View style={[styles.metricIcon, { backgroundColor: `${colors.wind}20` }]}>
+                        <Text style={[styles.metricIconText, { color: colors.wind }]}>💨</Text>
+                      </View>
+                      <View style={styles.metricContent}>
+                        <Text style={[styles.metricValue, { color: colors.wind }]}>
+                          {Math.round(current.wind_speed)}
+                        </Text>
+                        <Text style={styles.metricLabel}>{windUnit}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.metricCard}>
+                      <View style={[styles.metricIcon, { backgroundColor: `${colors.humidity}20` }]}>
+                        <Text style={[styles.metricIconText, { color: colors.humidity }]}>💧</Text>
+                      </View>
+                      <View style={styles.metricContent}>
+                        <Text style={[styles.metricValue, { color: colors.humidity }]}>
+                          {Math.round(current.humidity)}
+                        </Text>
+                        <Text style={styles.metricLabel}>%</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.metricCard}>
+                      <View style={[styles.metricIcon, { backgroundColor: `${colors.pressure}20` }]}>
+                        <Text style={[styles.metricIconText, { color: colors.pressure }]}>⚡</Text>
+                      </View>
+                      <View style={styles.metricContent}>
+                        <Text style={[styles.metricValue, { color: colors.pressure }]}>
+                          {Math.round(current.pressure)}
+                        </Text>
+                        <Text style={styles.metricLabel}>hPa</Text>
+                      </View>
+                    </View>
                   </View>
                 </>
               ) : (
-                <Text style={styles.weatherText}>No data available</Text>
+                <View style={styles.noDataContainer}>
+                  <View style={[styles.noDataIcon, { backgroundColor: `${categoryConfig.primary}20` }]}>
+                    <Text style={[styles.noDataIconText, { color: categoryConfig.primary }]}>⚠</Text>
+                  </View>
+                  <Text style={styles.noDataText}>Weather data unavailable</Text>
+                </View>
               )}
             </View>
           </View>
 
-          {/* Enhanced decorative accent */}
-          <View style={[styles.accent, { backgroundColor: categoryAccent }]} />
-          <View style={[styles.glowAccent, { backgroundColor: categoryColor }]} />
+          {/* Enhanced decorative elements */}
+          <View style={styles.decorativeElements}>
+            <View style={[styles.decorativeAccent, { backgroundColor: categoryConfig.accent }]} />
+            <View style={[styles.decorativeGlow, { backgroundColor: `${categoryConfig.primary}30` }]} />
+          </View>
         </TouchableOpacity>
       </Animated.View>
     </View>
@@ -153,26 +274,50 @@ export default function FeaturedTrackCard({ category }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingHorizontal: 4,
+    alignItems: 'flex-start',
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.xs,
+  },
+  titleSection: {
+    flex: 1,
+    gap: spacing.xs,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
     color: colors.text,
     fontFamily: 'Roboto_700Bold',
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
+    lineHeight: 28,
+  },
+  categoryIndicator: {
+    alignSelf: 'flex-start',
+  },
+  categoryBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  categoryText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '700',
+    fontFamily: 'Roboto_700Bold',
+    letterSpacing: 0.8,
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   statusText: {
     color: '#FFFFFF',
@@ -182,156 +327,237 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   card: {
-    backgroundColor: colors.card,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    borderLeftWidth: 5,
-    boxShadow: `0 12px 40px ${colors.shadow}`,
+    borderRadius: borderRadius.xl,
     overflow: 'hidden',
     position: 'relative',
+    borderWidth: 1,
+    borderColor: colors.divider,
+    boxShadow: `0 12px 48px rgba(0, 0, 0, 0.4)`,
+  },
+  gradientBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  accentBorder: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    borderTopLeftRadius: borderRadius.xl,
+    borderBottomLeftRadius: borderRadius.xl,
+  },
+  featuredBadgeContainer: {
+    position: 'absolute',
+    top: spacing.lg,
+    right: spacing.lg,
+    zIndex: 2,
   },
   featuredBadge: {
-    position: 'absolute',
-    top: 18,
-    right: 18,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
-    zIndex: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
   },
   featuredText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     fontFamily: 'Roboto_700Bold',
     letterSpacing: 0.8,
   },
   content: {
-    padding: 24,
-    paddingTop: 20,
+    padding: spacing.xl,
+    paddingTop: spacing.lg,
+    zIndex: 1,
   },
   header: {
-    marginBottom: 20,
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
   },
-  name: {
-    fontSize: 22,
+  circuitName: {
+    fontSize: 24,
     fontWeight: '700',
     color: colors.text,
     fontFamily: 'Roboto_700Bold',
-    marginBottom: 6,
-    letterSpacing: -0.4,
-    lineHeight: 28,
+    letterSpacing: -0.6,
+    lineHeight: 30,
+    paddingRight: spacing.xxxl,
   },
-  country: {
-    fontSize: 16,
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  locationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  countryText: {
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'Roboto_500Medium',
     color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    letterSpacing: 0.2,
-    marginBottom: 8,
+    letterSpacing: 0.5,
   },
   raceDate: {
     fontSize: 14,
     fontWeight: '600',
     fontFamily: 'Roboto_500Medium',
     letterSpacing: 0.1,
+    marginTop: spacing.xs,
   },
-  weather: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
+  weatherSection: {
+    gap: spacing.md,
   },
   loadingContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    paddingVertical: spacing.lg,
+    gap: spacing.sm,
+  },
+  loadingIndicator: {
+    flexDirection: 'row',
+    gap: spacing.xs,
   },
   loadingDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.primary,
-    opacity: 0.6,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  loadingText: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+  },
+  weatherHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  weatherSymbolSection: {
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   weatherSymbolContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   weatherLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
-    marginTop: 6,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  tempContainer: {
-    alignItems: 'flex-start',
+  primaryMetric: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.xs,
   },
-  temp: {
-    fontSize: 24,
+  primaryTemp: {
+    fontSize: 28,
     fontWeight: '700',
     fontFamily: 'Roboto_700Bold',
-    letterSpacing: -0.6,
+    lineHeight: 32,
   },
-  tempLabel: {
-    fontSize: 11,
+  tempUnit: {
+    fontSize: 14,
+    fontWeight: '500',
     color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginTop: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontFamily: 'Roboto_500Medium',
   },
-  windContainer: {
+  metricsGrid: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  metricCard: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: borderRadius.sm,
+    padding: spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    gap: spacing.xs,
   },
-  wind: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Roboto_500Medium',
+  metricIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  windLabel: {
-    fontSize: 11,
+  metricIconText: {
+    fontSize: 12,
+  },
+  metricContent: {
+    flex: 1,
+  },
+  metricValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: 'Roboto_700Bold',
+    lineHeight: 18,
+  },
+  metricLabel: {
+    fontSize: 9,
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
-    marginTop: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    lineHeight: 12,
   },
-  humidityContainer: {
-    alignItems: 'flex-end',
+  noDataContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing.lg,
+    gap: spacing.sm,
   },
-  humidity: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Roboto_500Medium',
+  noDataIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  humidityLabel: {
-    fontSize: 11,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginTop: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  noDataIconText: {
+    fontSize: 16,
   },
-  weatherText: {
+  noDataText: {
     fontSize: 14,
     color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
+    fontFamily: 'Roboto_500Medium',
+    textAlign: 'center',
   },
-  accent: {
+  decorativeElements: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 80,
-    height: 4,
-    borderTopLeftRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
   },
-  glowAccent: {
+  decorativeAccent: {
+    width: 60,
+    height: 3,
+    borderTopLeftRadius: borderRadius.sm,
+    borderBottomRightRadius: borderRadius.xl,
+  },
+  decorativeGlow: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 4,
-    height: '100%',
-    opacity: 0.3,
+    bottom: 0,
+    right: 0,
+    width: 20,
+    height: 20,
+    borderTopLeftRadius: borderRadius.md,
+    borderBottomRightRadius: borderRadius.xl,
   },
 });

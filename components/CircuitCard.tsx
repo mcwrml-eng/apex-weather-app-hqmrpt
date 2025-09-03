@@ -70,12 +70,14 @@ export default function CircuitCard({ circuit, category }: Props) {
     primary: colors.f1Red,
     accent: colors.f1Gold,
     gradient: colors.gradientF1,
-    label: 'FORMULA 1'
+    label: 'FORMULA 1',
+    bgGradient: ['#1A0B0B', '#2A1515']
   } : {
     primary: colors.motogpBlue,
     accent: colors.motogpOrange,
     gradient: colors.gradientMotoGP,
-    label: 'MOTOGP'
+    label: 'MOTOGP',
+    bgGradient: ['#0B1A2A', '#152A3A']
   };
 
   console.log('CircuitCard: Rendering enhanced', circuit.name, 'loading:', loading, 'current:', !!current);
@@ -95,18 +97,24 @@ export default function CircuitCard({ circuit, category }: Props) {
         onPressIn={onPressIn}
         onPressOut={onPressOut}
       >
-        {/* Enhanced gradient background */}
+        {/* Enhanced gradient background with category theming */}
         <LinearGradient
-          colors={[colors.card, colors.cardElevated]}
+          colors={categoryConfig.bgGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradientBackground}
         />
         
-        {/* Category accent border */}
-        <View style={[styles.accentBorder, { backgroundColor: categoryConfig.primary }]} />
+        {/* Subtle overlay for depth */}
+        <View style={styles.overlayPattern} />
         
-        {/* Category badge with gradient */}
+        {/* Category accent border with glow effect */}
+        <View style={[styles.accentBorder, { 
+          backgroundColor: categoryConfig.primary,
+          boxShadow: `0 0 12px ${categoryConfig.primary}40`
+        }]} />
+        
+        {/* Enhanced category badge */}
         <View style={styles.categoryBadgeContainer}>
           <LinearGradient
             colors={categoryConfig.gradient}
@@ -119,87 +127,108 @@ export default function CircuitCard({ circuit, category }: Props) {
         </View>
 
         <View style={styles.content}>
-          {/* Enhanced header section */}
+          {/* Enhanced header section with better typography */}
           <View style={styles.header}>
             <View style={styles.titleContainer}>
-              <Text style={styles.circuitName}>{circuit.name}</Text>
+              <Text style={styles.circuitName} numberOfLines={2}>
+                {circuit.name}
+              </Text>
               <View style={styles.countryContainer}>
-                <View style={[styles.countryDot, { backgroundColor: categoryConfig.accent }]} />
-                <Text style={styles.countryText}>{circuit.country}</Text>
+                <View style={[styles.countryIndicator, { backgroundColor: categoryConfig.accent }]} />
+                <Text style={styles.countryText}>{circuit.country.toUpperCase()}</Text>
               </View>
             </View>
           </View>
           
-          {/* Enhanced weather section */}
+          {/* Enhanced weather section with better visual hierarchy */}
           <View style={styles.weatherSection}>
             {loading ? (
               <View style={styles.loadingContainer}>
                 <View style={styles.loadingIndicator}>
-                  <Animated.View style={[styles.loadingDot, styles.loadingDot1]} />
-                  <Animated.View style={[styles.loadingDot, styles.loadingDot2]} />
-                  <Animated.View style={[styles.loadingDot, styles.loadingDot3]} />
+                  <Animated.View style={[styles.loadingDot, { backgroundColor: categoryConfig.primary }]} />
+                  <Animated.View style={[styles.loadingDot, { backgroundColor: categoryConfig.primary, opacity: 0.7 }]} />
+                  <Animated.View style={[styles.loadingDot, { backgroundColor: categoryConfig.primary, opacity: 0.4 }]} />
                 </View>
-                <Text style={styles.loadingText}>Loading weather data...</Text>
+                <Text style={styles.loadingText}>Loading weather...</Text>
               </View>
             ) : current ? (
               <>
-                {/* Current weather symbol */}
-                <View style={styles.weatherSymbolSection}>
-                  <View style={styles.weatherSymbolContainer}>
-                    <WeatherSymbol 
-                      weatherCode={current.weather_code} 
-                      size={36}
-                      latitude={circuit.latitude}
-                      longitude={circuit.longitude}
-                    />
+                {/* Current weather display with enhanced styling */}
+                <View style={styles.weatherHeader}>
+                  <View style={styles.weatherSymbolSection}>
+                    <View style={[styles.weatherSymbolContainer, {
+                      backgroundColor: `${categoryConfig.primary}15`,
+                      borderColor: `${categoryConfig.primary}30`
+                    }]}>
+                      <WeatherSymbol 
+                        weatherCode={current.weather_code} 
+                        size={32}
+                        latitude={circuit.latitude}
+                        longitude={circuit.longitude}
+                      />
+                    </View>
                   </View>
-                  <Text style={styles.weatherLabel}>Current</Text>
+                  <View style={styles.currentTempSection}>
+                    <Text style={[styles.currentTemp, { color: colors.temperature }]}>
+                      {Math.round(current.temperature)}°
+                    </Text>
+                    <Text style={styles.tempUnit}>{tempUnit}</Text>
+                  </View>
                 </View>
 
-                {/* Weather metrics grid */}
-                <View style={styles.metricsGrid}>
-                  {/* Temperature */}
-                  <View style={styles.metricItem}>
-                    <View style={[styles.metricIcon, { backgroundColor: `${colors.temperature}20` }]}>
-                      <Text style={[styles.metricIconText, { color: colors.temperature }]}>°</Text>
+                {/* Enhanced weather metrics with better spacing */}
+                <View style={styles.metricsContainer}>
+                  <View style={styles.metricsRow}>
+                    {/* Wind Speed */}
+                    <View style={styles.metricCard}>
+                      <View style={[styles.metricIconContainer, { backgroundColor: `${colors.wind}20` }]}>
+                        <Text style={[styles.metricIcon, { color: colors.wind }]}>💨</Text>
+                      </View>
+                      <View style={styles.metricInfo}>
+                        <Text style={[styles.metricValue, { color: colors.wind }]}>
+                          {Math.round(current.wind_speed)}
+                        </Text>
+                        <Text style={styles.metricUnit}>{windUnit}</Text>
+                      </View>
                     </View>
-                    <View style={styles.metricContent}>
-                      <Text style={[styles.metricValue, { color: colors.temperature }]}>
-                        {Math.round(current.temperature)}{tempUnit}
-                      </Text>
-                      <Text style={styles.metricLabel}>Temperature</Text>
+
+                    {/* Humidity */}
+                    <View style={styles.metricCard}>
+                      <View style={[styles.metricIconContainer, { backgroundColor: `${colors.humidity}20` }]}>
+                        <Text style={[styles.metricIcon, { color: colors.humidity }]}>💧</Text>
+                      </View>
+                      <View style={styles.metricInfo}>
+                        <Text style={[styles.metricValue, { color: colors.humidity }]}>
+                          {Math.round(current.humidity)}
+                        </Text>
+                        <Text style={styles.metricUnit}>%</Text>
+                      </View>
                     </View>
                   </View>
 
-                  {/* Wind Speed */}
-                  <View style={styles.metricItem}>
-                    <View style={[styles.metricIcon, { backgroundColor: `${colors.wind}20` }]}>
-                      <Text style={[styles.metricIconText, { color: colors.wind }]}>⚡</Text>
-                    </View>
-                    <View style={styles.metricContent}>
-                      <Text style={[styles.metricValue, { color: colors.wind }]}>
-                        {Math.round(current.wind_speed)}
+                  {/* Additional weather info */}
+                  <View style={styles.additionalInfo}>
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Feels like</Text>
+                      <Text style={styles.infoValue}>
+                        {Math.round(current.apparent_temperature)}°{tempUnit}
                       </Text>
-                      <Text style={styles.metricLabel}>{windUnit}</Text>
                     </View>
-                  </View>
-
-                  {/* Humidity */}
-                  <View style={styles.metricItem}>
-                    <View style={[styles.metricIcon, { backgroundColor: `${colors.humidity}20` }]}>
-                      <Text style={[styles.metricIconText, { color: colors.humidity }]}>💧</Text>
-                    </View>
-                    <View style={styles.metricContent}>
-                      <Text style={[styles.metricValue, { color: colors.humidity }]}>
-                        {Math.round(current.humidity)}%
+                    <View style={styles.infoDivider} />
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Pressure</Text>
+                      <Text style={styles.infoValue}>
+                        {Math.round(current.pressure)} hPa
                       </Text>
-                      <Text style={styles.metricLabel}>Humidity</Text>
                     </View>
                   </View>
                 </View>
               </>
             ) : (
               <View style={styles.noDataContainer}>
+                <View style={[styles.noDataIcon, { backgroundColor: `${categoryConfig.primary}20` }]}>
+                  <Text style={[styles.noDataIconText, { color: categoryConfig.primary }]}>⚠</Text>
+                </View>
                 <Text style={styles.noDataText}>Weather data unavailable</Text>
                 <Text style={styles.noDataSubtext}>Tap to view circuit details</Text>
               </View>
@@ -209,8 +238,7 @@ export default function CircuitCard({ circuit, category }: Props) {
 
         {/* Enhanced decorative elements */}
         <View style={styles.decorativeElements}>
-          <View style={[styles.decorativeDot, { backgroundColor: categoryConfig.accent }]} />
-          <View style={[styles.decorativeLine, { backgroundColor: categoryConfig.primary }]} />
+          <View style={[styles.decorativePattern, { backgroundColor: `${categoryConfig.accent}30` }]} />
         </View>
       </TouchableOpacity>
     </Animated.View>
@@ -226,7 +254,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     borderWidth: 1,
     borderColor: colors.divider,
-    boxShadow: shadows.lg,
+    boxShadow: `0 8px 32px rgba(0, 0, 0, 0.3)`,
   },
   gradientBackground: {
     position: 'absolute',
@@ -235,19 +263,27 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
+  overlayPattern: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+  },
   accentBorder: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
-    width: 4,
+    width: 3,
     borderTopLeftRadius: borderRadius.xl,
     borderBottomLeftRadius: borderRadius.xl,
   },
   categoryBadgeContainer: {
     position: 'absolute',
-    top: spacing.lg,
-    right: spacing.lg,
+    top: spacing.md,
+    right: spacing.md,
     zIndex: 2,
   },
   categoryBadge: {
@@ -255,14 +291,15 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
     borderWidth: 1,
-    borderColor: colors.glassBorder,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
   },
   categoryText: {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     fontFamily: 'Roboto_700Bold',
-    letterSpacing: 0.8,
+    letterSpacing: 1,
   },
   content: {
     padding: spacing.xl,
@@ -276,35 +313,38 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   circuitName: {
-    ...commonStyles.headingSmall,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     fontFamily: 'Roboto_700Bold',
-    letterSpacing: -0.4,
-    lineHeight: 24,
-    paddingRight: spacing.xxxl, // Account for category badge
+    color: colors.text,
+    letterSpacing: -0.5,
+    lineHeight: 26,
+    paddingRight: spacing.xxxl,
   },
   countryContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
+    marginTop: spacing.xs,
   },
-  countryDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+  countryIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   countryText: {
-    ...commonStyles.bodyMedium,
-    fontSize: 13,
-    letterSpacing: 0.3,
+    fontSize: 11,
+    fontWeight: '600',
+    fontFamily: 'Roboto_500Medium',
+    color: colors.textMuted,
+    letterSpacing: 0.5,
   },
   weatherSection: {
     gap: spacing.md,
   },
   loadingContainer: {
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.lg,
     gap: spacing.sm,
   },
   loadingIndicator: {
@@ -312,117 +352,161 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   loadingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
-  },
-  loadingDot1: {
-    opacity: 0.4,
-  },
-  loadingDot2: {
-    opacity: 0.7,
-  },
-  loadingDot3: {
-    opacity: 1,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   loadingText: {
-    ...commonStyles.caption,
-    fontSize: 11,
+    fontSize: 12,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+  },
+  weatherHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
   },
   weatherSymbolSection: {
-    alignItems: 'center',
-    marginBottom: spacing.sm,
+    flex: 1,
   },
   weatherSymbolContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.backgroundAlt,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: colors.divider,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xs,
   },
-  weatherLabel: {
-    ...commonStyles.captionSmall,
-    fontSize: 9,
-    fontWeight: '600',
-  },
-  metricsGrid: {
+  currentTempSection: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    gap: spacing.xs,
+  },
+  currentTemp: {
+    fontSize: 32,
+    fontWeight: '700',
+    fontFamily: 'Roboto_700Bold',
+    lineHeight: 36,
+  },
+  tempUnit: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.textMuted,
+    fontFamily: 'Roboto_500Medium',
+  },
+  metricsContainer: {
+    gap: spacing.md,
+  },
+  metricsRow: {
+    flexDirection: 'row',
     gap: spacing.sm,
   },
-  metricItem: {
+  metricCard: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.backgroundAlt,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: borderRadius.md,
     padding: spacing.sm,
     borderWidth: 1,
-    borderColor: colors.divider,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
     gap: spacing.sm,
   },
-  metricIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  metricIconContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  metricIconText: {
-    fontSize: 12,
-    fontWeight: '600',
+  metricIcon: {
+    fontSize: 14,
   },
-  metricContent: {
+  metricInfo: {
     flex: 1,
-    alignItems: 'flex-start',
   },
   metricValue: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
     fontFamily: 'Roboto_700Bold',
-    lineHeight: 18,
+    lineHeight: 20,
   },
-  metricLabel: {
-    ...commonStyles.captionSmall,
-    fontSize: 8,
-    lineHeight: 12,
+  metricUnit: {
+    fontSize: 10,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    lineHeight: 14,
+  },
+  additionalInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: borderRadius.sm,
+    padding: spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  infoItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  infoLabel: {
+    fontSize: 10,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginBottom: spacing.xs,
+  },
+  infoValue: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    fontFamily: 'Roboto_500Medium',
+  },
+  infoDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginHorizontal: spacing.sm,
   },
   noDataContainer: {
     alignItems: 'center',
     paddingVertical: spacing.lg,
-    gap: spacing.xs,
+    gap: spacing.sm,
+  },
+  noDataIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+  },
+  noDataIconText: {
+    fontSize: 18,
   },
   noDataText: {
-    ...commonStyles.bodyMedium,
+    fontSize: 14,
     color: colors.textMuted,
+    fontFamily: 'Roboto_500Medium',
+    textAlign: 'center',
   },
   noDataSubtext: {
-    ...commonStyles.caption,
     fontSize: 11,
     color: colors.textDisabled,
+    fontFamily: 'Roboto_400Regular',
+    textAlign: 'center',
   },
   decorativeElements: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    padding: spacing.sm,
+    width: 60,
+    height: 3,
   },
-  decorativeDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-  },
-  decorativeLine: {
-    width: 20,
-    height: 2,
-    borderRadius: 1,
+  decorativePattern: {
+    flex: 1,
+    borderTopLeftRadius: borderRadius.sm,
+    borderBottomRightRadius: borderRadius.xl,
   },
 });
