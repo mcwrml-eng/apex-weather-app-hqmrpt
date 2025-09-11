@@ -62,7 +62,7 @@ export default function F1Screen() {
               <Text style={styles.title}>Formula 1</Text>
               <View style={styles.titleAccent} />
             </View>
-            <Text style={styles.subtitle}>2025 / 2026 Racing Circuits</Text>
+            <Text style={styles.subtitle}>Racing Circuits</Text>
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
                 <Text style={styles.statNumber}>{f1Circuits.length}</Text>

@@ -62,7 +62,7 @@ export default function MotoGPScreen() {
               <Text style={styles.title}>MotoGP</Text>
               <View style={styles.titleAccent} />
             </View>
-            <Text style={styles.subtitle}>2025 / 2026 Racing Circuits</Text>
+            <Text style={styles.subtitle}>Racing Circuits</Text>
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
                 <Text style={styles.statNumber}>{motogpCircuits.length}</Text>
