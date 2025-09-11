@@ -72,19 +72,23 @@ export default function FeaturedTrackCard({ category }: Props) {
   const windUnit = unit === 'metric' ? 'km/h' : 'mph';
   const statusText = getTrackStatusText(trackOfWeek);
   
-  // Enhanced category-specific styling
+  // Enhanced category-specific styling - Updated for light theme
   const categoryConfig = category === 'f1' ? {
     primary: colors.f1Red,
     accent: colors.f1Gold,
     gradient: colors.gradientF1,
-    bgGradient: ['#2A0F0F', '#3A1A1A'],
-    label: 'FORMULA 1'
+    bgGradient: ['#FFFFFF', '#F8FAFC'], // Light gradient instead of dark
+    label: 'FORMULA 1',
+    textColor: colors.text, // Dark text for light background
+    secondaryTextColor: colors.textSecondary
   } : {
     primary: colors.motogpBlue,
     accent: colors.motogpOrange,
     gradient: colors.gradientMotoGP,
-    bgGradient: ['#0F1A2A', '#1A2A3A'],
-    label: 'MOTOGP'
+    bgGradient: ['#FFFFFF', '#F8FAFC'], // Light gradient instead of dark
+    label: 'MOTOGP',
+    textColor: colors.text, // Dark text for light background
+    secondaryTextColor: colors.textSecondary
   };
 
   console.log('FeaturedTrackCard: Rendering', circuit.name, 'status:', statusText);
@@ -157,7 +161,7 @@ export default function FeaturedTrackCard({ category }: Props) {
           <View style={styles.content}>
             {/* Enhanced header section */}
             <View style={styles.header}>
-              <Text style={styles.circuitName} numberOfLines={2}>
+              <Text style={[styles.circuitName, { color: categoryConfig.textColor }]} numberOfLines={2}>
                 {circuit.name}
               </Text>
               <View style={styles.locationContainer}>
@@ -255,7 +259,7 @@ export default function FeaturedTrackCard({ category }: Props) {
                   <View style={[styles.noDataIcon, { backgroundColor: `${categoryConfig.primary}20` }]}>
                     <Text style={[styles.noDataIconText, { color: categoryConfig.primary }]}>⚠</Text>
                   </View>
-                  <Text style={styles.noDataText}>Weather data unavailable</Text>
+                  <Text style={[styles.noDataText, { color: categoryConfig.secondaryTextColor }]}>Weather data unavailable</Text>
                 </View>
               )}
             </View>
@@ -331,8 +335,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
     borderWidth: 1,
-    borderColor: colors.divider,
-    boxShadow: `0 12px 48px rgba(0, 0, 0, 0.4)`,
+    borderColor: colors.border,
+    boxShadow: shadows.lg, // Enhanced shadow for featured card
   },
   gradientBackground: {
     position: 'absolute',
@@ -362,7 +366,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+    boxShadow: shadows.sm,
   },
   featuredText: {
     color: '#FFFFFF',
@@ -383,7 +387,6 @@ const styles = StyleSheet.create({
   circuitName: {
     fontSize: 24,
     fontWeight: '700',
-    color: colors.text,
     fontFamily: 'Roboto_700Bold',
     letterSpacing: -0.6,
     lineHeight: 30,
@@ -485,11 +488,11 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: colors.backgroundAlt, // Light background instead of transparent
     borderRadius: borderRadius.sm,
     padding: spacing.sm,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: colors.borderLight,
     gap: spacing.xs,
   },
   metricIcon: {
@@ -534,7 +537,6 @@ const styles = StyleSheet.create({
   },
   noDataText: {
     fontSize: 14,
-    color: colors.textMuted,
     fontFamily: 'Roboto_500Medium',
     textAlign: 'center',
   },

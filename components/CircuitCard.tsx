@@ -65,19 +65,23 @@ export default function CircuitCard({ circuit, category }: Props) {
   const tempUnit = unit === 'metric' ? '°C' : '°F';
   const windUnit = unit === 'metric' ? 'km/h' : 'mph';
 
-  // Get category-specific colors and gradients
+  // Get category-specific colors and gradients - Updated for light theme
   const categoryConfig = category === 'f1' ? {
     primary: colors.f1Red,
     accent: colors.f1Gold,
     gradient: colors.gradientF1,
     label: 'FORMULA 1',
-    bgGradient: ['#1A0B0B', '#2A1515']
+    bgGradient: ['#FFFFFF', '#F8FAFC'], // Light gradient instead of dark
+    textColor: colors.text, // Dark text for light background
+    secondaryTextColor: colors.textSecondary
   } : {
     primary: colors.motogpBlue,
     accent: colors.motogpOrange,
     gradient: colors.gradientMotoGP,
     label: 'MOTOGP',
-    bgGradient: ['#0B1A2A', '#152A3A']
+    bgGradient: ['#FFFFFF', '#F8FAFC'], // Light gradient instead of dark
+    textColor: colors.text, // Dark text for light background
+    secondaryTextColor: colors.textSecondary
   };
 
   console.log('CircuitCard: Rendering enhanced', circuit.name, 'loading:', loading, 'current:', !!current);
@@ -97,7 +101,7 @@ export default function CircuitCard({ circuit, category }: Props) {
         onPressIn={onPressIn}
         onPressOut={onPressOut}
       >
-        {/* Enhanced gradient background with category theming */}
+        {/* Enhanced gradient background with light theme */}
         <LinearGradient
           colors={categoryConfig.bgGradient}
           start={{ x: 0, y: 0 }}
@@ -130,7 +134,7 @@ export default function CircuitCard({ circuit, category }: Props) {
           {/* Enhanced header section with better typography */}
           <View style={styles.header}>
             <View style={styles.titleContainer}>
-              <Text style={styles.circuitName} numberOfLines={2}>
+              <Text style={[styles.circuitName, { color: categoryConfig.textColor }]} numberOfLines={2}>
                 {circuit.name}
               </Text>
               <View style={styles.countryContainer}>
@@ -210,14 +214,14 @@ export default function CircuitCard({ circuit, category }: Props) {
                   <View style={styles.additionalInfo}>
                     <View style={styles.infoItem}>
                       <Text style={styles.infoLabel}>Feels like</Text>
-                      <Text style={styles.infoValue}>
+                      <Text style={[styles.infoValue, { color: categoryConfig.secondaryTextColor }]}>
                         {Math.round(current.apparent_temperature)}°{tempUnit}
                       </Text>
                     </View>
                     <View style={styles.infoDivider} />
                     <View style={styles.infoItem}>
                       <Text style={styles.infoLabel}>Pressure</Text>
-                      <Text style={styles.infoValue}>
+                      <Text style={[styles.infoValue, { color: categoryConfig.secondaryTextColor }]}>
                         {Math.round(current.pressure)} hPa
                       </Text>
                     </View>
@@ -229,7 +233,7 @@ export default function CircuitCard({ circuit, category }: Props) {
                 <View style={[styles.noDataIcon, { backgroundColor: `${categoryConfig.primary}20` }]}>
                   <Text style={[styles.noDataIconText, { color: categoryConfig.primary }]}>⚠</Text>
                 </View>
-                <Text style={styles.noDataText}>Weather data unavailable</Text>
+                <Text style={[styles.noDataText, { color: categoryConfig.secondaryTextColor }]}>Weather data unavailable</Text>
                 <Text style={styles.noDataSubtext}>Tap to view circuit details</Text>
               </View>
             )}
@@ -253,8 +257,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
     borderWidth: 1,
-    borderColor: colors.divider,
-    boxShadow: `0 8px 32px rgba(0, 0, 0, 0.3)`,
+    borderColor: colors.border,
+    boxShadow: shadows.md, // Lighter shadow for light theme
   },
   gradientBackground: {
     position: 'absolute',
@@ -269,7 +273,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    backgroundColor: 'rgba(248, 250, 252, 0.5)', // Light overlay instead of dark
   },
   accentBorder: {
     position: 'absolute',
@@ -292,7 +296,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+    boxShadow: shadows.sm,
   },
   categoryText: {
     color: '#FFFFFF',
@@ -316,7 +320,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     fontFamily: 'Roboto_700Bold',
-    color: colors.text,
     letterSpacing: -0.5,
     lineHeight: 26,
     paddingRight: spacing.xxxl,
@@ -406,11 +409,11 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: colors.backgroundAlt, // Light background instead of transparent
     borderRadius: borderRadius.md,
     padding: spacing.sm,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: colors.borderLight,
     gap: spacing.sm,
   },
   metricIconContainer: {
@@ -441,11 +444,11 @@ const styles = StyleSheet.create({
   additionalInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: colors.backgroundTertiary, // Light background
     borderRadius: borderRadius.sm,
     padding: spacing.sm,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.borderLight,
   },
   infoItem: {
     flex: 1,
@@ -460,13 +463,12 @@ const styles = StyleSheet.create({
   infoValue: {
     fontSize: 12,
     fontWeight: '600',
-    color: colors.textSecondary,
     fontFamily: 'Roboto_500Medium',
   },
   infoDivider: {
     width: 1,
     height: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: colors.divider,
     marginHorizontal: spacing.sm,
   },
   noDataContainer: {
@@ -487,7 +489,6 @@ const styles = StyleSheet.create({
   },
   noDataText: {
     fontSize: 14,
-    color: colors.textMuted,
     fontFamily: 'Roboto_500Medium',
     textAlign: 'center',
   },
