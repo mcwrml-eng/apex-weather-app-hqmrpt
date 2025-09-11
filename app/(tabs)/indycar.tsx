@@ -6,6 +6,7 @@ import { indycarCircuits } from '../../data/circuits';
 import CircuitCard from '../../components/CircuitCard';
 import SearchBar from '../../components/SearchBar';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function IndyCarScreen() {
   console.log('IndyCarScreen: Rendering enhanced IndyCar screen with', indycarCircuits.length, 'circuits');
@@ -56,11 +57,27 @@ export default function IndyCarScreen() {
         />
         
         <View style={styles.headerContent}>
-          {/* Title section with enhanced typography */}
+          {/* Title section with enhanced typography and racing logo */}
           <View style={styles.titleSection}>
             <View style={styles.titleContainer}>
-              <Text style={styles.title}>IndyCar</Text>
-              <View style={styles.titleAccent} />
+              <View style={styles.logoContainer}>
+                <View style={styles.logoBackground}>
+                  <Ionicons 
+                    name="car-sport" 
+                    size={28} 
+                    color={colors.indycarBlue} 
+                  />
+                </View>
+                <View style={styles.speedLines}>
+                  <View style={[styles.speedLine, styles.speedLine1]} />
+                  <View style={[styles.speedLine, styles.speedLine2]} />
+                  <View style={[styles.speedLine, styles.speedLine3]} />
+                </View>
+              </View>
+              <View style={styles.titleTextContainer}>
+                <Text style={styles.title}>IndyCar</Text>
+                <View style={styles.titleAccent} />
+              </View>
             </View>
             <Text style={styles.subtitle}>Racing Circuits</Text>
             <View style={styles.statsContainer}>
@@ -171,6 +188,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     marginBottom: spacing.xs,
+  },
+  logoContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoBackground: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.backgroundAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.indycarBlue,
+    boxShadow: `0 4px 12px ${colors.indycarBlue}20`,
+  },
+  speedLines: {
+    position: 'absolute',
+    right: -12,
+    top: '50%',
+    transform: [{ translateY: -6 }],
+  },
+  speedLine: {
+    height: 2,
+    backgroundColor: colors.indycarBlue,
+    marginVertical: 1,
+    borderRadius: 1,
+  },
+  speedLine1: {
+    width: 8,
+    opacity: 0.8,
+  },
+  speedLine2: {
+    width: 12,
+    opacity: 0.6,
+  },
+  speedLine3: {
+    width: 6,
+    opacity: 0.4,
+  },
+  titleTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   title: {
     ...commonStyles.title,
