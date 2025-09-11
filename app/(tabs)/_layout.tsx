@@ -110,27 +110,6 @@ export default function TabsLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="calendar"
-        options={{
-          title: 'Calendar',
-          tabBarIcon: ({ color, size, focused }) => (
-            <View style={{
-              backgroundColor: focused ? `${colors.accent}20` : 'transparent',
-              borderRadius: borderRadius.sm,
-              padding: spacing.xs,
-              borderWidth: focused ? 1 : 0,
-              borderColor: focused ? `${colors.accent}40` : 'transparent',
-            }}>
-              <Ionicons 
-                name="calendar" 
-                size={size} 
-                color={focused ? colors.accent : colors.textMuted} 
-              />
-            </View>
-          ),
-        }}
-      />
     </Tabs>
   );
 }
