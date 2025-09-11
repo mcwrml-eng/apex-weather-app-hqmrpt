@@ -2,83 +2,126 @@
 import { StyleSheet } from 'react-native';
 
 export const colors = {
-  // Base colors - Clean Light theme with fresh colors
+  // Base colors - Enhanced Clean Light theme with improved contrast
   background: '#FFFFFF',
   backgroundAlt: '#F8FAFC',
   backgroundTertiary: '#F1F5F9',
+  backgroundQuaternary: '#E2E8F0',
   card: '#FFFFFF',
   cardElevated: '#FFFFFF',
-  text: '#1E293B',
-  textSecondary: '#475569',
+  text: '#0F172A',
+  textSecondary: '#334155',
   textMuted: '#64748B',
   textDisabled: '#94A3B8',
   
-  // Fresh primary colors - Modern blue-green
+  // Enhanced primary colors - Modern sky blue with better gradients
   primary: '#0EA5E9', // Sky Blue
   primaryLight: '#38BDF8',
   primaryDark: '#0284C7',
-  primaryGlow: 'rgba(14, 165, 233, 0.2)',
+  primaryGlow: 'rgba(14, 165, 233, 0.15)',
+  primarySoft: 'rgba(14, 165, 233, 0.08)',
   
-  // Secondary colors - Fresh green
+  // Enhanced secondary colors - Fresh emerald green
   secondary: '#10B981', // Emerald
   secondaryLight: '#34D399',
   secondaryDark: '#059669',
-  secondaryGlow: 'rgba(16, 185, 129, 0.2)',
+  secondaryGlow: 'rgba(16, 185, 129, 0.15)',
+  secondarySoft: 'rgba(16, 185, 129, 0.08)',
   
-  // Accent colors - Warm coral
+  // Enhanced accent colors - Warm orange
   accent: '#F97316', // Orange
   accentLight: '#FB923C',
   accentDark: '#EA580C',
-  accentGlow: 'rgba(249, 115, 22, 0.2)',
+  accentGlow: 'rgba(249, 115, 22, 0.15)',
+  accentSoft: 'rgba(249, 115, 22, 0.08)',
   
-  // F1 specific - Clean motorsport colors
-  f1Red: '#EF4444',
+  // Enhanced F1 specific colors
+  f1Red: '#DC2626',
+  f1RedLight: '#EF4444',
+  f1RedDark: '#B91C1C',
   f1Silver: '#E2E8F0',
   f1Gold: '#F59E0B',
   f1Carbon: '#64748B',
   
-  // MotoGP specific - Fresh motorsport colors
-  motogpBlue: '#3B82F6',
+  // Enhanced MotoGP specific colors
+  motogpBlue: '#2563EB',
+  motogpBlueLight: '#3B82F6',
+  motogpBlueDark: '#1D4ED8',
   motogpOrange: '#F97316',
   motogpYellow: '#EAB308',
   motogpPurple: '#8B5CF6',
   
-  // Weather colors - Clean and distinguishable
+  // Enhanced weather colors with better contrast
   temperature: '#F97316', // Orange
+  temperatureLight: '#FB923C',
+  temperatureDark: '#EA580C',
   wind: '#0EA5E9', // Sky Blue
+  windLight: '#38BDF8',
+  windDark: '#0284C7',
   humidity: '#06B6D4', // Cyan
+  humidityLight: '#22D3EE',
+  humidityDark: '#0891B2',
   precipitation: '#3B82F6', // Blue
+  precipitationLight: '#60A5FA',
+  precipitationDark: '#2563EB',
   pressure: '#8B5CF6', // Violet
+  pressureLight: '#A78BFA',
+  pressureDark: '#7C3AED',
   uv: '#F59E0B', // Amber
+  uvLight: '#FBBF24',
+  uvDark: '#D97706',
   
-  // Status colors - Fresh and clear
+  // Enhanced status colors
   success: '#10B981',
+  successLight: '#34D399',
+  successDark: '#059669',
   warning: '#F59E0B',
-  error: '#EF4444',
+  warningLight: '#FBBF24',
+  warningDark: '#D97706',
+  error: '#DC2626',
+  errorLight: '#EF4444',
+  errorDark: '#B91C1C',
   info: '#0EA5E9',
+  infoLight: '#38BDF8',
+  infoDark: '#0284C7',
   
-  // UI colors - Clean light theme
+  // Enhanced UI colors with better hierarchy
   divider: '#E2E8F0',
+  dividerLight: '#F1F5F9',
   border: '#CBD5E1',
   borderLight: '#E2E8F0',
-  shadow: 'rgba(15, 23, 42, 0.08)',
-  shadowMedium: 'rgba(15, 23, 42, 0.12)',
-  shadowDark: 'rgba(15, 23, 42, 0.16)',
+  borderDark: '#94A3B8',
+  shadow: 'rgba(15, 23, 42, 0.04)',
+  shadowMedium: 'rgba(15, 23, 42, 0.08)',
+  shadowDark: 'rgba(15, 23, 42, 0.12)',
+  shadowStrong: 'rgba(15, 23, 42, 0.16)',
   overlay: 'rgba(15, 23, 42, 0.4)',
+  overlayLight: 'rgba(15, 23, 42, 0.2)',
   
-  // Glass morphism effects
-  glass: 'rgba(255, 255, 255, 0.8)',
-  glassBorder: 'rgba(255, 255, 255, 0.2)',
+  // Enhanced glass morphism effects
+  glass: 'rgba(255, 255, 255, 0.85)',
+  glassBorder: 'rgba(255, 255, 255, 0.3)',
+  glassOverlay: 'rgba(248, 250, 252, 0.6)',
   
-  // Gradients (for use with expo-linear-gradient)
+  // Enhanced gradients (for use with expo-linear-gradient)
   gradientPrimary: ['#0EA5E9', '#38BDF8'],
   gradientSecondary: ['#10B981', '#34D399'],
   gradientAccent: ['#F97316', '#FB923C'],
-  gradientF1: ['#EF4444', '#F97316'],
-  gradientMotoGP: ['#3B82F6', '#F97316'],
+  gradientF1: ['#DC2626', '#F97316'],
+  gradientMotoGP: ['#2563EB', '#F97316'],
   gradientWeather: ['#0EA5E9', '#10B981'],
-  gradientSunset: ['#F97316', '#EF4444'],
-  gradientNight: ['#64748B', '#475569'],
+  gradientSunset: ['#F97316', '#DC2626'],
+  gradientNight: ['#64748B', '#334155'],
+  gradientLight: ['#FFFFFF', '#F8FAFC'],
+  gradientSoft: ['#F8FAFC', '#F1F5F9'],
+  
+  // New enhanced gradients for better visual appeal
+  gradientHero: ['#0EA5E9', '#10B981', '#F97316'],
+  gradientCard: ['#FFFFFF', '#F8FAFC'],
+  gradientButton: ['#0EA5E9', '#0284C7'],
+  gradientSuccess: ['#10B981', '#059669'],
+  gradientWarning: ['#F59E0B', '#D97706'],
+  gradientError: ['#DC2626', '#B91C1C'],
 };
 
 export const spacing = {
@@ -90,6 +133,7 @@ export const spacing = {
   xxl: 24,
   xxxl: 32,
   huge: 40,
+  massive: 48,
 };
 
 export const borderRadius = {
@@ -99,16 +143,20 @@ export const borderRadius = {
   lg: 16,
   xl: 20,
   xxl: 24,
+  xxxl: 32,
   round: 9999,
 };
 
 export const shadows = {
+  xs: `0 1px 2px ${colors.shadow}`,
   sm: `0 1px 3px ${colors.shadow}`,
-  md: `0 4px 12px ${colors.shadow}`,
-  lg: `0 8px 24px ${colors.shadowMedium}`,
-  xl: `0 12px 32px ${colors.shadowDark}`,
+  md: `0 4px 12px ${colors.shadowMedium}`,
+  lg: `0 8px 24px ${colors.shadowDark}`,
+  xl: `0 12px 32px ${colors.shadowStrong}`,
+  xxl: `0 16px 40px ${colors.shadowStrong}`,
   glow: (color: string) => `0 0 20px ${color}`,
   glowLarge: (color: string) => `0 0 40px ${color}`,
+  glowSoft: (color: string) => `0 0 12px ${color}`,
 };
 
 export const commonStyles = StyleSheet.create({
@@ -139,7 +187,10 @@ export const commonStyles = StyleSheet.create({
     alignItems: 'center',
   },
   
-  // Enhanced shadow system
+  // Enhanced shadow system with more options
+  shadowXs: {
+    boxShadow: shadows.xs,
+  },
   shadowSm: {
     boxShadow: shadows.sm,
   },
@@ -152,14 +203,17 @@ export const commonStyles = StyleSheet.create({
   shadowXl: {
     boxShadow: shadows.xl,
   },
+  shadowXxl: {
+    boxShadow: shadows.xxl,
+  },
   
-  // Enhanced card system
+  // Enhanced card system with more variants
   card: {
     backgroundColor: colors.card,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.divider,
+    borderColor: colors.borderLight,
     boxShadow: shadows.sm,
   },
   cardElevated: {
@@ -170,6 +224,14 @@ export const commonStyles = StyleSheet.create({
     borderColor: colors.border,
     boxShadow: shadows.md,
   },
+  cardHero: {
+    backgroundColor: colors.cardElevated,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xxl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    boxShadow: shadows.lg,
+  },
   cardGlass: {
     backgroundColor: colors.glass,
     borderRadius: borderRadius.lg,
@@ -178,17 +240,33 @@ export const commonStyles = StyleSheet.create({
     borderColor: colors.glassBorder,
     boxShadow: shadows.sm,
   },
+  cardCompact: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    boxShadow: shadows.xs,
+  },
   
-  // Enhanced Typography system
+  // Enhanced Typography system with better hierarchy
   displayLarge: {
-    fontSize: 36,
+    fontSize: 40,
     fontWeight: '800',
+    color: colors.text,
+    fontFamily: 'Roboto_700Bold',
+    letterSpacing: -1.2,
+    lineHeight: 48,
+  },
+  displayMedium: {
+    fontSize: 36,
+    fontWeight: '700',
     color: colors.text,
     fontFamily: 'Roboto_700Bold',
     letterSpacing: -1,
     lineHeight: 44,
   },
-  displayMedium: {
+  displaySmall: {
     fontSize: 32,
     fontWeight: '700',
     color: colors.text,
@@ -211,6 +289,14 @@ export const commonStyles = StyleSheet.create({
     fontFamily: 'Roboto_500Medium',
     letterSpacing: -0.4,
     lineHeight: 32,
+  },
+  titleSmall: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.text,
+    fontFamily: 'Roboto_500Medium',
+    letterSpacing: -0.3,
+    lineHeight: 28,
   },
   subtitle: {
     fontSize: 18,
@@ -250,6 +336,13 @@ export const commonStyles = StyleSheet.create({
     lineHeight: 22,
     letterSpacing: 0.1,
   },
+  bodySmall: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    lineHeight: 18,
+    letterSpacing: 0.2,
+  },
   caption: {
     fontSize: 12,
     color: colors.textMuted,
@@ -264,6 +357,15 @@ export const commonStyles = StyleSheet.create({
     lineHeight: 16,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
+  },
+  label: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_500Medium',
+    lineHeight: 16,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    fontWeight: '500',
   },
 });
 
@@ -282,6 +384,16 @@ export const buttonStyles = StyleSheet.create({
     backgroundColor: colors.primaryDark,
     transform: [{ scale: 0.97 }],
     boxShadow: `0 2px 8px ${colors.primaryGlow}`,
+  },
+  primaryLarge: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.xxl,
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: `0 6px 16px ${colors.primaryGlow}`,
+    borderWidth: 0,
   },
   secondary: {
     backgroundColor: colors.backgroundAlt,
@@ -327,14 +439,35 @@ export const buttonStyles = StyleSheet.create({
     backgroundColor: colors.backgroundAlt,
     borderColor: colors.border,
   },
+  outline: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+  },
+  outlinePressed: {
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.primaryDark,
+  },
   
-  // Text styles
+  // Text styles with enhanced hierarchy
   text: {
     color: '#FFFFFF',
     fontWeight: '600',
     fontSize: 16,
     fontFamily: 'Roboto_500Medium',
     letterSpacing: 0.3,
+  },
+  textLarge: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 18,
+    fontFamily: 'Roboto_500Medium',
+    letterSpacing: 0.2,
   },
   textSecondary: {
     color: colors.text,
@@ -357,9 +490,16 @@ export const buttonStyles = StyleSheet.create({
     fontFamily: 'Roboto_500Medium',
     letterSpacing: 0.2,
   },
+  textOutline: {
+    color: colors.primary,
+    fontWeight: '600',
+    fontSize: 16,
+    fontFamily: 'Roboto_500Medium',
+    letterSpacing: 0.3,
+  },
 });
 
-// Enhanced animation presets
+// Enhanced animation presets with more options
 export const animations = {
   spring: {
     tension: 400,
@@ -368,6 +508,10 @@ export const animations = {
   springBouncy: {
     tension: 300,
     friction: 15,
+  },
+  springGentle: {
+    tension: 200,
+    friction: 20,
   },
   timing: {
     duration: 250,
@@ -378,22 +522,106 @@ export const animations = {
   timingSlow: {
     duration: 400,
   },
+  timingVeryFast: {
+    duration: 100,
+  },
+  timingVerySlow: {
+    duration: 600,
+  },
   scale: {
     pressed: 0.96,
     normal: 1,
     hover: 1.02,
+    active: 1.05,
   },
   opacity: {
     pressed: 0.8,
     normal: 1,
     disabled: 0.5,
+    subtle: 0.7,
   },
 };
 
-// Layout helpers
+// Enhanced layout helpers
 export const layout = {
   screenPadding: spacing.lg,
+  screenPaddingLarge: spacing.xl,
   cardSpacing: spacing.md,
+  cardSpacingLarge: spacing.lg,
   sectionSpacing: spacing.xxl,
+  sectionSpacingLarge: spacing.xxxl,
   itemSpacing: spacing.sm,
+  itemSpacingLarge: spacing.md,
+  headerHeight: 60,
+  tabBarHeight: 80,
+  buttonHeight: 48,
+  buttonHeightLarge: 56,
+  inputHeight: 48,
 };
+
+// New utility styles for common patterns
+export const utilities = StyleSheet.create({
+  // Flex utilities
+  flex1: { flex: 1 },
+  flexRow: { flexDirection: 'row' },
+  flexColumn: { flexDirection: 'column' },
+  flexCenter: { justifyContent: 'center', alignItems: 'center' },
+  flexBetween: { justifyContent: 'space-between' },
+  flexAround: { justifyContent: 'space-around' },
+  flexEvenly: { justifyContent: 'space-evenly' },
+  flexStart: { justifyContent: 'flex-start' },
+  flexEnd: { justifyContent: 'flex-end' },
+  alignCenter: { alignItems: 'center' },
+  alignStart: { alignItems: 'flex-start' },
+  alignEnd: { alignItems: 'flex-end' },
+  alignStretch: { alignItems: 'stretch' },
+  
+  // Position utilities
+  absolute: { position: 'absolute' },
+  relative: { position: 'relative' },
+  
+  // Size utilities
+  fullWidth: { width: '100%' },
+  fullHeight: { height: '100%' },
+  
+  // Margin utilities
+  m0: { margin: 0 },
+  mt0: { marginTop: 0 },
+  mb0: { marginBottom: 0 },
+  ml0: { marginLeft: 0 },
+  mr0: { marginRight: 0 },
+  
+  // Padding utilities
+  p0: { padding: 0 },
+  pt0: { paddingTop: 0 },
+  pb0: { paddingBottom: 0 },
+  pl0: { paddingLeft: 0 },
+  pr0: { paddingRight: 0 },
+  
+  // Border utilities
+  borderTop: { borderTopWidth: 1, borderTopColor: colors.border },
+  borderBottom: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  borderLeft: { borderLeftWidth: 1, borderLeftColor: colors.border },
+  borderRight: { borderRightWidth: 1, borderRightColor: colors.border },
+  
+  // Background utilities
+  bgTransparent: { backgroundColor: 'transparent' },
+  bgPrimary: { backgroundColor: colors.primary },
+  bgSecondary: { backgroundColor: colors.secondary },
+  bgAccent: { backgroundColor: colors.accent },
+  bgCard: { backgroundColor: colors.card },
+  bgBackground: { backgroundColor: colors.background },
+  bgBackgroundAlt: { backgroundColor: colors.backgroundAlt },
+  
+  // Text utilities
+  textCenter: { textAlign: 'center' },
+  textLeft: { textAlign: 'left' },
+  textRight: { textAlign: 'right' },
+  textUppercase: { textTransform: 'uppercase' },
+  textLowercase: { textTransform: 'lowercase' },
+  textCapitalize: { textTransform: 'capitalize' },
+  
+  // Overflow utilities
+  overflowHidden: { overflow: 'hidden' },
+  overflowVisible: { overflow: 'visible' },
+});

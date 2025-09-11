@@ -1,13 +1,13 @@
 
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, borderRadius } from '../../styles/commonStyles';
+import { colors, spacing, borderRadius, shadows } from '../../styles/commonStyles';
 import { Platform, View } from 'react-native';
 import React from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function TabsLayout() {
-  console.log('TabsLayout: Rendering enhanced tabs');
+  console.log('TabsLayout: Rendering enhanced tabs with improved design');
   
   return (
     <Tabs
@@ -16,55 +16,76 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.text,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
-          backgroundColor: colors.backgroundAlt,
-          borderTopColor: colors.divider,
-          borderTopWidth: 1,
-          height: Platform.OS === 'android' ? 70 : 90,
-          paddingBottom: Platform.OS === 'android' ? spacing.md : spacing.xl,
-          paddingTop: spacing.sm,
-          paddingHorizontal: spacing.sm,
-          borderTopLeftRadius: borderRadius.xl,
-          borderTopRightRadius: borderRadius.xl,
+          backgroundColor: 'transparent',
+          borderTopColor: 'transparent',
+          borderTopWidth: 0,
+          height: Platform.OS === 'android' ? 75 : 95,
+          paddingBottom: Platform.OS === 'android' ? spacing.lg : spacing.xl,
+          paddingTop: spacing.md,
+          paddingHorizontal: spacing.md,
           position: 'absolute',
           left: 0,
           right: 0,
           bottom: 0,
-          elevation: 8,
-          shadowColor: colors.shadowDark,
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
+          elevation: 0,
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontFamily: 'Roboto_500Medium',
-          fontWeight: '500',
+          fontWeight: '600',
           letterSpacing: 0.3,
-          marginTop: 2,
+          marginTop: spacing.xs,
         },
         tabBarIconStyle: {
           marginBottom: -2,
         },
         tabBarItemStyle: {
-          borderRadius: borderRadius.md,
+          borderRadius: borderRadius.lg,
           marginHorizontal: spacing.xs,
-          paddingVertical: spacing.xs,
+          paddingVertical: spacing.sm,
+          paddingHorizontal: spacing.xs,
         },
         tabBarBackground: () => (
-          <LinearGradient
-            colors={[colors.backgroundAlt, colors.backgroundTertiary]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={{
+          <View style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}>
+            {/* Enhanced background with glass morphism effect */}
+            <LinearGradient
+              colors={[colors.glass, colors.backgroundAlt]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: spacing.md,
+                right: spacing.md,
+                bottom: Platform.OS === 'android' ? spacing.lg : spacing.xl,
+                borderTopLeftRadius: borderRadius.xl,
+                borderTopRightRadius: borderRadius.xl,
+                borderWidth: 1,
+                borderColor: colors.glassBorder,
+                borderBottomWidth: 0,
+                boxShadow: shadows.lg,
+              }}
+            />
+            
+            {/* Subtle top border accent */}
+            <View style={{
               position: 'absolute',
               top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
+              left: spacing.md,
+              right: spacing.md,
+              height: 2,
               borderTopLeftRadius: borderRadius.xl,
               borderTopRightRadius: borderRadius.xl,
-            }}
-          />
+              backgroundColor: colors.primary,
+              opacity: 0.3,
+            }} />
+          </View>
         ),
       }}
     >
@@ -74,19 +95,29 @@ export default function TabsLayout() {
           title: 'Formula 1',
           tabBarIcon: ({ color, size, focused }) => (
             <View style={{
-              backgroundColor: focused ? `${colors.f1Red}20` : 'transparent',
-              borderRadius: borderRadius.sm,
-              padding: spacing.xs,
+              backgroundColor: focused ? colors.f1Red : 'transparent',
+              borderRadius: borderRadius.md,
+              padding: spacing.sm,
               borderWidth: focused ? 1 : 0,
-              borderColor: focused ? `${colors.f1Red}40` : 'transparent',
+              borderColor: focused ? colors.f1RedLight : 'transparent',
+              boxShadow: focused ? `0 4px 12px ${colors.f1Red}30` : 'none',
+              transform: [{ scale: focused ? 1.05 : 1 }],
             }}>
               <Ionicons 
                 name="speedometer" 
                 size={size} 
-                color={focused ? colors.f1Red : colors.textMuted} 
+                color={focused ? '#FFFFFF' : colors.textMuted} 
               />
             </View>
           ),
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontFamily: 'Roboto_500Medium',
+            fontWeight: '600',
+            letterSpacing: 0.3,
+            marginTop: spacing.xs,
+            color: colors.text,
+          },
         }}
       />
       <Tabs.Screen
@@ -95,19 +126,29 @@ export default function TabsLayout() {
           title: 'MotoGP',
           tabBarIcon: ({ color, size, focused }) => (
             <View style={{
-              backgroundColor: focused ? `${colors.motogpBlue}20` : 'transparent',
-              borderRadius: borderRadius.sm,
-              padding: spacing.xs,
+              backgroundColor: focused ? colors.motogpBlue : 'transparent',
+              borderRadius: borderRadius.md,
+              padding: spacing.sm,
               borderWidth: focused ? 1 : 0,
-              borderColor: focused ? `${colors.motogpBlue}40` : 'transparent',
+              borderColor: focused ? colors.motogpBlueLight : 'transparent',
+              boxShadow: focused ? `0 4px 12px ${colors.motogpBlue}30` : 'none',
+              transform: [{ scale: focused ? 1.05 : 1 }],
             }}>
               <Ionicons 
                 name="bicycle" 
                 size={size} 
-                color={focused ? colors.motogpBlue : colors.textMuted} 
+                color={focused ? '#FFFFFF' : colors.textMuted} 
               />
             </View>
           ),
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontFamily: 'Roboto_500Medium',
+            fontWeight: '600',
+            letterSpacing: 0.3,
+            marginTop: spacing.xs,
+            color: colors.text,
+          },
         }}
       />
     </Tabs>
