@@ -18,7 +18,6 @@ import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
 import { useUnit } from '../../state/UnitContext';
-import { getWeekendSchedule, WeekendSession } from '../../data/schedules';
 
 function DetailScreen() {
   const params = useLocalSearchParams<{ slug?: string; category?: 'f1' | 'motogp' }>();
@@ -39,8 +38,6 @@ function DetailScreen() {
   const openSettings = useCallback(() => settingsRef.current?.expand(), []);
   const openCharts = useCallback(() => chartsRef.current?.expand(), []);
   const openForecast = useCallback(() => forecastRef.current?.expand(), []);
-
-  const schedule: WeekendSession[] = useMemo(() => getWeekendSchedule(slug, category), [slug, category]);
 
   // Convert hourly data for charts
   const chartData = useMemo(() => {
@@ -221,134 +218,6 @@ function DetailScreen() {
     return descriptions[code] || 'Unknown conditions';
   };
 
-  // Helper function to get session type styling - ENHANCED FOR MOTOGP
-  const getSessionTypeStyle = (sessionKey: string) => {
-    console.log('DetailScreen: Getting session type style for:', sessionKey);
-    
-    // Race sessions (highest priority)
-    if (sessionKey.includes('race') || sessionKey === 'sprint') {
-      return { backgroundColor: colors.primary + '20', borderColor: colors.primary };
-    }
-    
-    // Qualifying sessions
-    if (sessionKey.includes('qualifying') || sessionKey.includes('qual') || 
-        sessionKey === 'q1' || sessionKey === 'q2' || sessionKey === 'sprint-qual') {
-      return { backgroundColor: colors.accent + '20', borderColor: colors.accent };
-    }
-    
-    // Practice sessions (F1: fp1, fp2, fp3; MotoGP: p1, p2, p3)
-    if (sessionKey.includes('practice') || sessionKey.includes('fp') || 
-        sessionKey === 'p1' || sessionKey === 'p2' || sessionKey === 'p3') {
-      return { backgroundColor: colors.secondary + '20', borderColor: colors.secondary };
-    }
-    
-    // MotoGP specific sessions
-    if (sessionKey === 'warmup') {
-      return { backgroundColor: colors.warning + '20', borderColor: colors.warning };
-    }
-    
-    // Default fallback
-    return { backgroundColor: colors.backgroundAlt, borderColor: colors.divider };
-  };
-
-  // Helper function to get session type icon - ENHANCED FOR MOTOGP
-  const getSessionIcon = (sessionKey: string) => {
-    console.log('DetailScreen: Getting session icon for:', sessionKey);
-    
-    // Race sessions
-    if (sessionKey.includes('race') || sessionKey === 'sprint') {
-      return 'trophy';
-    }
-    
-    // Qualifying sessions
-    if (sessionKey.includes('qualifying') || sessionKey.includes('qual') || 
-        sessionKey === 'q1' || sessionKey === 'q2' || sessionKey === 'sprint-qual') {
-      return 'stopwatch';
-    }
-    
-    // Practice sessions (F1: fp1, fp2, fp3; MotoGP: p1, p2, p3)
-    if (sessionKey.includes('practice') || sessionKey.includes('fp') || 
-        sessionKey === 'p1' || sessionKey === 'p2' || sessionKey === 'p3') {
-      return 'speedometer';
-    }
-    
-    // MotoGP specific sessions
-    if (sessionKey === 'warmup') {
-      return 'flame';
-    }
-    
-    return 'time';
-  };
-
-  // Helper function to get session type color - ENHANCED FOR MOTOGP
-  const getSessionIconColor = (sessionKey: string) => {
-    console.log('DetailScreen: Getting session icon color for:', sessionKey);
-    
-    // Race sessions
-    if (sessionKey.includes('race') || sessionKey === 'sprint') {
-      return colors.primary;
-    }
-    
-    // Qualifying sessions
-    if (sessionKey.includes('qualifying') || sessionKey.includes('qual') || 
-        sessionKey === 'q1' || sessionKey === 'q2' || sessionKey === 'sprint-qual') {
-      return colors.accent;
-    }
-    
-    // Practice sessions (F1: fp1, fp2, fp3; MotoGP: p1, p2, p3)
-    if (sessionKey.includes('practice') || sessionKey.includes('fp') || 
-        sessionKey === 'p1' || sessionKey === 'p2' || sessionKey === 'p3') {
-      return colors.secondary;
-    }
-    
-    // MotoGP specific sessions
-    if (sessionKey === 'warmup') {
-      return colors.warning;
-    }
-    
-    return colors.textMuted;
-  };
-
-  // Helper function to format date for display
-  const formatDateForDisplay = (dateStr: string): string => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
-
-  // Helper function to get relative date
-  const getRelativeDate = (dateStr: string): string => {
-    if (!dateStr) return '';
-    const sessionDate = new Date(dateStr + 'T00:00:00');
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-
-    // Reset time to compare dates only
-    today.setHours(0, 0, 0, 0);
-    tomorrow.setHours(0, 0, 0, 0);
-    yesterday.setHours(0, 0, 0, 0);
-    sessionDate.setHours(0, 0, 0, 0);
-
-    if (sessionDate.getTime() === today.getTime()) return 'Today';
-    if (sessionDate.getTime() === tomorrow.getTime()) return 'Tomorrow';
-    if (sessionDate.getTime() === yesterday.getTime()) return 'Yesterday';
-    
-    const diffTime = sessionDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays > 0 && diffDays <= 7) return `In ${diffDays} day${diffDays > 1 ? 's' : ''}`;
-    if (diffDays < 0 && diffDays >= -7) return `${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? 's' : ''} ago`;
-    
-    return formatDateForDisplay(dateStr);
-  };
-
   return (
     <View style={styles.wrapper}>
       <View style={styles.header}>
@@ -397,125 +266,7 @@ function DetailScreen() {
           </View>
         )}
 
-        {/* 1. ENHANCED WEEKEND SCHEDULE - COMPREHENSIVE SINGLE TAB VIEW */}
-        {daily && (
-          <View style={styles.scheduleCard}>
-            <View style={styles.scheduleHeader}>
-              <View style={styles.scheduleHeaderLeft}>
-                <Icon name="calendar" size={24} color={colors.primary} />
-                <View style={styles.scheduleHeaderText}>
-                  <Text style={styles.scheduleTitle}>Weekend Schedule</Text>
-                  <Text style={styles.scheduleSubtitle}>
-                    {category.toUpperCase()} • {schedule.length} sessions • Local times
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.categoryBadge}>
-                <Text style={styles.categoryBadgeText}>{category.toUpperCase()}</Text>
-              </View>
-            </View>
-
-            {/* Enhanced Schedule List with Full Details */}
-            <View style={styles.enhancedScheduleList}>
-              {schedule.map((session, index) => {
-                const sessionStyle = getSessionTypeStyle(session.key);
-                const sessionIcon = getSessionIcon(session.key);
-                const sessionIconColor = getSessionIconColor(session.key);
-                const relativeDate = getRelativeDate(session.date || '');
-                const formattedDate = formatDateForDisplay(session.date || '');
-                
-                return (
-                  <View key={session.key} style={[styles.enhancedSessionRow, sessionStyle]}>
-                    <View style={styles.sessionIconContainer}>
-                      <Icon name={sessionIcon} size={18} color={sessionIconColor} />
-                    </View>
-                    
-                    <View style={styles.sessionMainContent}>
-                      <View style={styles.sessionTitleRow}>
-                        <Text style={styles.enhancedSessionTitle}>{session.title}</Text>
-                        <View style={styles.sessionTimeContainer}>
-                          <Icon name="time" size={12} color={colors.textMuted} />
-                          <Text style={styles.enhancedSessionTime}>{session.time}</Text>
-                        </View>
-                      </View>
-                      
-                      <View style={styles.sessionDetailsRow}>
-                        <View style={styles.sessionDayContainer}>
-                          <Icon name="calendar-outline" size={10} color={colors.textMuted} />
-                          <Text style={styles.sessionDay}>{session.day}</Text>
-                        </View>
-                        
-                        {session.date && (
-                          <View style={styles.sessionDateContainer}>
-                            <Text style={styles.sessionRelativeDate}>{relativeDate}</Text>
-                            <Text style={styles.sessionFormattedDate}>({formattedDate})</Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                    
-                    <View style={styles.sessionNumber}>
-                      <Text style={styles.sessionNumberText}>{index + 1}</Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-
-            {/* Schedule Summary */}
-            <View style={styles.scheduleSummary}>
-              <View style={styles.summaryItem}>
-                <Icon name="flag" size={14} color={colors.primary} />
-                <Text style={styles.summaryLabel}>Race Weekend</Text>
-                <Text style={styles.summaryValue}>
-                  {schedule.find(s => s.day === 'Fri')?.date ? 
-                    `${formatDateForDisplay(schedule.find(s => s.day === 'Fri')?.date || '')} - ${formatDateForDisplay(schedule.find(s => s.day === 'Sun')?.date || '')}` :
-                    'TBD'
-                  }
-                </Text>
-              </View>
-              
-              <View style={styles.summaryItem}>
-                <Icon name="location" size={14} color={colors.accent} />
-                <Text style={styles.summaryLabel}>Circuit</Text>
-                <Text style={styles.summaryValue}>{circuit.name}</Text>
-              </View>
-              
-              <View style={styles.summaryItem}>
-                <Icon name="globe" size={14} color={colors.secondary} />
-                <Text style={styles.summaryLabel}>Country</Text>
-                <Text style={styles.summaryValue}>{circuit.country}</Text>
-              </View>
-            </View>
-
-            {/* Session Type Legend - ENHANCED FOR MOTOGP */}
-            <View style={styles.sessionLegend}>
-              <Text style={styles.legendTitle}>Session Types</Text>
-              <View style={styles.legendItems}>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: colors.secondary }]} />
-                  <Text style={styles.legendText}>Practice</Text>
-                </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: colors.accent }]} />
-                  <Text style={styles.legendText}>Qualifying</Text>
-                </View>
-                {category === 'motogp' && (
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: colors.warning }]} />
-                    <Text style={styles.legendText}>Warm Up</Text>
-                  </View>
-                )}
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
-                  <Text style={styles.legendText}>Race</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* 2. SUNRISE & SUNSET TIMES */}
+        {/* SUNRISE & SUNSET TIMES */}
         {!loading && todaySunTimes && (
           <View style={styles.sunTimesCard}>
             <View style={styles.sunTimesHeader}>
@@ -584,7 +335,7 @@ function DetailScreen() {
           </View>
         )}
 
-        {/* 3. WEATHER FORECASTS AND CURRENT CONDITIONS */}
+        {/* WEATHER FORECASTS AND CURRENT CONDITIONS */}
         
         {/* Written Text Weather Forecast */}
         {!loading && current && hourly.length > 0 && (
@@ -861,9 +612,7 @@ function DetailScreen() {
           </>
         )}
 
-
-
-        {/* 4. ENHANCED LIVE RAINFALL RADAR - IMPROVED VERSION */}
+        {/* ENHANCED LIVE RAINFALL RADAR - IMPROVED VERSION */}
         <RainfallRadar
           latitude={circuit.latitude}
           longitude={circuit.longitude}
@@ -1046,229 +795,6 @@ const styles = StyleSheet.create({
   },
   updateText: {
     fontSize: 12,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-  },
-
-  // Enhanced Weekend Schedule Styles - CONDENSED VERSION
-  scheduleCard: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16, // Reduced from 20
-    borderWidth: 1,
-    borderColor: colors.divider,
-    boxShadow: '0 8px 32px rgba(16,24,40,0.08)',
-    marginBottom: 20,
-  },
-  scheduleHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14, // Reduced from 20
-  },
-  scheduleHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10, // Reduced from 12
-    flex: 1,
-  },
-  scheduleHeaderText: {
-    flex: 1,
-  },
-  scheduleTitle: {
-    fontSize: 18, // Reduced from 20
-    fontWeight: '700',
-    color: colors.text,
-    fontFamily: 'Roboto_700Bold',
-    marginBottom: 2,
-  },
-  scheduleSubtitle: {
-    fontSize: 12, // Reduced from 13
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-  },
-  categoryBadge: {
-    backgroundColor: colors.primary + '20',
-    paddingHorizontal: 10, // Reduced from 12
-    paddingVertical: 5, // Reduced from 6
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.primary + '40',
-  },
-  categoryBadgeText: {
-    fontSize: 11, // Reduced from 12
-    fontWeight: '700',
-    color: colors.primary,
-    fontFamily: 'Roboto_700Bold',
-  },
-
-  // Enhanced Schedule List - CONDENSED
-  enhancedScheduleList: {
-    gap: 10, // Reduced from 16
-    marginBottom: 16, // Reduced from 24
-  },
-  enhancedSessionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12, // Reduced from 16
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 10, // Reduced from 14
-    boxShadow: '0 4px 16px rgba(16,24,40,0.04)',
-  },
-  sessionIconContainer: {
-    width: 36, // Reduced from 44
-    height: 36, // Reduced from 44
-    borderRadius: 18, // Reduced from 22
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  sessionMainContent: {
-    flex: 1,
-    gap: 6, // Reduced from 8
-  },
-  sessionTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  enhancedSessionTitle: {
-    fontSize: 15, // Reduced from 16
-    fontWeight: '700',
-    color: colors.text,
-    fontFamily: 'Roboto_700Bold',
-    flex: 1,
-  },
-  sessionTimeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3, // Reduced from 4
-    backgroundColor: colors.background,
-    paddingHorizontal: 6, // Reduced from 8
-    paddingVertical: 3, // Reduced from 4
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  enhancedSessionTime: {
-    fontSize: 13, // Reduced from 14
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-  },
-  sessionDetailsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12, // Reduced from 16
-  },
-  sessionDayContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3, // Reduced from 4
-  },
-  sessionDay: {
-    fontSize: 11, // Reduced from 12
-    color: colors.textMuted,
-    fontFamily: 'Roboto_500Medium',
-    fontWeight: '600',
-  },
-  sessionDateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4, // Reduced from 6
-  },
-  sessionRelativeDate: {
-    fontSize: 11, // Reduced from 12
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    fontWeight: '600',
-  },
-  sessionFormattedDate: {
-    fontSize: 10, // Reduced from 11
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-  },
-  sessionNumber: {
-    width: 24, // Reduced from 28
-    height: 24, // Reduced from 28
-    borderRadius: 12, // Reduced from 14
-    backgroundColor: colors.backgroundAlt,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  sessionNumberText: {
-    fontSize: 11, // Reduced from 12
-    fontWeight: '700',
-    color: colors.text,
-    fontFamily: 'Roboto_700Bold',
-  },
-
-  // Schedule Summary - CONDENSED
-  scheduleSummary: {
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 12,
-    padding: 12, // Reduced from 16
-    marginBottom: 14, // Reduced from 20
-    borderWidth: 1,
-    borderColor: colors.divider,
-    gap: 8, // Reduced from 12
-  },
-  summaryItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8, // Reduced from 10
-  },
-  summaryLabel: {
-    fontSize: 12, // Reduced from 13
-    color: colors.textMuted,
-    fontFamily: 'Roboto_500Medium',
-    fontWeight: '600',
-    minWidth: 55, // Reduced from 60
-  },
-  summaryValue: {
-    fontSize: 12, // Reduced from 13
-    color: colors.text,
-    fontFamily: 'Roboto_400Regular',
-    flex: 1,
-  },
-
-  // Session Type Legend - CONDENSED & ENHANCED FOR MOTOGP
-  sessionLegend: {
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 12,
-    padding: 12, // Reduced from 16
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  legendTitle: {
-    fontSize: 13, // Reduced from 14
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    marginBottom: 8, // Reduced from 12
-  },
-  legendItems: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16, // Reduced from 20
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5, // Reduced from 6
-  },
-  legendDot: {
-    width: 7, // Reduced from 8
-    height: 7, // Reduced from 8
-    borderRadius: 3.5, // Reduced from 4
-  },
-  legendText: {
-    fontSize: 11, // Reduced from 12
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
   },
@@ -1697,25 +1223,4 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   sheetTitle: { fontSize: 18, fontWeight: '700', color: colors.text, fontFamily: 'Roboto_700Bold' },
-  sessionText: { color: colors.text, fontFamily: 'Roboto_400Regular' },
-  moreBtn: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.backgroundAlt,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  moreBtnText: { color: colors.text, fontFamily: 'Roboto_500Medium' },
-  sessionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
-  },
-  sessionDotLarge: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent },
-  sessionSub: { color: colors.textMuted, fontFamily: 'Roboto_400Regular', marginTop: 2 },
 });
