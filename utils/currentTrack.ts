@@ -1,7 +1,7 @@
 
-import { f1RaceDates, motogpRaceDates } from '../data/schedules';
+import { f1RaceDates, motogpRaceDates, indycarRaceDates } from '../data/schedules';
 
-export type Category = 'f1' | 'motogp';
+export type Category = 'f1' | 'motogp' | 'indycar';
 
 interface TrackOfWeek {
   slug: string;
@@ -13,7 +13,9 @@ interface TrackOfWeek {
 
 // Get the race dates for a category
 function getRaceDates(category: Category): Record<string, string> {
-  return category === 'f1' ? f1RaceDates : motogpRaceDates;
+  return category === 'f1' ? f1RaceDates : 
+         category === 'motogp' ? motogpRaceDates : 
+         indycarRaceDates;
 }
 
 // Calculate days between two dates

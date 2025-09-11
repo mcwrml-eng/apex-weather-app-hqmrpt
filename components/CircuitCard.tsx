@@ -16,7 +16,7 @@ export interface Circuit {
   longitude: number;
 }
 
-export type Category = 'f1' | 'motogp';
+export type Category = 'f1' | 'motogp' | 'indycar';
 
 interface Props {
   circuit: Circuit;
@@ -74,11 +74,19 @@ export default function CircuitCard({ circuit, category }: Props) {
     bgGradient: ['#FFFFFF', '#F8FAFC'], // Light gradient instead of dark
     textColor: colors.text, // Dark text for light background
     secondaryTextColor: colors.textSecondary
-  } : {
+  } : category === 'motogp' ? {
     primary: colors.motogpBlue,
     accent: colors.motogpOrange,
     gradient: colors.gradientMotoGP,
     label: 'MOTOGP',
+    bgGradient: ['#FFFFFF', '#F8FAFC'], // Light gradient instead of dark
+    textColor: colors.text, // Dark text for light background
+    secondaryTextColor: colors.textSecondary
+  } : {
+    primary: colors.indycarBlue,
+    accent: colors.indycarRed,
+    gradient: colors.gradientIndyCar,
+    label: 'INDYCAR',
     bgGradient: ['#FFFFFF', '#F8FAFC'], // Light gradient instead of dark
     textColor: colors.text, // Dark text for light background
     secondaryTextColor: colors.textSecondary

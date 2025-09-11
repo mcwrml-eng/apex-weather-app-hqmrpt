@@ -51,6 +51,14 @@ export const colors = {
   motogpYellow: '#EAB308',
   motogpPurple: '#8B5CF6',
   
+  // Enhanced IndyCar specific colors
+  indycarBlue: '#1E40AF',
+  indycarBlueLight: '#3B82F6',
+  indycarBlueDark: '#1E3A8A',
+  indycarRed: '#DC2626',
+  indycarWhite: '#FFFFFF',
+  indycarSilver: '#94A3B8',
+  
   // Enhanced weather colors with better contrast
   temperature: '#F97316', // Orange
   temperatureLight: '#FB923C',
@@ -109,6 +117,7 @@ export const colors = {
   gradientAccent: ['#F97316', '#FB923C'],
   gradientF1: ['#DC2626', '#F97316'],
   gradientMotoGP: ['#2563EB', '#F97316'],
+  gradientIndyCar: ['#1E40AF', '#DC2626'],
   gradientWeather: ['#0EA5E9', '#10B981'],
   gradientSunset: ['#F97316', '#DC2626'],
   gradientNight: ['#64748B', '#334155'],

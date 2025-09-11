@@ -81,12 +81,20 @@ export default function FeaturedTrackCard({ category }: Props) {
     label: 'FORMULA 1',
     textColor: colors.text, // Dark text for light background
     secondaryTextColor: colors.textSecondary
-  } : {
+  } : category === 'motogp' ? {
     primary: colors.motogpBlue,
     accent: colors.motogpOrange,
     gradient: colors.gradientMotoGP,
     bgGradient: ['#FFFFFF', '#F8FAFC'], // Light gradient instead of dark
     label: 'MOTOGP',
+    textColor: colors.text, // Dark text for light background
+    secondaryTextColor: colors.textSecondary
+  } : {
+    primary: colors.indycarBlue,
+    accent: colors.indycarRed,
+    gradient: colors.gradientIndyCar,
+    bgGradient: ['#FFFFFF', '#F8FAFC'], // Light gradient instead of dark
+    label: 'INDYCAR',
     textColor: colors.text, // Dark text for light background
     secondaryTextColor: colors.textSecondary
   };

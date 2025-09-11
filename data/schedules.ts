@@ -1,5 +1,5 @@
 
-export type Category = 'f1' | 'motogp';
+export type Category = 'f1' | 'motogp' | 'indycar';
 
 export interface WeekendSession {
   key: string;
@@ -135,6 +135,49 @@ const motogpRaceDates: DateMap = {
   valencia: '2025-11-16',
 };
 
+const defaultIndyCarSchedule: WeekendSession[] = [
+  { key: 'p1', title: 'Practice 1', day: 'Fri', time: '12:00' },
+  { key: 'p2', title: 'Practice 2', day: 'Fri', time: '16:00' },
+  { key: 'qualifying', title: 'Qualifying', day: 'Sat', time: '14:00' },
+  { key: 'race', title: 'Race', day: 'Sun', time: '15:00' },
+];
+
+const defaultIndyCarOvalSchedule: WeekendSession[] = [
+  { key: 'p1', title: 'Practice 1', day: 'Fri', time: '12:00' },
+  { key: 'p2', title: 'Practice 2', day: 'Sat', time: '10:00' },
+  { key: 'qualifying', title: 'Qualifying', day: 'Sat', time: '14:00' },
+  { key: 'race', title: 'Race', day: 'Sun', time: '15:00' },
+];
+
+const indycarSchedules: ScheduleMap = {
+  'indianapolis-500': [
+    { key: 'p1', title: 'Practice 1', day: 'Thu', time: '12:00' },
+    { key: 'p2', title: 'Practice 2', day: 'Fri', time: '12:00' },
+    { key: 'p3', title: 'Practice 3', day: 'Sat', time: '11:00' },
+    { key: 'qualifying', title: 'Qualifying', day: 'Sat', time: '15:00' },
+    { key: 'race', title: 'Indianapolis 500', day: 'Sun', time: '12:30' },
+  ],
+  // Other IndyCar rounds use defaults
+};
+
+const indycarRaceDates: DateMap = {
+  'st-pete': '2025-03-09',
+  'thermal': '2025-03-23',
+  'long-beach': '2025-04-13',
+  'barber': '2025-04-27',
+  'indianapolis-gp': '2025-05-10',
+  'indianapolis-500': '2025-05-25',
+  'detroit': '2025-06-01',
+  'road-america': '2025-06-22',
+  'laguna-seca': '2025-06-29',
+  'mid-ohio': '2025-07-06',
+  'toronto': '2025-07-20',
+  'iowa': '2025-07-27',
+  'gateway': '2025-08-24',
+  'portland': '2025-08-31',
+  'nashville': '2025-09-14',
+};
+
 function addDays(isoDate: string, days: number) {
   const d = new Date(isoDate + 'T00:00:00');
   d.setDate(d.getDate() + days);
@@ -156,23 +199,31 @@ function dayOffsetFromSunday(day: WeekendSession['day']) {
 }
 
 function attachDates(slug: string, category: Category, sessions: WeekendSession[]): WeekendSession[] {
-  const raceDate = category === 'f1' ? f1RaceDates[slug] : motogpRaceDates[slug];
+  const raceDate = category === 'f1' ? f1RaceDates[slug] : 
+                   category === 'motogp' ? motogpRaceDates[slug] : 
+                   indycarRaceDates[slug];
   if (!raceDate) return sessions; // fallback if unknown date
   return sessions.map((s) => ({ ...s, date: addDays(raceDate, dayOffsetFromSunday(s.day)) }));
 }
 
 export function getWeekendSchedule(slug: string, category: Category): WeekendSession[] {
-  const sessions = category === 'f1' ? (f1Schedules[slug] || defaultF1Schedule) : (motogpSchedules[slug] || defaultMotoGPSchedule);
+  const sessions = category === 'f1' ? (f1Schedules[slug] || defaultF1Schedule) : 
+                   category === 'motogp' ? (motogpSchedules[slug] || defaultMotoGPSchedule) :
+                   (indycarSchedules[slug] || defaultIndyCarSchedule);
   return attachDates(slug, category, sessions);
 }
 
 export function getAllCalendarEvents(category: Category | 'all' = 'all', circuitLookup?: (slug: string, category: Category) => { name: string }) {
   const make = (cat: Category) => {
-    const dates = cat === 'f1' ? f1RaceDates : motogpRaceDates;
+    const dates = cat === 'f1' ? f1RaceDates : 
+                  cat === 'motogp' ? motogpRaceDates : 
+                  indycarRaceDates;
     const allSlugs = Object.keys(dates);
     const col: CalendarEvent[] = [];
     for (const slug of allSlugs) {
-      const base = cat === 'f1' ? (f1Schedules[slug] || defaultF1Schedule) : (motogpSchedules[slug] || defaultMotoGPSchedule);
+      const base = cat === 'f1' ? (f1Schedules[slug] || defaultF1Schedule) : 
+                   cat === 'motogp' ? (motogpSchedules[slug] || defaultMotoGPSchedule) :
+                   (indycarSchedules[slug] || defaultIndyCarSchedule);
       const withDates = attachDates(slug, cat, base);
       for (const s of withDates) {
         const name = circuitLookup ? circuitLookup(slug, cat)?.name : slug;
@@ -183,7 +234,9 @@ export function getAllCalendarEvents(category: Category | 'all' = 'all', circuit
   };
 
   if (category === 'all') {
-    return [...make('f1'), ...make('motogp')];
+    return [...make('f1'), ...make('motogp'), ...make('indycar')];
   }
   return make(category);
 }
+
+export { f1RaceDates, motogpRaceDates, indycarRaceDates };

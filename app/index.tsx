@@ -263,7 +263,7 @@ export default function CoverPage() {
               <Ionicons name="car-sport" size={20} color="#FFFFFF" />
             </LinearGradient>
             <Text style={styles.featureText}>Formula 1</Text>
-            <Text style={styles.featureSubtext}>20+ Circuits</Text>
+            <Text style={styles.featureSubtext}>24 Circuits</Text>
           </Animated.View>
           
           <Animated.View 
@@ -288,7 +288,32 @@ export default function CoverPage() {
               <Ionicons name="bicycle" size={20} color="#FFFFFF" />
             </LinearGradient>
             <Text style={styles.featureText}>MotoGP</Text>
-            <Text style={styles.featureSubtext}>20+ Circuits</Text>
+            <Text style={styles.featureSubtext}>20 Circuits</Text>
+          </Animated.View>
+          
+          <Animated.View 
+            style={[
+              styles.featureItem,
+              {
+                transform: [{
+                  translateY: slideAnim.interpolate({
+                    inputRange: [0, 30],
+                    outputRange: [0, 8],
+                  })
+                }]
+              }
+            ]}
+          >
+            <LinearGradient
+              colors={[colors.indycarBlue, colors.indycarBlueLight]}
+              style={styles.featureIcon}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <Ionicons name="speedometer" size={20} color="#FFFFFF" />
+            </LinearGradient>
+            <Text style={styles.featureText}>IndyCar</Text>
+            <Text style={styles.featureSubtext}>15 Circuits</Text>
           </Animated.View>
           
           <Animated.View 
@@ -541,7 +566,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
-    maxWidth: 320,
+    maxWidth: 400,
     marginBottom: spacing.massive,
   },
   featureItem: {

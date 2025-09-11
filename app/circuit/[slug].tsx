@@ -20,9 +20,9 @@ import Button from '../../components/Button';
 import { useUnit } from '../../state/UnitContext';
 
 function DetailScreen() {
-  const params = useLocalSearchParams<{ slug?: string; category?: 'f1' | 'motogp' }>();
+  const params = useLocalSearchParams<{ slug?: string; category?: 'f1' | 'motogp' | 'indycar' }>();
   const slug = params.slug as string;
-  const category = (params.category as 'f1' | 'motogp') || 'f1';
+  const category = (params.category as 'f1' | 'motogp' | 'indycar') || 'f1';
 
   const circuit = getCircuitBySlug(slug, category);
   const { unit, toggleUnit } = useUnit();

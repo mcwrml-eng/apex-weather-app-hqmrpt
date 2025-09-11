@@ -151,6 +151,37 @@ export default function TabsLayout() {
           },
         }}
       />
+      <Tabs.Screen
+        name="indycar"
+        options={{
+          title: 'IndyCar',
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={{
+              backgroundColor: focused ? colors.indycarBlue : 'transparent',
+              borderRadius: borderRadius.md,
+              padding: spacing.sm,
+              borderWidth: focused ? 1 : 0,
+              borderColor: focused ? colors.indycarBlueLight : 'transparent',
+              boxShadow: focused ? `0 4px 12px ${colors.indycarBlue}30` : 'none',
+              transform: [{ scale: focused ? 1.05 : 1 }],
+            }}>
+              <Ionicons 
+                name="car-sport" 
+                size={size} 
+                color={focused ? '#FFFFFF' : colors.textMuted} 
+              />
+            </View>
+          ),
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontFamily: 'Roboto_500Medium',
+            fontWeight: '600',
+            letterSpacing: 0.3,
+            marginTop: spacing.xs,
+            color: colors.text,
+          },
+        }}
+      />
     </Tabs>
   );
 }
