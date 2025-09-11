@@ -337,6 +337,45 @@ function DetailScreen() {
 
         {/* WEATHER FORECASTS AND CURRENT CONDITIONS */}
         
+        {/* Next 12 Hours Forecast - Moved above text forecast */}
+        {!loading && forecast72Hours.length > 0 && (
+          <View style={styles.next12HoursCard}>
+            <View style={styles.next12HoursHeader}>
+              <Icon name="time" size={20} color={colors.primary} />
+              <Text style={styles.next12HoursTitle}>Next 12 Hours</Text>
+            </View>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.next12HoursScroll}
+            >
+              {forecast72Hours.slice(0, 12).map((hour, index) => (
+                <View key={hour.time} style={styles.next12HourCard}>
+                  <Text style={styles.next12HourTime}>
+                    {new Date(hour.time).toLocaleTimeString([], { hour: 'numeric' })}
+                  </Text>
+                  <WeatherSymbol 
+                    weatherCode={hour.weatherCode}
+                    size={28}
+                    latitude={circuit.latitude}
+                    longitude={circuit.longitude}
+                    time={hour.time}
+                  />
+                  <Text style={styles.next12HourTemp}>
+                    {Math.round(hour.temperature)}°
+                  </Text>
+                  <Text style={styles.next12HourRain}>
+                    {Math.round(hour.precipitationProbability)}%
+                  </Text>
+                  <Text style={styles.next12HourWind}>
+                    {Math.round(hour.windSpeed)} {unit === 'metric' ? 'km/h' : 'mph'}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
         {/* Written Text Weather Forecast */}
         {!loading && current && hourly.length > 0 && (
           <WeatherTextForecast
@@ -575,37 +614,6 @@ function DetailScreen() {
                       </Text>
                     </View>
                   </View>
-                </View>
-
-                {/* Quick hourly preview for next 12 hours */}
-                <View style={styles.quickHourlyPreview}>
-                  <Text style={styles.quickHourlyTitle}>Next 12 Hours</Text>
-                  <ScrollView 
-                    horizontal 
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.quickHourlyScroll}
-                  >
-                    {forecast72Hours.slice(0, 12).map((hour, index) => (
-                      <View key={hour.time} style={styles.quickHourCard}>
-                        <Text style={styles.quickHourTime}>
-                          {new Date(hour.time).toLocaleTimeString([], { hour: 'numeric' })}
-                        </Text>
-                        <WeatherSymbol 
-                          weatherCode={hour.weatherCode}
-                          size={24}
-                          latitude={circuit.latitude}
-                          longitude={circuit.longitude}
-                          time={hour.time}
-                        />
-                        <Text style={styles.quickHourTemp}>
-                          {Math.round(hour.temperature)}°
-                        </Text>
-                        <Text style={styles.quickHourRain}>
-                          {Math.round(hour.precipitationProbability)}%
-                        </Text>
-                      </View>
-                    ))}
-                  </ScrollView>
                 </View>
               </View>
             )}
@@ -918,6 +926,68 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontFamily: 'Roboto_400Regular',
   },
+
+  // Next 12 Hours section styles (moved above text forecast)
+  next12HoursCard: {
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+    marginBottom: 16,
+  },
+  next12HoursHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  next12HoursTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    fontFamily: 'Roboto_700Bold',
+  },
+  next12HoursScroll: {
+    paddingHorizontal: 4,
+    gap: 12,
+  },
+  next12HourCard: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    minWidth: 80,
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  next12HourTime: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    marginBottom: 8,
+  },
+  next12HourTemp: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    fontFamily: 'Roboto_700Bold',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  next12HourRain: {
+    fontSize: 11,
+    color: colors.precipitation,
+    fontFamily: 'Roboto_500Medium',
+    marginBottom: 4,
+  },
+  next12HourWind: {
+    fontSize: 10,
+    color: colors.wind,
+    fontFamily: 'Roboto_400Regular',
+  },
+
   card: {
     flex: 1,
     backgroundColor: colors.card,
@@ -1033,48 +1103,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
     fontFamily: 'Roboto_500Medium',
-  },
-  quickHourlyPreview: {
-    marginTop: 4,
-  },
-  quickHourlyTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    marginBottom: 12,
-  },
-  quickHourlyScroll: {
-    paddingHorizontal: 4,
-    gap: 8,
-  },
-  quickHourCard: {
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 10,
-    padding: 10,
-    alignItems: 'center',
-    minWidth: 70,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  quickHourTime: {
-    fontSize: 10,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginBottom: 6,
-  },
-  quickHourTemp: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    marginTop: 6,
-    marginBottom: 2,
-  },
-  quickHourRain: {
-    fontSize: 10,
-    color: colors.precipitation,
-    fontFamily: 'Roboto_400Regular',
   },
   metricsGrid: {
     flexDirection: 'row',
