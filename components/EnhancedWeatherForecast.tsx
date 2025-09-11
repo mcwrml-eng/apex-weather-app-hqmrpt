@@ -28,6 +28,8 @@ interface Props {
   latitude: number;
   longitude: number;
   showExtended?: boolean;
+  sunrise?: string;
+  sunset?: string;
 }
 
 function formatHour(timeString: string): string {
@@ -97,23 +99,6 @@ function formatDate(timeString: string): string {
   }
 }
 
-function isNightTime(timeString: string, latitude: number, longitude: number): boolean {
-  const date = new Date(timeString);
-  const hour = date.getHours();
-  
-  // Enhanced calculation with seasonal adjustment
-  const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000);
-  const seasonalOffset = Math.sin((dayOfYear - 81) * 2 * Math.PI / 365) * 2;
-  
-  const timeZoneOffset = longitude / 15;
-  const localHour = (hour + timeZoneOffset + 24) % 24;
-  
-  const sunriseHour = 6 - seasonalOffset;
-  const sunsetHour = 18 + seasonalOffset;
-  
-  return localHour < sunriseHour || localHour > sunsetHour;
-}
-
 function groupHourlyDataByDay(hourlyData: HourlyData[]): { date: string; displayDate: string; hours: HourlyData[] }[] {
   const dayGroups: { [key: string]: HourlyData[] } = {};
   
@@ -162,8 +147,9 @@ function formatPrecipitation(value: number, unit: 'metric' | 'imperial'): string
   return value < 0.1 ? `<0.1${precipUnit}` : `${Math.round(value * 10) / 10}${precipUnit}`;
 }
 
-export default function EnhancedWeatherForecast({ hourlyData, unit, latitude, longitude, showExtended = false }: Props) {
+export default function EnhancedWeatherForecast({ hourlyData, unit, latitude, longitude, showExtended = false, sunrise, sunset }: Props) {
   console.log('EnhancedWeatherForecast: Rendering with', hourlyData.length, 'hours of enhanced data with visible day intervals, unit:', unit);
+  console.log('EnhancedWeatherForecast: Using sunrise/sunset times:', sunrise, sunset);
 
   if (!hourlyData || hourlyData.length === 0) {
     return (
@@ -201,7 +187,6 @@ export default function EnhancedWeatherForecast({ hourlyData, unit, latitude, lo
               contentContainerStyle={styles.hourlyScrollContent}
             >
               {dayForecast.hours.map((hour, hourIndex) => {
-                const isNight = isNightTime(hour.time, latitude, longitude);
                 const timeScale = formatTimeWithScale(hour.time, hourIndex, dayForecast.hours.length);
                 const temperature = Math.round(hour.temperature);
                 const tempUnit = unit === 'metric' ? '°C' : '°F';
@@ -260,10 +245,11 @@ export default function EnhancedWeatherForecast({ hourlyData, unit, latitude, lo
                       <WeatherSymbol 
                         weatherCode={hour.weatherCode}
                         size={32}
-                        isNight={isNight}
                         latitude={latitude}
                         longitude={longitude}
                         time={hour.time}
+                        sunrise={sunrise}
+                        sunset={sunset}
                       />
                     </View>
                     

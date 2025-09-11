@@ -22,18 +22,32 @@ interface Props {
   latitude?: number;
   longitude?: number;
   time?: string;
+  sunrise?: string;
+  sunset?: string;
 }
 
-// Enhanced function to determine if it's nighttime based on time and location
-function isNightTime(latitude?: number, longitude?: number, time?: string): boolean {
-  if (!latitude || !longitude) {
-    // Fallback to local time if no coordinates provided
-    const hour = time ? new Date(time).getHours() : new Date().getHours();
-    return hour < 6 || hour > 18; // Simple nighttime check
+// Enhanced function to determine if it's nighttime based on actual sunrise/sunset times
+function isNightTime(latitude?: number, longitude?: number, time?: string, sunrise?: string, sunset?: string): boolean {
+  const currentTime = time ? new Date(time) : new Date();
+  
+  // If we have actual sunrise/sunset times from the API, use them for accurate detection
+  if (sunrise && sunset) {
+    const currentDate = currentTime.toISOString().split('T')[0]; // Get YYYY-MM-DD
+    const sunriseTime = new Date(`${currentDate}T${sunrise}`);
+    const sunsetTime = new Date(`${currentDate}T${sunset}`);
+    
+    console.log('WeatherSymbol: Using API sunrise/sunset times:', sunrise, sunset, 'current:', currentTime.toISOString());
+    return currentTime < sunriseTime || currentTime > sunsetTime;
   }
   
-  const date = time ? new Date(time) : new Date();
-  const hour = date.getHours();
+  // Fallback to enhanced calculation if no API times available
+  if (!latitude || !longitude) {
+    // Simple fallback to local time if no coordinates provided
+    const hour = currentTime.getHours();
+    return hour < 6 || hour > 18; // Basic nighttime check
+  }
+  
+  const hour = currentTime.getHours();
   
   // More accurate calculation based on location
   // Rough approximation: adjust for longitude (each 15 degrees = 1 hour)
@@ -41,23 +55,24 @@ function isNightTime(latitude?: number, longitude?: number, time?: string): bool
   const localHour = (hour + timeZoneOffset + 24) % 24;
   
   // Enhanced night detection: consider seasonal variations
-  const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000);
+  const dayOfYear = Math.floor((currentTime.getTime() - new Date(currentTime.getFullYear(), 0, 0).getTime()) / 86400000);
   const seasonalOffset = Math.sin((dayOfYear - 81) * 2 * Math.PI / 365) * 2; // +/- 2 hours seasonal variation
   
   const sunriseHour = 6 - seasonalOffset;
   const sunsetHour = 18 + seasonalOffset;
   
+  console.log('WeatherSymbol: Using calculated sunrise/sunset:', sunriseHour, sunsetHour, 'localHour:', localHour);
   return localHour < sunriseHour || localHour > sunsetHour;
 }
 
-// Enhanced weather code mapping with more realistic colors
+// Enhanced weather code mapping with proper night-time symbols and realistic colors
 function getWeatherSymbol(code: number, isNight: boolean = false): { 
   name: keyof typeof Ionicons.glyphMap; 
   color: string; 
   description: string;
   animationType: 'pulse' | 'rotate' | 'bounce' | 'float' | 'shake' | 'glow' | 'none';
 } {
-  console.log('WeatherSymbol: Getting realistic symbol for code', code, 'isNight:', isNight);
+  console.log('WeatherSymbol: Getting symbol for code', code, 'isNight:', isNight);
   
   // Clear sky (0)
   if (code === 0) {
@@ -72,10 +87,10 @@ function getWeatherSymbol(code: number, isNight: boolean = false): {
   // Mainly clear (1)
   if (code === 1) {
     return { 
-      name: isNight ? 'partly-sunny' : 'partly-sunny', 
+      name: isNight ? 'moon' : 'partly-sunny', 
       color: isNight ? '#CBD5E1' : '#FBBF24', // Light silver / Warm yellow
       description: isNight ? 'Mostly clear night' : 'Mostly clear',
-      animationType: 'float'
+      animationType: isNight ? 'glow' : 'float'
     };
   }
   
@@ -93,7 +108,7 @@ function getWeatherSymbol(code: number, isNight: boolean = false): {
   if (code === 3) {
     return { 
       name: 'cloudy', 
-      color: '#6B7280', // Dark gray clouds
+      color: isNight ? '#64748B' : '#6B7280', // Darker gray at night / Dark gray clouds
       description: 'Overcast',
       animationType: 'float'
     };
@@ -113,9 +128,9 @@ function getWeatherSymbol(code: number, isNight: boolean = false): {
   if (code >= 51 && code <= 55) {
     const intensity = code === 51 ? 'Light' : code === 53 ? 'Moderate' : 'Dense';
     const colorMap = { 
-      51: '#7DD3FC', // Light sky blue
-      53: '#38BDF8', // Sky blue
-      55: '#0EA5E9'  // Deeper blue
+      51: isNight ? '#64748B' : '#7DD3FC', // Darker blue at night / Light sky blue
+      53: isNight ? '#475569' : '#38BDF8', // Darker blue at night / Sky blue
+      55: isNight ? '#334155' : '#0EA5E9'  // Dark blue at night / Deeper blue
     };
     return { 
       name: 'rainy', 
@@ -129,7 +144,7 @@ function getWeatherSymbol(code: number, isNight: boolean = false): {
   if (code >= 56 && code <= 57) {
     return { 
       name: 'rainy', 
-      color: '#A5F3FC', // Icy light blue
+      color: isNight ? '#64748B' : '#A5F3FC', // Darker at night / Icy light blue
       description: code === 56 ? 'Light freezing drizzle' : 'Dense freezing drizzle',
       animationType: 'shake'
     };
@@ -139,9 +154,9 @@ function getWeatherSymbol(code: number, isNight: boolean = false): {
   if (code >= 61 && code <= 65) {
     const intensity = code === 61 ? 'Light' : code === 63 ? 'Moderate' : 'Heavy';
     const colorMap = { 
-      61: '#60A5FA', // Light blue rain
-      63: '#3B82F6', // Blue rain
-      65: '#1D4ED8'  // Deep blue heavy rain
+      61: isNight ? '#64748B' : '#60A5FA', // Darker blue at night / Light blue rain
+      63: isNight ? '#475569' : '#3B82F6', // Darker blue at night / Blue rain
+      65: isNight ? '#334155' : '#1D4ED8'  // Dark blue at night / Deep blue heavy rain
     };
     return { 
       name: 'rainy', 
@@ -155,7 +170,7 @@ function getWeatherSymbol(code: number, isNight: boolean = false): {
   if (code >= 66 && code <= 67) {
     return { 
       name: 'rainy', 
-      color: code === 66 ? '#67E8F9' : '#22D3EE', // Icy cyan
+      color: isNight ? '#64748B' : (code === 66 ? '#67E8F9' : '#22D3EE'), // Darker at night / Icy cyan
       description: code === 66 ? 'Light freezing rain' : 'Heavy freezing rain',
       animationType: 'shake'
     };
@@ -165,9 +180,9 @@ function getWeatherSymbol(code: number, isNight: boolean = false): {
   if (code >= 71 && code <= 75) {
     const intensity = code === 71 ? 'Light' : code === 73 ? 'Moderate' : 'Heavy';
     const colorMap = { 
-      71: '#F8FAFC', // Very light snow
-      73: '#E2E8F0', // Light gray snow
-      75: '#CBD5E1'  // Gray snow
+      71: isNight ? '#E2E8F0' : '#F8FAFC', // Slightly darker at night / Very light snow
+      73: isNight ? '#CBD5E1' : '#E2E8F0', // Darker at night / Light gray snow
+      75: isNight ? '#94A3B8' : '#CBD5E1'  // Much darker at night / Gray snow
     };
     return { 
       name: 'snow', 
@@ -181,7 +196,7 @@ function getWeatherSymbol(code: number, isNight: boolean = false): {
   if (code === 77) {
     return { 
       name: 'snow', 
-      color: '#E5E7EB', // Light gray
+      color: isNight ? '#94A3B8' : '#E5E7EB', // Darker at night / Light gray
       description: 'Snow grains',
       animationType: 'shake'
     };
@@ -191,9 +206,9 @@ function getWeatherSymbol(code: number, isNight: boolean = false): {
   if (code >= 80 && code <= 82) {
     const intensity = code === 80 ? 'Light' : code === 81 ? 'Moderate' : 'Heavy';
     const colorMap = { 
-      80: '#7DD3FC', // Light shower blue
-      81: '#0EA5E9', // Shower blue
-      82: '#0284C7'  // Heavy shower blue
+      80: isNight ? '#64748B' : '#7DD3FC', // Darker at night / Light shower blue
+      81: isNight ? '#475569' : '#0EA5E9', // Darker at night / Shower blue
+      82: isNight ? '#334155' : '#0284C7'  // Dark at night / Heavy shower blue
     };
     return { 
       name: 'rainy', 
@@ -207,7 +222,7 @@ function getWeatherSymbol(code: number, isNight: boolean = false): {
   if (code >= 85 && code <= 86) {
     return { 
       name: 'snow', 
-      color: code === 85 ? '#F1F5F9' : '#E2E8F0', // Light to medium gray
+      color: isNight ? (code === 85 ? '#CBD5E1' : '#94A3B8') : (code === 85 ? '#F1F5F9' : '#E2E8F0'), // Darker at night
       description: code === 85 ? 'Light snow showers' : 'Heavy snow showers',
       animationType: 'float'
     };
@@ -217,9 +232,9 @@ function getWeatherSymbol(code: number, isNight: boolean = false): {
   if (code >= 95 && code <= 99) {
     const severity = code === 95 ? 'Moderate' : code === 96 ? 'With light hail' : 'With heavy hail';
     const colorMap = { 
-      95: '#4C1D95', // Deep purple storm
-      96: '#5B21B6', // Purple with hail
-      99: '#3730A3'  // Dark purple heavy storm
+      95: isNight ? '#312E81' : '#4C1D95', // Darker purple at night / Deep purple storm
+      96: isNight ? '#3730A3' : '#5B21B6', // Darker purple at night / Purple with hail
+      99: isNight ? '#1E1B4B' : '#3730A3'  // Very dark purple at night / Dark purple heavy storm
     };
     return { 
       name: 'thunderstorm', 
@@ -370,9 +385,19 @@ function useWeatherAnimation(animationType: string) {
   return animatedStyle;
 }
 
-export default function WeatherSymbol({ weatherCode, size = 24, color, isNight, latitude, longitude, time }: Props) {
-  // Determine if it's night time with enhanced detection
-  const nightTime = isNight !== undefined ? isNight : isNightTime(latitude, longitude, time);
+export default function WeatherSymbol({ 
+  weatherCode, 
+  size = 24, 
+  color, 
+  isNight, 
+  latitude, 
+  longitude, 
+  time, 
+  sunrise, 
+  sunset 
+}: Props) {
+  // Determine if it's night time with enhanced detection using actual sunrise/sunset times
+  const nightTime = isNight !== undefined ? isNight : isNightTime(latitude, longitude, time, sunrise, sunset);
   
   const symbol = getWeatherSymbol(weatherCode, nightTime);
   const iconColor = color || symbol.color;
@@ -380,7 +405,7 @@ export default function WeatherSymbol({ weatherCode, size = 24, color, isNight, 
   // Get animation style based on weather type
   const animatedStyle = useWeatherAnimation(symbol.animationType);
   
-  console.log('WeatherSymbol: Rendering realistic', symbol.name, 'for code', weatherCode, 'isNight:', nightTime, 'color:', iconColor);
+  console.log('WeatherSymbol: Rendering', symbol.name, 'for code', weatherCode, 'isNight:', nightTime, 'color:', iconColor);
   
   return (
     <View style={styles.container}>

@@ -360,6 +360,8 @@ function DetailScreen() {
                     latitude={circuit.latitude}
                     longitude={circuit.longitude}
                     time={hour.time}
+                    sunrise={todaySunTimes?.sunrise}
+                    sunset={todaySunTimes?.sunset}
                   />
                   <Text style={styles.next12HourTemp}>
                     {Math.round(hour.temperature)}°
@@ -398,6 +400,8 @@ function DetailScreen() {
                 size={56}
                 latitude={circuit.latitude}
                 longitude={circuit.longitude}
+                sunrise={todaySunTimes?.sunrise}
+                sunset={todaySunTimes?.sunset}
               />
               <View style={styles.currentWeatherText}>
                 <Text style={styles.cardValue}>{Math.round(current.temperature)}°{unit === 'metric' ? 'C' : 'F'}</Text>
@@ -518,6 +522,8 @@ function DetailScreen() {
                         size={24}
                         latitude={circuit.latitude}
                         longitude={circuit.longitude}
+                        sunrise={d.sunrise}
+                        sunset={d.sunset}
                       />
                     </View>
                     <Text style={styles.dayTemp}>
@@ -762,6 +768,8 @@ function DetailScreen() {
             latitude={circuit.latitude}
             longitude={circuit.longitude}
             showExtended={true}
+            sunrise={todaySunTimes?.sunrise}
+            sunset={todaySunTimes?.sunset}
           />
         </BottomSheetView>
       </BottomSheet>
