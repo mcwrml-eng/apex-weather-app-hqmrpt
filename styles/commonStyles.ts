@@ -2,83 +2,83 @@
 import { StyleSheet } from 'react-native';
 
 export const colors = {
-  // Base colors - Enhanced Dark theme with better contrast
-  background: '#0A0E13',
-  backgroundAlt: '#151B23',
-  backgroundTertiary: '#1F2937',
-  card: '#1A2332',
-  cardElevated: '#212B3D',
-  text: '#F8FAFC',
-  textSecondary: '#CBD5E1',
-  textMuted: '#94A3B8',
-  textDisabled: '#64748B',
+  // Base colors - Clean Light theme with fresh colors
+  background: '#FFFFFF',
+  backgroundAlt: '#F8FAFC',
+  backgroundTertiary: '#F1F5F9',
+  card: '#FFFFFF',
+  cardElevated: '#FFFFFF',
+  text: '#1E293B',
+  textSecondary: '#475569',
+  textMuted: '#64748B',
+  textDisabled: '#94A3B8',
   
-  // Enhanced Motorsport-inspired primary colors
-  primary: '#DC2626', // Enhanced Ferrari Red
-  primaryLight: '#EF4444',
-  primaryDark: '#B91C1C',
-  primaryGlow: 'rgba(220, 38, 38, 0.3)',
+  // Fresh primary colors - Modern blue-green
+  primary: '#0EA5E9', // Sky Blue
+  primaryLight: '#38BDF8',
+  primaryDark: '#0284C7',
+  primaryGlow: 'rgba(14, 165, 233, 0.2)',
   
-  // Secondary colors with better saturation
-  secondary: '#059669', // Enhanced Emerald
-  secondaryLight: '#10B981',
-  secondaryDark: '#047857',
-  secondaryGlow: 'rgba(5, 150, 105, 0.3)',
+  // Secondary colors - Fresh green
+  secondary: '#10B981', // Emerald
+  secondaryLight: '#34D399',
+  secondaryDark: '#059669',
+  secondaryGlow: 'rgba(16, 185, 129, 0.2)',
   
-  // Accent colors
-  accent: '#F59E0B', // Enhanced Amber
-  accentLight: '#FBBF24',
-  accentDark: '#D97706',
-  accentGlow: 'rgba(245, 158, 11, 0.3)',
+  // Accent colors - Warm coral
+  accent: '#F97316', // Orange
+  accentLight: '#FB923C',
+  accentDark: '#EA580C',
+  accentGlow: 'rgba(249, 115, 22, 0.2)',
   
-  // F1 specific - Enhanced
-  f1Red: '#DC2626',
-  f1Silver: '#E5E7EB',
+  // F1 specific - Clean motorsport colors
+  f1Red: '#EF4444',
+  f1Silver: '#E2E8F0',
   f1Gold: '#F59E0B',
-  f1Carbon: '#374151',
+  f1Carbon: '#64748B',
   
-  // MotoGP specific - Enhanced
-  motogpBlue: '#2563EB',
-  motogpOrange: '#EA580C',
+  // MotoGP specific - Fresh motorsport colors
+  motogpBlue: '#3B82F6',
+  motogpOrange: '#F97316',
   motogpYellow: '#EAB308',
-  motogpPurple: '#7C3AED',
+  motogpPurple: '#8B5CF6',
   
-  // Weather colors - Enhanced with better visibility
-  temperature: '#F97316', // Enhanced Orange
-  wind: '#0EA5E9', // Enhanced Sky Blue
-  humidity: '#06B6D4', // Enhanced Cyan
-  precipitation: '#3B82F6', // Enhanced Blue
-  pressure: '#8B5CF6', // Enhanced Violet
-  uv: '#F59E0B', // Enhanced Amber
+  // Weather colors - Clean and distinguishable
+  temperature: '#F97316', // Orange
+  wind: '#0EA5E9', // Sky Blue
+  humidity: '#06B6D4', // Cyan
+  precipitation: '#3B82F6', // Blue
+  pressure: '#8B5CF6', // Violet
+  uv: '#F59E0B', // Amber
   
-  // Status colors - Enhanced
+  // Status colors - Fresh and clear
   success: '#10B981',
   warning: '#F59E0B',
   error: '#EF4444',
-  info: '#3B82F6',
+  info: '#0EA5E9',
   
-  // UI colors - Enhanced Dark theme
-  divider: '#334155',
-  border: '#475569',
-  borderLight: '#64748B',
-  shadow: 'rgba(0, 0, 0, 0.4)',
-  shadowMedium: 'rgba(0, 0, 0, 0.6)',
-  shadowDark: 'rgba(0, 0, 0, 0.8)',
-  overlay: 'rgba(0, 0, 0, 0.5)',
+  // UI colors - Clean light theme
+  divider: '#E2E8F0',
+  border: '#CBD5E1',
+  borderLight: '#E2E8F0',
+  shadow: 'rgba(15, 23, 42, 0.08)',
+  shadowMedium: 'rgba(15, 23, 42, 0.12)',
+  shadowDark: 'rgba(15, 23, 42, 0.16)',
+  overlay: 'rgba(15, 23, 42, 0.4)',
   
   // Glass morphism effects
-  glass: 'rgba(255, 255, 255, 0.05)',
-  glassBorder: 'rgba(255, 255, 255, 0.1)',
+  glass: 'rgba(255, 255, 255, 0.8)',
+  glassBorder: 'rgba(255, 255, 255, 0.2)',
   
   // Gradients (for use with expo-linear-gradient)
-  gradientPrimary: ['#DC2626', '#EF4444'],
-  gradientSecondary: ['#059669', '#10B981'],
-  gradientAccent: ['#F59E0B', '#FBBF24'],
-  gradientF1: ['#DC2626', '#F59E0B'],
-  gradientMotoGP: ['#2563EB', '#EA580C'],
-  gradientWeather: ['#0EA5E9', '#3B82F6'],
-  gradientSunset: ['#F59E0B', '#DC2626'],
-  gradientNight: ['#1E293B', '#0F172A'],
+  gradientPrimary: ['#0EA5E9', '#38BDF8'],
+  gradientSecondary: ['#10B981', '#34D399'],
+  gradientAccent: ['#F97316', '#FB923C'],
+  gradientF1: ['#EF4444', '#F97316'],
+  gradientMotoGP: ['#3B82F6', '#F97316'],
+  gradientWeather: ['#0EA5E9', '#10B981'],
+  gradientSunset: ['#F97316', '#EF4444'],
+  gradientNight: ['#64748B', '#475569'],
 };
 
 export const spacing = {
@@ -103,10 +103,10 @@ export const borderRadius = {
 };
 
 export const shadows = {
-  sm: `0 2px 8px ${colors.shadow}`,
-  md: `0 4px 16px ${colors.shadow}`,
-  lg: `0 8px 32px ${colors.shadowMedium}`,
-  xl: `0 12px 48px ${colors.shadowDark}`,
+  sm: `0 1px 3px ${colors.shadow}`,
+  md: `0 4px 12px ${colors.shadow}`,
+  lg: `0 8px 24px ${colors.shadowMedium}`,
+  xl: `0 12px 32px ${colors.shadowDark}`,
   glow: (color: string) => `0 0 20px ${color}`,
   glowLarge: (color: string) => `0 0 40px ${color}`,
 };
@@ -160,7 +160,7 @@ export const commonStyles = StyleSheet.create({
     padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.divider,
-    boxShadow: shadows.md,
+    boxShadow: shadows.sm,
   },
   cardElevated: {
     backgroundColor: colors.cardElevated,
@@ -168,7 +168,7 @@ export const commonStyles = StyleSheet.create({
     padding: spacing.xl,
     borderWidth: 1,
     borderColor: colors.border,
-    boxShadow: shadows.lg,
+    boxShadow: shadows.md,
   },
   cardGlass: {
     backgroundColor: colors.glass,
@@ -176,7 +176,7 @@ export const commonStyles = StyleSheet.create({
     padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.glassBorder,
-    boxShadow: shadows.md,
+    boxShadow: shadows.sm,
   },
   
   // Enhanced Typography system
@@ -275,14 +275,13 @@ export const buttonStyles = StyleSheet.create({
     borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: `0 6px 20px ${colors.primaryGlow}`,
-    borderWidth: 1,
-    borderColor: colors.primaryLight,
+    boxShadow: `0 4px 12px ${colors.primaryGlow}`,
+    borderWidth: 0,
   },
   primaryPressed: {
     backgroundColor: colors.primaryDark,
     transform: [{ scale: 0.97 }],
-    boxShadow: `0 4px 16px ${colors.primaryGlow}`,
+    boxShadow: `0 2px 8px ${colors.primaryGlow}`,
   },
   secondary: {
     backgroundColor: colors.backgroundAlt,
@@ -291,9 +290,9 @@ export const buttonStyles = StyleSheet.create({
     borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.border,
-    boxShadow: shadows.md,
+    boxShadow: shadows.sm,
   },
   secondaryPressed: {
     backgroundColor: colors.backgroundTertiary,
@@ -307,9 +306,8 @@ export const buttonStyles = StyleSheet.create({
     borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: `0 6px 20px ${colors.accentGlow}`,
-    borderWidth: 1,
-    borderColor: colors.accentLight,
+    boxShadow: `0 4px 12px ${colors.accentGlow}`,
+    borderWidth: 0,
   },
   accentPressed: {
     backgroundColor: colors.accentDark,
