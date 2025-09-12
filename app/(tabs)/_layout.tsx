@@ -7,7 +7,7 @@ import React from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function TabsLayout() {
-  console.log('TabsLayout: Rendering enhanced tabs with improved design');
+  console.log('TabsLayout: Rendering enhanced tabs with improved design and disclaimer tab');
   
   return (
     <Tabs
@@ -30,7 +30,7 @@ export default function TabsLayout() {
           elevation: 0,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontFamily: 'Roboto_500Medium',
           fontWeight: '600',
           letterSpacing: 0.3,
@@ -41,9 +41,9 @@ export default function TabsLayout() {
         },
         tabBarItemStyle: {
           borderRadius: borderRadius.lg,
-          marginHorizontal: spacing.xs,
+          marginHorizontal: spacing.xs / 2,
           paddingVertical: spacing.sm,
-          paddingHorizontal: spacing.xs,
+          paddingHorizontal: spacing.xs / 2,
         },
         tabBarBackground: () => (
           <View style={{
@@ -111,7 +111,7 @@ export default function TabsLayout() {
             </View>
           ),
           tabBarLabelStyle: {
-            fontSize: 11,
+            fontSize: 10,
             fontFamily: 'Roboto_500Medium',
             fontWeight: '600',
             letterSpacing: 0.3,
@@ -142,7 +142,7 @@ export default function TabsLayout() {
             </View>
           ),
           tabBarLabelStyle: {
-            fontSize: 11,
+            fontSize: 10,
             fontFamily: 'Roboto_500Medium',
             fontWeight: '600',
             letterSpacing: 0.3,
@@ -173,7 +173,38 @@ export default function TabsLayout() {
             </View>
           ),
           tabBarLabelStyle: {
-            fontSize: 11,
+            fontSize: 10,
+            fontFamily: 'Roboto_500Medium',
+            fontWeight: '600',
+            letterSpacing: 0.3,
+            marginTop: spacing.xs,
+            color: colors.text,
+          },
+        }}
+      />
+      <Tabs.Screen
+        name="disclaimer"
+        options={{
+          title: 'Legal',
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={{
+              backgroundColor: focused ? colors.textSecondary : 'transparent',
+              borderRadius: borderRadius.md,
+              padding: spacing.sm,
+              borderWidth: focused ? 1 : 0,
+              borderColor: focused ? colors.text : 'transparent',
+              boxShadow: focused ? `0 4px 12px ${colors.textSecondary}30` : 'none',
+              transform: [{ scale: focused ? 1.05 : 1 }],
+            }}>
+              <Ionicons 
+                name="shield-checkmark" 
+                size={size} 
+                color={focused ? '#FFFFFF' : colors.textMuted} 
+              />
+            </View>
+          ),
+          tabBarLabelStyle: {
+            fontSize: 10,
             fontFamily: 'Roboto_500Medium',
             fontWeight: '600',
             letterSpacing: 0.3,
