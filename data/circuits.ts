@@ -50,6 +50,7 @@ export const motogpCircuits: Circuit[] = [
   { slug: 'motegi', name: 'Mobility Resort Motegi', country: 'Japan', latitude: 36.5319, longitude: 140.2279 },
   { slug: 'mandalika', name: 'Pertamina Mandalika International Circuit', country: 'Indonesia', latitude: -8.8441, longitude: 116.324 },
   { slug: 'phillip-island', name: 'Phillip Island', country: 'Australia', latitude: -38.5042, longitude: 145.237 },
+  { slug: 'sepang', name: 'Sepang International Circuit', country: 'Malaysia', latitude: 2.7608, longitude: 101.7381 },
   { slug: 'portimao', name: 'Algarve International Circuit', country: 'Portugal', latitude: 37.2301, longitude: -8.6267 },
   { slug: 'valencia', name: 'Circuit Ricardo Tormo', country: 'Spain', latitude: 39.4895, longitude: -0.6262 },
 ];
