@@ -5,6 +5,7 @@ import { colors, commonStyles, spacing, borderRadius, shadows, layout } from '..
 import { indycarCircuits } from '../../data/circuits';
 import CircuitCard from '../../components/CircuitCard';
 import SearchBar from '../../components/SearchBar';
+import Logo from '../../components/Logo';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function IndyCarScreen() {
@@ -56,6 +57,11 @@ export default function IndyCarScreen() {
         />
         
         <View style={styles.headerContent}>
+          {/* M9 Logo */}
+          <View style={styles.logoContainer}>
+            <Logo size="medium" showBackground={true} />
+          </View>
+
           {/* Title section with enhanced typography */}
           <View style={styles.titleSection}>
             <View style={styles.titleContainer}>
@@ -162,6 +168,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
   },
   titleSection: {
     marginBottom: spacing.lg,
