@@ -50,6 +50,7 @@ export const motogpCircuits: Circuit[] = [
   { slug: 'phillip-island', name: 'Phillip Island', country: 'Australia', latitude: -38.5042, longitude: 145.237 },
   { slug: 'sepang', name: 'Sepang International Circuit', country: 'Malaysia', latitude: 2.7608, longitude: 101.7372 },
   { slug: 'valencia', name: 'Circuit Ricardo Tormo', country: 'Spain', latitude: 39.4895, longitude: -0.6262 },
+  { slug: 'goiania', name: 'Autódromo Internacional de Goiânia', country: 'Brazil', latitude: -16.6869, longitude: -49.2648 },
 ];
 
 // IndyCar 2025 calendar circuits
