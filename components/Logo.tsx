@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { View, Image, StyleSheet } from 'react-native';
+import { View, Image, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import { colors, spacing, borderRadius, shadows } from '../styles/commonStyles';
 
 interface LogoProps {
@@ -17,6 +17,15 @@ export default function Logo({
   style 
 }: LogoProps) {
   console.log('Logo: Rendering M9 logo with size:', size, 'variant:', variant);
+
+  const handlePress = async () => {
+    try {
+      console.log('Logo: Opening M9 Facebook page');
+      await Linking.openURL('https://www.facebook.com/metservices');
+    } catch (error) {
+      console.error('Logo: Failed to open Facebook URL:', error);
+    }
+  };
 
   const getSizeStyles = () => {
     switch (size) {
@@ -50,13 +59,17 @@ export default function Logo({
   const containerStyles = getContainerStyles();
 
   return (
-    <View style={[styles.container, containerStyles, style]}>
+    <TouchableOpacity 
+      style={[styles.container, containerStyles, style]}
+      onPress={handlePress}
+      activeOpacity={0.7}
+    >
       <Image
         source={require('../assets/images/180143b8-013c-4452-8f96-c3647737b389.jpeg')}
         style={[styles.logo, sizeStyles]}
         resizeMode="contain"
       />
-    </View>
+    </TouchableOpacity>
   );
 }
 
