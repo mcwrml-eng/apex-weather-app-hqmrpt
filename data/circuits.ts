@@ -32,6 +32,7 @@ export const f1Circuits: Circuit[] = [
 // MotoGP 2026 calendar circuits (reordered to match 2026 calendar)
 export const motogpCircuits: Circuit[] = [
   { slug: 'buriram', name: 'Chang International Circuit', country: 'Thailand', latitude: 15.2296, longitude: 103.0439 },
+  { slug: 'goiania', name: 'Autódromo Internacional de Goiânia', country: 'Brazil', latitude: -16.6869, longitude: -49.2648 },
   { slug: 'cota-mgp', name: 'Circuit of The Americas', country: 'USA', latitude: 30.1328, longitude: -97.6411 },
   { slug: 'losail', name: 'Lusail International Circuit', country: 'Qatar', latitude: 25.4889, longitude: 51.4542 },
   { slug: 'jerez', name: 'Circuito de Jerez', country: 'Spain', latitude: 36.7081, longitude: -6.0353 },
