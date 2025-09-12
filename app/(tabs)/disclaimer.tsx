@@ -4,6 +4,7 @@ import { View, Text, ScrollView, StyleSheet, Animated, Linking, TouchableOpacity
 import { colors, commonStyles, spacing, borderRadius, shadows, layout } from '../../styles/commonStyles';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import Logo from '../../components/Logo';
 
 export default function DisclaimerScreen() {
   console.log('DisclaimerScreen: Rendering legal disclaimer screen');
@@ -57,8 +58,12 @@ export default function DisclaimerScreen() {
           {/* Title section with enhanced typography */}
           <View style={styles.titleSection}>
             <View style={styles.titleContainer}>
-              <Ionicons name="shield-checkmark" size={28} color={colors.primary} />
-              <Text style={styles.title}>Legal Disclaimer</Text>
+              <View style={styles.titleWithIcon}>
+                <Ionicons name="shield-checkmark" size={28} color={colors.primary} />
+                <Text style={styles.title}>Legal Disclaimer</Text>
+              </View>
+              {/* M9 Logo positioned to the right of the title */}
+              <Logo size="medium" showBackground={true} />
             </View>
             <Text style={styles.subtitle}>Privacy Policy & Terms of Use</Text>
             <View style={styles.lastUpdated}>
@@ -316,8 +321,13 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    justifyContent: 'space-between',
     marginBottom: spacing.xs,
+  },
+  titleWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
   },
   title: {
     ...commonStyles.title,
