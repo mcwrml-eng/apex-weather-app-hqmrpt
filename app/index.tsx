@@ -254,7 +254,7 @@ export default function CoverPage() {
         <View style={styles.titleContainer}>
           <Text style={styles.appTitle}>RaceWeather</Text>
           <Text style={styles.appSubtitle}>Professional Motorsport Weather Forecasting</Text>
-          <Text style={styles.poweredBy}>Powered by M9</Text>
+          <Text style={styles.poweredBy}>Meteorological Services</Text>
           <View style={styles.titleAccent} />
         </View>
 
