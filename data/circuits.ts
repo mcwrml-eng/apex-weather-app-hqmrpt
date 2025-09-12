@@ -31,28 +31,26 @@ export const f1Circuits: Circuit[] = [
 
 // MotoGP 2026 calendar circuits (reordered to match 2026 calendar)
 export const motogpCircuits: Circuit[] = [
-  { slug: 'losail', name: 'Lusail International Circuit', country: 'Qatar', latitude: 25.4889, longitude: 51.4542 },
-  { slug: 'portimao', name: 'Algarve International Circuit', country: 'Portugal', latitude: 37.2301, longitude: -8.6267 },
+  { slug: 'buriram', name: 'Chang International Circuit', country: 'Thailand', latitude: 15.2296, longitude: 103.0439 },
   { slug: 'cota-mgp', name: 'Circuit of The Americas', country: 'USA', latitude: 30.1328, longitude: -97.6411 },
+  { slug: 'losail', name: 'Lusail International Circuit', country: 'Qatar', latitude: 25.4889, longitude: 51.4542 },
   { slug: 'jerez', name: 'Circuito de Jerez', country: 'Spain', latitude: 36.7081, longitude: -6.0353 },
   { slug: 'lemans', name: 'Bugatti Circuit (Le Mans)', country: 'France', latitude: 47.955, longitude: 0.2243 },
   { slug: 'barcelona-mgp', name: 'Circuit de Barcelona-Catalunya', country: 'Spain', latitude: 41.57, longitude: 2.2611 },
   { slug: 'mugello', name: 'Mugello Circuit', country: 'Italy', latitude: 43.9975, longitude: 11.3713 },
-  { slug: 'assen', name: 'TT Circuit Assen', country: 'Netherlands', latitude: 52.9553, longitude: 6.5222 },
   { slug: 'balaton-park', name: 'Balaton Park', country: 'Hungary', latitude: 46.8167, longitude: 17.7667 },
+  { slug: 'brno', name: 'Automotodrom Brno', country: 'Czech Republic', latitude: 49.2108, longitude: 16.6083 },
+  { slug: 'assen', name: 'TT Circuit Assen', country: 'Netherlands', latitude: 52.9553, longitude: 6.5222 },
   { slug: 'sachsenring', name: 'Sachsenring', country: 'Germany', latitude: 50.7972, longitude: 12.6883 },
   { slug: 'silverstone-mgp', name: 'Silverstone Circuit', country: 'UK', latitude: 52.0733, longitude: -1.0142 },
-  { slug: 'red-bull-ring-mgp', name: 'Red Bull Ring', country: 'Austria', latitude: 47.2197, longitude: 14.7647 },
   { slug: 'aragon', name: 'MotorLand Aragón', country: 'Spain', latitude: 41.227, longitude: -0.2089 },
   { slug: 'misano', name: 'Misano World Circuit', country: 'San Marino', latitude: 43.9947, longitude: 12.6928 },
-  { slug: 'mandalika', name: 'Pertamina Mandalika International Circuit', country: 'Indonesia', latitude: -8.8441, longitude: 116.324 },
+  { slug: 'red-bull-ring-mgp', name: 'Red Bull Ring', country: 'Austria', latitude: 47.2197, longitude: 14.7647 },
   { slug: 'motegi', name: 'Mobility Resort Motegi', country: 'Japan', latitude: 36.5319, longitude: 140.2279 },
-  { slug: 'buriram', name: 'Chang International Circuit', country: 'Thailand', latitude: 15.2296, longitude: 103.0439 },
+  { slug: 'mandalika', name: 'Pertamina Mandalika International Circuit', country: 'Indonesia', latitude: -8.8441, longitude: 116.324 },
   { slug: 'phillip-island', name: 'Phillip Island', country: 'Australia', latitude: -38.5042, longitude: 145.237 },
-  { slug: 'sepang', name: 'Sepang International Circuit', country: 'Malaysia', latitude: 2.7608, longitude: 101.7372 },
-  { slug: 'brno', name: 'Automotodrom Brno', country: 'Czech Republic', latitude: 49.2108, longitude: 16.6083 },
+  { slug: 'portimao', name: 'Algarve International Circuit', country: 'Portugal', latitude: 37.2301, longitude: -8.6267 },
   { slug: 'valencia', name: 'Circuit Ricardo Tormo', country: 'Spain', latitude: 39.4895, longitude: -0.6262 },
-  { slug: 'goiania', name: 'Autódromo Internacional de Goiânia', country: 'Brazil', latitude: -16.6869, longitude: -49.2648 },
 ];
 
 // IndyCar 2025 calendar circuits
