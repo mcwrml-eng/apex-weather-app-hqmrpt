@@ -57,16 +57,15 @@ export default function MotoGPScreen() {
         />
         
         <View style={styles.headerContent}>
-          {/* M9 Logo */}
-          <View style={styles.logoContainer}>
-            <Logo size="medium" showBackground={true} />
-          </View>
-
-          {/* Title section with enhanced typography */}
+          {/* Title section with logo positioned to the right */}
           <View style={styles.titleSection}>
             <View style={styles.titleContainer}>
-              <Text style={styles.title}>MotoGP</Text>
-              <View style={styles.titleAccent} />
+              <View style={styles.titleWithAccent}>
+                <Text style={styles.title}>MotoGP</Text>
+                <View style={styles.titleAccent} />
+              </View>
+              {/* M9 Logo positioned to the right of the title */}
+              <Logo size="medium" showBackground={true} />
             </View>
             <Text style={styles.subtitle}>Racing Circuits</Text>
             <View style={styles.statsContainer}>
@@ -169,18 +168,19 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
   },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
   titleSection: {
     marginBottom: spacing.lg,
   },
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    justifyContent: 'space-between',
     marginBottom: spacing.xs,
+  },
+  titleWithAccent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
   },
   title: {
     ...commonStyles.title,
