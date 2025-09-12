@@ -52,6 +52,7 @@ export const motogpCircuits: Circuit[] = [
   { slug: 'valencia', name: 'Circuit Ricardo Tormo', country: 'Spain', latitude: 39.4895, longitude: -0.6262 },
   { slug: 'goiania', name: 'Autódromo Internacional de Goiânia', country: 'Brazil', latitude: -16.6869, longitude: -49.2648 },
   { slug: 'balaton-park', name: 'Balaton Park', country: 'Hungary', latitude: 46.8167, longitude: 17.7667 },
+  { slug: 'brno', name: 'Automotodrom Brno', country: 'Czech Republic', latitude: 49.2108, longitude: 16.6083 },
 ];
 
 // IndyCar 2025 calendar circuits
