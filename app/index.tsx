@@ -307,7 +307,7 @@ export default function CoverPage() {
               <Ionicons name="bicycle" size={20} color="#FFFFFF" />
             </LinearGradient>
             <Text style={styles.featureText}>MotoGP</Text>
-            <Text style={styles.featureSubtext}>20 Circuits</Text>
+            <Text style={styles.featureSubtext}>22 Circuits</Text>
           </Animated.View>
           
           <Animated.View 
