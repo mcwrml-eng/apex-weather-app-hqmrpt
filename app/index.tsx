@@ -253,7 +253,7 @@ export default function CoverPage() {
         {/* Enhanced App Title with better typography */}
         <View style={styles.titleContainer}>
           <Text style={styles.appTitle}>RaceWeather</Text>
-          <Text style={styles.appSubtitle}>Professional Motorsport Weather Forecasting</Text>
+          <Text style={styles.appSubtitle}>Motorsport Weather Forecasting</Text>
           <Text style={styles.poweredBy}>Meteorological Services</Text>
           <View style={styles.titleAccent} />
         </View>
