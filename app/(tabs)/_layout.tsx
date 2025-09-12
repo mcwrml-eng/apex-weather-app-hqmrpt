@@ -7,7 +7,7 @@ import React from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function TabsLayout() {
-  console.log('TabsLayout: Rendering enhanced tabs with improved design and disclaimer tab');
+  console.log('TabsLayout: Rendering enhanced tabs with improved text label visibility');
   
   return (
     <Tabs
@@ -19,9 +19,9 @@ export default function TabsLayout() {
           backgroundColor: 'transparent',
           borderTopColor: 'transparent',
           borderTopWidth: 0,
-          height: Platform.OS === 'android' ? 85 : 105, // Increased height to accommodate text
-          paddingBottom: Platform.OS === 'android' ? spacing.xl : spacing.xxl, // Increased bottom padding
-          paddingTop: spacing.lg, // Increased top padding
+          height: Platform.OS === 'android' ? 95 : 115, // Further increased height
+          paddingBottom: Platform.OS === 'android' ? spacing.xxl : spacing.xxxl, // Increased bottom padding
+          paddingTop: spacing.lg, // Maintained top padding
           paddingHorizontal: spacing.md,
           position: 'absolute',
           left: 0,
@@ -34,20 +34,22 @@ export default function TabsLayout() {
           fontFamily: 'Roboto_500Medium',
           fontWeight: '600',
           letterSpacing: 0.3,
-          marginTop: spacing.sm, // Increased margin from xs (4px) to sm (8px)
-          marginBottom: spacing.xs, // Added bottom margin for better spacing
+          marginTop: spacing.md, // Increased from sm (8px) to md (12px)
+          marginBottom: spacing.sm, // Increased bottom margin for better spacing
+          color: colors.text, // Ensure text color is always visible
         },
         tabBarIconStyle: {
-          marginBottom: spacing.xs, // Changed from -2 to positive spacing.xs (4px)
-          marginTop: spacing.xs, // Added top margin for better positioning
+          marginBottom: spacing.sm, // Increased from xs to sm for better spacing
+          marginTop: spacing.xs, // Maintained top margin
         },
         tabBarItemStyle: {
           borderRadius: borderRadius.lg,
           marginHorizontal: spacing.xs / 2,
-          paddingVertical: spacing.md, // Increased vertical padding
+          paddingVertical: spacing.lg, // Increased vertical padding
           paddingHorizontal: spacing.xs / 2,
-          height: Platform.OS === 'android' ? 70 : 80, // Set explicit height for tab items
+          height: Platform.OS === 'android' ? 80 : 90, // Increased height for tab items
           justifyContent: 'center', // Center content vertically
+          alignItems: 'center', // Center content horizontally
         },
         tabBarBackground: () => (
           <View style={{
@@ -67,7 +69,7 @@ export default function TabsLayout() {
                 top: 0,
                 left: spacing.md,
                 right: spacing.md,
-                bottom: Platform.OS === 'android' ? spacing.xl : spacing.xxl,
+                bottom: Platform.OS === 'android' ? spacing.xxl : spacing.xxxl,
                 borderTopLeftRadius: borderRadius.xl,
                 borderTopRightRadius: borderRadius.xl,
                 borderWidth: 1,
@@ -119,8 +121,8 @@ export default function TabsLayout() {
             fontFamily: 'Roboto_500Medium',
             fontWeight: '600',
             letterSpacing: 0.3,
-            marginTop: spacing.sm,
-            marginBottom: spacing.xs,
+            marginTop: spacing.md,
+            marginBottom: spacing.sm,
             color: colors.text,
           },
         }}
@@ -151,8 +153,8 @@ export default function TabsLayout() {
             fontFamily: 'Roboto_500Medium',
             fontWeight: '600',
             letterSpacing: 0.3,
-            marginTop: spacing.sm,
-            marginBottom: spacing.xs,
+            marginTop: spacing.md,
+            marginBottom: spacing.sm,
             color: colors.text,
           },
         }}
@@ -183,8 +185,8 @@ export default function TabsLayout() {
             fontFamily: 'Roboto_500Medium',
             fontWeight: '600',
             letterSpacing: 0.3,
-            marginTop: spacing.sm,
-            marginBottom: spacing.xs,
+            marginTop: spacing.md,
+            marginBottom: spacing.sm,
             color: colors.text,
           },
         }}
@@ -215,8 +217,8 @@ export default function TabsLayout() {
             fontFamily: 'Roboto_500Medium',
             fontWeight: '600',
             letterSpacing: 0.3,
-            marginTop: spacing.sm,
-            marginBottom: spacing.xs,
+            marginTop: spacing.md,
+            marginBottom: spacing.sm,
             color: colors.text,
           },
         }}
