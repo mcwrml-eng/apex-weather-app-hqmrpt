@@ -6,6 +6,7 @@ import { motogpCircuits } from '../../data/circuits';
 import CircuitCard from '../../components/CircuitCard';
 import SearchBar from '../../components/SearchBar';
 import Logo from '../../components/Logo';
+import ChequeredFlag from '../../components/ChequeredFlag';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function MotoGPScreen() {
@@ -61,6 +62,7 @@ export default function MotoGPScreen() {
           <View style={styles.titleSection}>
             <View style={styles.titleContainer}>
               <View style={styles.titleWithAccent}>
+                <ChequeredFlag size={28} />
                 <Text style={styles.title}>MotoGP</Text>
                 <View style={styles.titleAccent} />
               </View>
