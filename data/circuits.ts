@@ -29,7 +29,7 @@ export const f1Circuits: Circuit[] = [
   { slug: 'yas-marina', name: 'Yas Marina Circuit', country: 'UAE', latitude: 24.4672, longitude: 54.6031 },
 ];
 
-// MotoGP 2025 calendar circuits
+// MotoGP 2026 calendar circuits
 export const motogpCircuits: Circuit[] = [
   { slug: 'losail', name: 'Lusail International Circuit', country: 'Qatar', latitude: 25.4889, longitude: 51.4542 },
   { slug: 'portimao', name: 'Algarve International Circuit', country: 'Portugal', latitude: 37.2301, longitude: -8.6267 },
@@ -44,7 +44,6 @@ export const motogpCircuits: Circuit[] = [
   { slug: 'red-bull-ring-mgp', name: 'Red Bull Ring', country: 'Austria', latitude: 47.2197, longitude: 14.7647 },
   { slug: 'aragon', name: 'MotorLand Aragón', country: 'Spain', latitude: 41.227, longitude: -0.2089 },
   { slug: 'misano', name: 'Misano World Circuit', country: 'San Marino', latitude: 43.9947, longitude: 12.6928 },
-  { slug: 'sokol', name: 'Sokol International Racetrack', country: 'Kazakhstan', latitude: 43.498, longitude: 77.116 },
   { slug: 'mandalika', name: 'Pertamina Mandalika International Circuit', country: 'Indonesia', latitude: -8.8441, longitude: 116.324 },
   { slug: 'motegi', name: 'Mobility Resort Motegi', country: 'Japan', latitude: 36.5319, longitude: 140.2279 },
   { slug: 'buriram', name: 'Chang International Circuit', country: 'Thailand', latitude: 15.2296, longitude: 103.0439 },
