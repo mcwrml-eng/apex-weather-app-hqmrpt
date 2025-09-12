@@ -16,11 +16,10 @@ export default function CoverPage() {
   const [slideAnim] = useState(new Animated.Value(30));
   const [loadingProgress] = useState(new Animated.Value(0));
   const [pulseAnim] = useState(new Animated.Value(1));
-  const [logoRotateAnim] = useState(new Animated.Value(0));
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log('CoverPage: Starting enhanced animations with M9 logo');
+    console.log('CoverPage: Starting enhanced animations with M9 logo (no rotation)');
     
     // Start entrance animations with staggered timing
     Animated.stagger(200, [
@@ -58,15 +57,6 @@ export default function CoverPage() {
       ])
     ).start();
 
-    // Start subtle rotation animation for M9 logo
-    Animated.loop(
-      Animated.timing(logoRotateAnim, {
-        toValue: 1,
-        duration: 8000,
-        useNativeDriver: true,
-      })
-    ).start();
-
     // Start loading animation
     Animated.timing(loadingProgress, {
       toValue: 1,
@@ -91,11 +81,6 @@ export default function CoverPage() {
 
     return () => clearTimeout(timer);
   }, []);
-
-  const logoRotation = logoRotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
 
   return (
     <View style={styles.container}>
@@ -224,14 +209,13 @@ export default function CoverPage() {
           }
         ]}
       >
-        {/* M9 Business Logo with enhanced animations */}
+        {/* M9 Business Logo with enhanced animations (no rotation) */}
         <Animated.View 
           style={[
             styles.businessLogoContainer,
             {
               transform: [
-                { scale: pulseAnim },
-                { rotate: logoRotation }
+                { scale: pulseAnim }
               ]
             }
           ]}
