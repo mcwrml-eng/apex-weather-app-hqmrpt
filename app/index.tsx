@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { colors, commonStyles, spacing, borderRadius, shadows } from '../styles/commonStyles';
 import WeatherSymbol from '../components/WeatherSymbol';
+import Logo from '../components/Logo';
 
 const { width, height } = Dimensions.get('window');
 
@@ -15,10 +16,11 @@ export default function CoverPage() {
   const [slideAnim] = useState(new Animated.Value(30));
   const [loadingProgress] = useState(new Animated.Value(0));
   const [pulseAnim] = useState(new Animated.Value(1));
+  const [logoRotateAnim] = useState(new Animated.Value(0));
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log('CoverPage: Starting enhanced animations');
+    console.log('CoverPage: Starting enhanced animations with M9 logo');
     
     // Start entrance animations with staggered timing
     Animated.stagger(200, [
@@ -56,6 +58,15 @@ export default function CoverPage() {
       ])
     ).start();
 
+    // Start subtle rotation animation for M9 logo
+    Animated.loop(
+      Animated.timing(logoRotateAnim, {
+        toValue: 1,
+        duration: 8000,
+        useNativeDriver: true,
+      })
+    ).start();
+
     // Start loading animation
     Animated.timing(loadingProgress, {
       toValue: 1,
@@ -80,6 +91,11 @@ export default function CoverPage() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  const logoRotation = logoRotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   return (
     <View style={styles.container}>
@@ -208,6 +224,24 @@ export default function CoverPage() {
           }
         ]}
       >
+        {/* M9 Business Logo with enhanced animations */}
+        <Animated.View 
+          style={[
+            styles.businessLogoContainer,
+            {
+              transform: [
+                { scale: pulseAnim },
+                { rotate: logoRotation }
+              ]
+            }
+          ]}
+        >
+          <View style={styles.logoWrapper}>
+            <Logo size="xlarge" showBackground={true} />
+            <View style={styles.logoGlow} />
+          </View>
+        </Animated.View>
+
         {/* Enhanced App Logo with pulsing animation */}
         <Animated.View 
           style={[
@@ -229,13 +263,14 @@ export default function CoverPage() {
           </LinearGradient>
           
           {/* Glow effect */}
-          <View style={styles.logoGlow} />
+          <View style={styles.appLogoGlow} />
         </Animated.View>
 
         {/* Enhanced App Title with better typography */}
         <View style={styles.titleContainer}>
           <Text style={styles.appTitle}>RaceWeather</Text>
           <Text style={styles.appSubtitle}>Professional Motorsport Weather Forecasting</Text>
+          <Text style={styles.poweredBy}>Powered by M9</Text>
           <View style={styles.titleAccent} />
         </View>
 
@@ -508,8 +543,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     zIndex: 1,
   },
+  businessLogoContainer: {
+    marginBottom: spacing.xl,
+    position: 'relative',
+  },
+  logoWrapper: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoGlow: {
+    position: 'absolute',
+    top: -15,
+    left: -15,
+    right: -15,
+    bottom: -15,
+    borderRadius: 50,
+    backgroundColor: colors.primarySoft,
+    zIndex: -1,
+  },
   logoContainer: {
-    marginBottom: spacing.xxxl,
+    marginBottom: spacing.xxl,
     position: 'relative',
   },
   logoBackground: {
@@ -529,7 +583,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
-  logoGlow: {
+  appLogoGlow: {
     position: 'absolute',
     top: -10,
     left: -10,
@@ -551,10 +605,17 @@ const styles = StyleSheet.create({
   },
   appSubtitle: {
     ...commonStyles.subtitle,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     textAlign: 'center',
     color: colors.textSecondary,
     maxWidth: 280,
+  },
+  poweredBy: {
+    ...commonStyles.caption,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+    color: colors.textMuted,
+    fontStyle: 'italic',
   },
   titleAccent: {
     width: 60,

@@ -5,9 +5,10 @@ import { colors, spacing, borderRadius, shadows } from '../../styles/commonStyle
 import { Platform, View } from 'react-native';
 import React from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
+import Logo from '../../components/Logo';
 
 export default function TabsLayout() {
-  console.log('TabsLayout: Rendering enhanced tabs with improved text label visibility');
+  console.log('TabsLayout: Rendering enhanced tabs with M9 logo integration');
   
   return (
     <Tabs
@@ -91,6 +92,16 @@ export default function TabsLayout() {
               backgroundColor: colors.primary,
               opacity: 0.3,
             }} />
+
+            {/* M9 Logo watermark in bottom navigation */}
+            <View style={{
+              position: 'absolute',
+              top: spacing.xs,
+              right: spacing.lg,
+              opacity: 0.15,
+            }}>
+              <Logo size="small" />
+            </View>
           </View>
         ),
       }}
