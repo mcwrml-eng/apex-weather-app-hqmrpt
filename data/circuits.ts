@@ -1,7 +1,7 @@
 
 import { Circuit } from '../components/CircuitCard';
 
-// F1 2026 calendar circuits (reordered to match 2026 calendar)
+// F1 2026 calendar circuits (reordered to match official 2026 calendar)
 export const f1Circuits: Circuit[] = [
   { slug: 'bahrain', name: 'Bahrain International Circuit', country: 'Bahrain', latitude: 26.0325, longitude: 50.5106 },
   { slug: 'jeddah', name: 'Jeddah Corniche Circuit', country: 'Saudi Arabia', latitude: 21.6319, longitude: 39.1044 },
