@@ -1,7 +1,7 @@
 
 import { Circuit } from '../components/CircuitCard';
 
-// F1 2025 calendar circuits
+// F1 2026 calendar circuits (reordered to match 2026 calendar)
 export const f1Circuits: Circuit[] = [
   { slug: 'bahrain', name: 'Bahrain International Circuit', country: 'Bahrain', latitude: 26.0325, longitude: 50.5106 },
   { slug: 'jeddah', name: 'Jeddah Corniche Circuit', country: 'Saudi Arabia', latitude: 21.6319, longitude: 39.1044 },
@@ -29,7 +29,7 @@ export const f1Circuits: Circuit[] = [
   { slug: 'yas-marina', name: 'Yas Marina Circuit', country: 'UAE', latitude: 24.4672, longitude: 54.6031 },
 ];
 
-// MotoGP 2026 calendar circuits
+// MotoGP 2026 calendar circuits (reordered to match 2026 calendar)
 export const motogpCircuits: Circuit[] = [
   { slug: 'losail', name: 'Lusail International Circuit', country: 'Qatar', latitude: 25.4889, longitude: 51.4542 },
   { slug: 'portimao', name: 'Algarve International Circuit', country: 'Portugal', latitude: 37.2301, longitude: -8.6267 },
@@ -39,6 +39,7 @@ export const motogpCircuits: Circuit[] = [
   { slug: 'barcelona-mgp', name: 'Circuit de Barcelona-Catalunya', country: 'Spain', latitude: 41.57, longitude: 2.2611 },
   { slug: 'mugello', name: 'Mugello Circuit', country: 'Italy', latitude: 43.9975, longitude: 11.3713 },
   { slug: 'assen', name: 'TT Circuit Assen', country: 'Netherlands', latitude: 52.9553, longitude: 6.5222 },
+  { slug: 'balaton-park', name: 'Balaton Park', country: 'Hungary', latitude: 46.8167, longitude: 17.7667 },
   { slug: 'sachsenring', name: 'Sachsenring', country: 'Germany', latitude: 50.7972, longitude: 12.6883 },
   { slug: 'silverstone-mgp', name: 'Silverstone Circuit', country: 'UK', latitude: 52.0733, longitude: -1.0142 },
   { slug: 'red-bull-ring-mgp', name: 'Red Bull Ring', country: 'Austria', latitude: 47.2197, longitude: 14.7647 },
@@ -49,10 +50,9 @@ export const motogpCircuits: Circuit[] = [
   { slug: 'buriram', name: 'Chang International Circuit', country: 'Thailand', latitude: 15.2296, longitude: 103.0439 },
   { slug: 'phillip-island', name: 'Phillip Island', country: 'Australia', latitude: -38.5042, longitude: 145.237 },
   { slug: 'sepang', name: 'Sepang International Circuit', country: 'Malaysia', latitude: 2.7608, longitude: 101.7372 },
+  { slug: 'brno', name: 'Automotodrom Brno', country: 'Czech Republic', latitude: 49.2108, longitude: 16.6083 },
   { slug: 'valencia', name: 'Circuit Ricardo Tormo', country: 'Spain', latitude: 39.4895, longitude: -0.6262 },
   { slug: 'goiania', name: 'Autódromo Internacional de Goiânia', country: 'Brazil', latitude: -16.6869, longitude: -49.2648 },
-  { slug: 'balaton-park', name: 'Balaton Park', country: 'Hungary', latitude: 46.8167, longitude: 17.7667 },
-  { slug: 'brno', name: 'Automotodrom Brno', country: 'Czech Republic', latitude: 49.2108, longitude: 16.6083 },
 ];
 
 // IndyCar 2025 calendar circuits
