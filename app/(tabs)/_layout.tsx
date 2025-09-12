@@ -19,9 +19,9 @@ export default function TabsLayout() {
           backgroundColor: 'transparent',
           borderTopColor: 'transparent',
           borderTopWidth: 0,
-          height: Platform.OS === 'android' ? 75 : 95,
-          paddingBottom: Platform.OS === 'android' ? spacing.lg : spacing.xl,
-          paddingTop: spacing.md,
+          height: Platform.OS === 'android' ? 85 : 105, // Increased height to accommodate text
+          paddingBottom: Platform.OS === 'android' ? spacing.xl : spacing.xxl, // Increased bottom padding
+          paddingTop: spacing.lg, // Increased top padding
           paddingHorizontal: spacing.md,
           position: 'absolute',
           left: 0,
@@ -34,16 +34,20 @@ export default function TabsLayout() {
           fontFamily: 'Roboto_500Medium',
           fontWeight: '600',
           letterSpacing: 0.3,
-          marginTop: spacing.xs,
+          marginTop: spacing.sm, // Increased margin from xs (4px) to sm (8px)
+          marginBottom: spacing.xs, // Added bottom margin for better spacing
         },
         tabBarIconStyle: {
-          marginBottom: -2,
+          marginBottom: spacing.xs, // Changed from -2 to positive spacing.xs (4px)
+          marginTop: spacing.xs, // Added top margin for better positioning
         },
         tabBarItemStyle: {
           borderRadius: borderRadius.lg,
           marginHorizontal: spacing.xs / 2,
-          paddingVertical: spacing.sm,
+          paddingVertical: spacing.md, // Increased vertical padding
           paddingHorizontal: spacing.xs / 2,
+          height: Platform.OS === 'android' ? 70 : 80, // Set explicit height for tab items
+          justifyContent: 'center', // Center content vertically
         },
         tabBarBackground: () => (
           <View style={{
@@ -63,7 +67,7 @@ export default function TabsLayout() {
                 top: 0,
                 left: spacing.md,
                 right: spacing.md,
-                bottom: Platform.OS === 'android' ? spacing.lg : spacing.xl,
+                bottom: Platform.OS === 'android' ? spacing.xl : spacing.xxl,
                 borderTopLeftRadius: borderRadius.xl,
                 borderTopRightRadius: borderRadius.xl,
                 borderWidth: 1,
@@ -115,7 +119,8 @@ export default function TabsLayout() {
             fontFamily: 'Roboto_500Medium',
             fontWeight: '600',
             letterSpacing: 0.3,
-            marginTop: spacing.xs,
+            marginTop: spacing.sm,
+            marginBottom: spacing.xs,
             color: colors.text,
           },
         }}
@@ -146,7 +151,8 @@ export default function TabsLayout() {
             fontFamily: 'Roboto_500Medium',
             fontWeight: '600',
             letterSpacing: 0.3,
-            marginTop: spacing.xs,
+            marginTop: spacing.sm,
+            marginBottom: spacing.xs,
             color: colors.text,
           },
         }}
@@ -177,7 +183,8 @@ export default function TabsLayout() {
             fontFamily: 'Roboto_500Medium',
             fontWeight: '600',
             letterSpacing: 0.3,
-            marginTop: spacing.xs,
+            marginTop: spacing.sm,
+            marginBottom: spacing.xs,
             color: colors.text,
           },
         }}
@@ -208,7 +215,8 @@ export default function TabsLayout() {
             fontFamily: 'Roboto_500Medium',
             fontWeight: '600',
             letterSpacing: 0.3,
-            marginTop: spacing.xs,
+            marginTop: spacing.sm,
+            marginBottom: spacing.xs,
             color: colors.text,
           },
         }}
