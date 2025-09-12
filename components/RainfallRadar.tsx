@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import Animated, { 
   useSharedValue, 
@@ -40,8 +40,11 @@ const RainfallRadar: React.FC<Props> = ({
   radarOpacity = 0.7,
   refreshInterval = 10
 }) => {
+  // Check if we're running on web
+  const isWeb = Platform.OS === 'web';
+  
   // Simplified state management
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!isWeb);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [showRadar, setShowRadar] = useState(alwaysVisible);
@@ -65,16 +68,34 @@ const RainfallRadar: React.FC<Props> = ({
   const RETRY_DELAYS = [2000, 4000, 8000];
   const CONNECTION_TIMEOUT = 10000;
 
-  console.log('RainfallRadar: Simplified component initialized', { 
+  console.log('RainfallRadar: Component initialized', { 
     latitude, 
     longitude, 
     circuitName, 
     connectionStatus,
-    retryCount
+    retryCount,
+    isWeb,
+    platform: Platform.OS
   });
+
+  // Web fallback effect
+  useEffect(() => {
+    if (isWeb) {
+      console.log('RainfallRadar: Web platform detected, showing fallback');
+      setConnectionStatus('error');
+      setIsLoading(false);
+      setHasError(true);
+      setErrorMessage('Web platform not supported');
+    }
+  }, [isWeb]);
 
   // Simplified retry mechanism
   const retryConnection = useCallback(() => {
+    if (isWeb) {
+      console.log('RainfallRadar: Retry not available on web');
+      return;
+    }
+
     if (retryCount >= MAX_RETRY_ATTEMPTS) {
       console.log('RainfallRadar: Max retry attempts reached');
       setConnectionStatus('error');
@@ -97,10 +118,15 @@ const RainfallRadar: React.FC<Props> = ({
       setWebViewKey(prev => prev + 1);
       setConnectionStatus('connecting');
     }, delay);
-  }, [retryCount]);
+  }, [retryCount, isWeb]);
 
   // Simplified refresh function
   const refreshRadar = useCallback(() => {
+    if (isWeb) {
+      console.log('RainfallRadar: Refresh not available on web');
+      return;
+    }
+
     console.log('RainfallRadar: Refreshing radar');
     setWebViewKey(prev => prev + 1);
     setIsLoading(true);
@@ -112,30 +138,37 @@ const RainfallRadar: React.FC<Props> = ({
     setConnectionStatus('connecting');
     setErrorMessage('');
     setLastUpdateTime(null);
-  }, []);
+  }, [isWeb]);
 
   // Simplified toggle animation
   const toggleAnimation = useCallback(() => {
+    if (isWeb) {
+      console.log('RainfallRadar: Animation not available on web');
+      return;
+    }
+
     console.log('RainfallRadar: Toggle animation');
     if (webViewRef.current && connectionStatus === 'connected') {
       webViewRef.current.postMessage(JSON.stringify({
         type: 'toggleAnimation'
       }));
     }
-  }, [connectionStatus]);
+  }, [connectionStatus, isWeb]);
 
   // Auto-start animation effect
   useEffect(() => {
+    if (isWeb) return;
+    
     if (autoStartAnimation && totalFrames > 1 && !isAnimating && connectionStatus === 'connected') {
       console.log('RainfallRadar: Auto-starting animation');
       const timer = setTimeout(toggleAnimation, 1500);
       return () => clearTimeout(timer);
     }
-  }, [autoStartAnimation, totalFrames, isAnimating, connectionStatus, toggleAnimation]);
+  }, [autoStartAnimation, totalFrames, isAnimating, connectionStatus, toggleAnimation, isWeb]);
 
   // Auto-refresh effect
   useEffect(() => {
-    if (!showRadar || connectionStatus === 'error') return;
+    if (isWeb || !showRadar || connectionStatus === 'error') return;
     
     const refreshTimer = setInterval(() => {
       console.log('RainfallRadar: Auto-refreshing');
@@ -143,11 +176,11 @@ const RainfallRadar: React.FC<Props> = ({
     }, refreshInterval * 60 * 1000);
     
     return () => clearInterval(refreshTimer);
-  }, [showRadar, connectionStatus, refreshInterval, refreshRadar]);
+  }, [showRadar, connectionStatus, refreshInterval, refreshRadar, isWeb]);
 
   // Loading animation effect
   useEffect(() => {
-    if (isLoading) {
+    if (isLoading && !isWeb) {
       pulseAnimation.value = withRepeat(
         withSequence(
           withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
@@ -166,7 +199,7 @@ const RainfallRadar: React.FC<Props> = ({
       pulseAnimation.value = withTiming(0, { duration: 300 });
       loadingRotation.value = withTiming(0, { duration: 300 });
     }
-  }, [isLoading, pulseAnimation, loadingRotation]);
+  }, [isLoading, pulseAnimation, loadingRotation, isWeb]);
 
   // Error shake animation effect
   useEffect(() => {
@@ -596,11 +629,11 @@ const RainfallRadar: React.FC<Props> = ({
     console.log('RainfallRadar: Toggling radar view');
     if (!alwaysVisible) {
       setShowRadar(!showRadar);
-      if (!showRadar) {
+      if (!showRadar && !isWeb) {
         refreshRadar();
       }
     }
-  }, [showRadar, alwaysVisible, refreshRadar]);
+  }, [showRadar, alwaysVisible, refreshRadar, isWeb]);
 
   // Prop validation
   if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
@@ -618,6 +651,63 @@ const RainfallRadar: React.FC<Props> = ({
           <Text style={styles.errorText}>Invalid Location Data</Text>
           <Text style={styles.errorSubtext}>
             Cannot display radar for this circuit.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Web platform fallback
+  if (isWeb) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <View style={styles.titleContainer}>
+            <Icon name="rainy" size={20} color={colors.precipitation} />
+            <View style={styles.titleTextContainer}>
+              <Text style={styles.title}>Rainfall Radar</Text>
+              <Text style={styles.subtitle}>{circuitName}</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.webNotSupportedContainer}>
+          <Icon name="desktop" size={56} color={colors.textMuted} />
+          <Text style={styles.webNotSupportedTitle}>Web Preview Not Supported</Text>
+          <Text style={styles.webNotSupportedText}>
+            The rainfall radar feature uses native WebView components that are not supported in the web preview environment.
+          </Text>
+          <Text style={styles.webNotSupportedSubtext}>
+            To view the live rainfall radar for {circuitName}, please use the mobile app on iOS or Android devices.
+          </Text>
+          
+          <View style={styles.webFeaturesList}>
+            <Text style={styles.webFeaturesTitle}>Mobile Features Include:</Text>
+            <View style={styles.webFeatureItem}>
+              <Icon name="checkmark-circle" size={16} color={colors.success} />
+              <Text style={styles.webFeatureText}>Live animated radar data</Text>
+            </View>
+            <View style={styles.webFeatureItem}>
+              <Icon name="checkmark-circle" size={16} color={colors.success} />
+              <Text style={styles.webFeatureText}>Interactive map controls</Text>
+            </View>
+            <View style={styles.webFeatureItem}>
+              <Icon name="checkmark-circle" size={16} color={colors.success} />
+              <Text style={styles.webFeatureText}>Auto-refresh every {refreshInterval} minutes</Text>
+            </View>
+            <View style={styles.webFeatureItem}>
+              <Icon name="checkmark-circle" size={16} color={colors.success} />
+              <Text style={styles.webFeatureText}>Precipitation intensity overlay</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            Available on mobile • Updates every {refreshInterval} minutes
+          </Text>
+          <Text style={styles.attribution}>
+            Powered by RainViewer API
           </Text>
         </View>
       </View>
@@ -934,6 +1024,59 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  // Web not supported styles
+  webNotSupportedContainer: {
+    alignItems: 'center',
+    padding: 32,
+    backgroundColor: colors.backgroundAlt,
+  },
+  webNotSupportedTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: 16,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  webNotSupportedText: {
+    fontSize: 14,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  webNotSupportedSubtext: {
+    fontSize: 13,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 24,
+  },
+  webFeaturesList: {
+    alignSelf: 'stretch',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  webFeaturesTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 12,
+  },
+  webFeatureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  webFeatureText: {
+    fontSize: 13,
+    color: colors.textMuted,
+    flex: 1,
   },
   webViewContainer: {
     height: 400,
