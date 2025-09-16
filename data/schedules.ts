@@ -161,21 +161,23 @@ const indycarSchedules: ScheduleMap = {
 };
 
 const indycarRaceDates: DateMap = {
-  'st-pete': '2025-03-09',
-  'thermal': '2025-03-23',
-  'long-beach': '2025-04-13',
-  'barber': '2025-04-27',
-  'indianapolis-gp': '2025-05-10',
-  'indianapolis-500': '2025-05-25',
-  'detroit': '2025-06-01',
-  'road-america': '2025-06-22',
-  'laguna-seca': '2025-06-29',
-  'mid-ohio': '2025-07-06',
-  'toronto': '2025-07-20',
-  'iowa': '2025-07-27',
-  'gateway': '2025-08-24',
-  'portland': '2025-08-31',
-  'nashville': '2025-09-14',
+  'st-pete': '2026-03-08',
+  'thermal': '2026-03-22',
+  'long-beach': '2026-04-12',
+  'barber': '2026-04-26',
+  'indianapolis-gp': '2026-05-09',
+  'indianapolis-500': '2026-05-24',
+  'detroit': '2026-05-31',
+  'road-america': '2026-06-21',
+  'laguna-seca': '2026-06-28',
+  'mid-ohio': '2026-07-05',
+  'toronto': '2026-07-19',
+  'iowa': '2026-07-26',
+  'pocono': '2026-08-02',
+  'gateway': '2026-08-23',
+  'portland': '2026-08-30',
+  'milwaukee': '2026-09-06',
+  'nashville': '2026-09-13',
 };
 
 function addDays(isoDate: string, days: number) {

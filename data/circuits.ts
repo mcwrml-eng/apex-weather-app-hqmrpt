@@ -76,12 +76,23 @@ export const indycarCircuits: Circuit[] = [
   { slug: 'nashville', name: 'Nashville Superspeedway', country: 'USA', latitude: 36.2058, longitude: -86.8119 },
 ];
 
-export function getCircuitBySlug(slug: string, category: 'f1' | 'motogp' | 'indycar') {
-  const list = category === 'f1' ? f1Circuits : category === 'motogp' ? motogpCircuits : indycarCircuits;
-  const hit = list.find((c) => c.slug === slug);
+export function getCircuitBySlug(slug: string, category?: 'f1' | 'motogp' | 'indycar') {
+  if (category) {
+    const list = category === 'f1' ? f1Circuits : category === 'motogp' ? motogpCircuits : indycarCircuits;
+    const hit = list.find((c) => c.slug === slug);
+    if (!hit) {
+      console.log('Circuit not found', slug, category);
+      return list[0];
+    }
+    return hit;
+  }
+  
+  // Search all circuits if no category specified
+  const allCircuits = [...f1Circuits, ...motogpCircuits, ...indycarCircuits];
+  const hit = allCircuits.find((c) => c.slug === slug);
   if (!hit) {
-    console.log('Circuit not found', slug, category);
-    return list[0];
+    console.log('Circuit not found', slug, 'in any category');
+    return f1Circuits[0]; // fallback
   }
   return hit;
 }

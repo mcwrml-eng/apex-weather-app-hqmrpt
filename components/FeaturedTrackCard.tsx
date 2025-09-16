@@ -18,7 +18,7 @@ interface Props {
 
 export default function FeaturedTrackCard({ category }: Props) {
   const currentTrack = getCurrentTrackOfWeek(category);
-  const circuit = currentTrack ? getCircuitBySlug(currentTrack.slug) : null;
+  const circuit = currentTrack ? getCircuitBySlug(currentTrack.slug, category) : null;
   const { current, loading } = useWeather(
     circuit?.latitude || 0, 
     circuit?.longitude || 0, 
