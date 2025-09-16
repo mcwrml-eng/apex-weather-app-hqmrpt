@@ -1,13 +1,15 @@
 
 import React, { Component, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { colors } from '../styles/commonStyles';
+import { getColors, spacing, borderRadius } from '../styles/commonStyles';
+import { useTheme } from '../state/ThemeContext';
 import Icon from './Icon';
 
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
   onError?: (error: Error, errorInfo: any) => void;
+  isDark?: boolean;
 }
 
 interface State {
@@ -62,10 +64,47 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   render() {
+    const colors = getColors(this.props.isDark || false);
+    
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
       }
+
+      const styles = StyleSheet.create({
+        container: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: spacing.xl,
+          backgroundColor: colors.backgroundAlt,
+        },
+        title: {
+          fontSize: 18,
+          fontWeight: '700',
+          color: colors.text,
+          marginTop: spacing.md,
+          marginBottom: spacing.sm,
+        },
+        message: {
+          fontSize: 14,
+          color: colors.textMuted,
+          textAlign: 'center',
+          marginBottom: spacing.xl,
+          lineHeight: 20,
+        },
+        retryButton: {
+          backgroundColor: colors.primary,
+          paddingHorizontal: spacing.xl,
+          paddingVertical: spacing.sm + 2,
+          borderRadius: borderRadius.sm,
+        },
+        retryText: {
+          color: '#fff',
+          fontSize: 14,
+          fontWeight: '600',
+        },
+      });
 
       return (
         <View style={styles.container}>
@@ -85,39 +124,10 @@ class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: colors.backgroundAlt,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  message: {
-    fontSize: 14,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 20,
-  },
-  retryButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  retryText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-});
+// Wrapper component to provide theme context to the class component
+function ErrorBoundaryWithTheme(props: Omit<Props, 'isDark'>) {
+  const { isDark } = useTheme();
+  return <ErrorBoundary {...props} isDark={isDark} />;
+}
 
-export default ErrorBoundary;
+export default ErrorBoundaryWithTheme;

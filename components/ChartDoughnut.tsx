@@ -2,7 +2,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
-import { colors } from '../styles/commonStyles';
+import { getColors } from '../styles/commonStyles';
+import { useTheme } from '../state/ThemeContext';
 
 interface Props {
   size: number;
@@ -21,14 +22,20 @@ export default function ChartDoughnut({
   size,
   strokeWidth,
   progress,
-  color = colors.primary,
-  backgroundColor = colors.divider,
+  color,
+  backgroundColor,
   centerText,
   subText,
   showScale = true,
   maxValue = 100,
   unit = '%',
 }: Props) {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  
+  // Set default colors based on theme
+  const primaryColor = color || colors.primary;
+  const bgColor = backgroundColor || colors.divider;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const progressLength = Math.min(Math.max(progress, 0), 1) * circumference;
@@ -82,7 +89,7 @@ export default function ChartDoughnut({
       <Svg width={containerSize} height={containerSize}>
         {/* Background circle */}
         <Circle
-          stroke={backgroundColor}
+          stroke={bgColor}
           cx={containerSize / 2}
           cy={containerSize / 2}
           r={radius}
@@ -92,7 +99,7 @@ export default function ChartDoughnut({
         
         {/* Progress circle */}
         <Circle
-          stroke={color}
+          stroke={primaryColor}
           cx={containerSize / 2}
           cy={containerSize / 2}
           r={radius}
@@ -148,35 +155,35 @@ export default function ChartDoughnut({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  centerTextContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  textWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  centerText: { 
-    fontSize: 18, 
-    fontWeight: '700', 
-    color: colors.text, 
-    fontFamily: 'Roboto_700Bold',
-    textAlign: 'center',
-  },
-  subText: { 
-    fontSize: 12, 
-    color: colors.textMuted, 
-    fontFamily: 'Roboto_400Regular',
-    marginTop: 2,
-    textAlign: 'center',
-  },
-});
+  const styles = StyleSheet.create({
+    container: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+    },
+    centerTextContainer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    textWrapper: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    centerText: { 
+      fontSize: 18, 
+      fontWeight: '700', 
+      color: colors.text, 
+      fontFamily: 'Roboto_700Bold',
+      textAlign: 'center',
+    },
+    subText: { 
+      fontSize: 12, 
+      color: colors.textMuted, 
+      fontFamily: 'Roboto_400Regular',
+      marginTop: 2,
+      textAlign: 'center',
+    },
+  });

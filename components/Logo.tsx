@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { View, Image, StyleSheet, TouchableOpacity, Linking } from 'react-native';
-import { colors, spacing, borderRadius, shadows } from '../styles/commonStyles';
+import { getColors, spacing, borderRadius, getShadows } from '../styles/commonStyles';
+import { useTheme } from '../state/ThemeContext';
 
 interface LogoProps {
   size?: 'small' | 'medium' | 'large' | 'xlarge';
@@ -16,6 +17,10 @@ export default function Logo({
   showBackground = false,
   style 
 }: LogoProps) {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const shadows = getShadows(isDark);
+  
   console.log('Logo: Rendering M9 logo with size:', size, 'variant:', variant);
 
   const handlePress = async () => {

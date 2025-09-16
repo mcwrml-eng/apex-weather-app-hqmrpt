@@ -2,7 +2,8 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import Svg, { Circle, Line, Text as SvgText, Polygon, Path } from 'react-native-svg';
-import { colors } from '../styles/commonStyles';
+import { getColors, spacing, borderRadius, getShadows } from '../styles/commonStyles';
+import { useTheme } from '../state/ThemeContext';
 import { validateWindSpeed, validateWindDirection } from '../hooks/useWeather';
 
 interface HourlyData {
@@ -33,9 +34,14 @@ function getWindDirectionLabel(degrees: number): string {
 }
 
 function WindRadarGraph({ hourlyData, unit }: Props) {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const shadows = getShadows(isDark);
+  
   console.log('WindRadarGraph: Rendering radar chart for', hourlyData.length, 'hours, unit:', unit);
 
   if (!hourlyData || hourlyData.length === 0) {
+    const styles = getStyles(colors, shadows);
     return (
       <View style={styles.container}>
         <Text style={styles.noDataText}>No wind data available for radar analysis</Text>
@@ -59,6 +65,7 @@ function WindRadarGraph({ hourlyData, unit }: Props) {
   })));
 
   if (displayData.length === 0) {
+    const styles = getStyles(colors, shadows);
     return (
       <View style={styles.container}>
         <Text style={styles.noDataText}>No valid wind data available for radar display</Text>
@@ -138,6 +145,8 @@ function WindRadarGraph({ hourlyData, unit }: Props) {
   const maxSectorIndex = sectorCounts.indexOf(Math.max(...sectorCounts));
   const dominantDirection = maxSectorIndex * sectorSize;
   const dominantDirectionLabel = getWindDirectionLabel(dominantDirection);
+
+  const styles = getStyles(colors, shadows);
 
   return (
     <View style={styles.container}>
@@ -420,15 +429,15 @@ function WindRadarGraph({ hourlyData, unit }: Props) {
 
 export default memo(WindRadarGraph);
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, shadows: any) => StyleSheet.create({
   container: {
     backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.divider,
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
-    marginBottom: 12,
+    boxShadow: shadows.md,
+    marginBottom: spacing.md,
   },
   title: {
     fontSize: 18,
@@ -593,6 +602,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
     textAlign: 'center',
-    padding: 20,
+    padding: spacing.xl,
   },
 });

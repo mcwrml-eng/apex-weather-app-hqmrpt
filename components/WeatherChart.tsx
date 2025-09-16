@@ -2,7 +2,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { LineChart, AreaChart, YAxis, XAxis } from 'react-native-svg-charts';
-import { colors } from '../styles/commonStyles';
+import { getColors, spacing, borderRadius, getShadows } from '../styles/commonStyles';
+import { useTheme } from '../state/ThemeContext';
 import { getPrecipitationUnit } from '../hooks/useWeather';
 import * as shape from 'd3-shape';
 
@@ -22,9 +23,14 @@ interface Props {
 }
 
 export default function WeatherChart({ data, type, unit, height = 140 }: Props) {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const shadows = getShadows(isDark);
+  
   console.log('WeatherChart: Rendering accurate', type, 'chart with', data.length, 'data points, unit:', unit);
 
   if (!data || data.length === 0) {
+    const styles = getStyles(colors, shadows);
     return (
       <View style={[styles.container, { height }]}>
         <Text style={styles.noData}>No data available</Text>
@@ -68,13 +74,13 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
   const getChartColor = () => {
     switch (type) {
       case 'temperature':
-        return colors.accent;
+        return colors.temperature;
       case 'wind':
-        return colors.primary;
+        return colors.wind;
       case 'humidity':
-        return colors.secondary;
+        return colors.humidity;
       case 'precipitation':
-        return '#4FC3F7';
+        return colors.precipitation;
       default:
         return colors.primary;
     }
@@ -172,6 +178,8 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
   const unitLabel = getUnit();
   const title = getTitle();
   const timeLabels = generateTimeLabels();
+  
+  const styles = getStyles(colors, shadows);
 
   // Enhanced statistical calculations
   const minValue = Math.min(...chartData);
@@ -360,15 +368,15 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, shadows: any) => StyleSheet.create({
   container: {
     backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: borderRadius.md,
+    padding: borderRadius.lg,
     borderWidth: 1,
     borderColor: colors.divider,
-    marginBottom: 12,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+    marginBottom: spacing.md,
+    boxShadow: shadows.sm,
   },
   header: {
     flexDirection: 'row',
@@ -485,7 +493,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
-    marginTop: 20,
+    marginTop: spacing.xl,
     fontSize: 14,
   },
 });

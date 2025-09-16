@@ -2,7 +2,8 @@
 import React, { useMemo, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { colors, buttonStyles } from '../../styles/commonStyles';
+import { getColors, getButtonStyles, spacing, borderRadius, getShadows } from '../../styles/commonStyles';
+import { useTheme } from '../../state/ThemeContext';
 import { getCircuitBySlug } from '../../data/circuits';
 import { useWeather } from '../../hooks/useWeather';
 import ChartDoughnut from '../../components/ChartDoughnut';
@@ -23,6 +24,11 @@ function DetailScreen() {
   const params = useLocalSearchParams<{ slug?: string; category?: 'f1' | 'motogp' | 'indycar' }>();
   const slug = params.slug as string;
   const category = (params.category as 'f1' | 'motogp' | 'indycar') || 'f1';
+
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const buttonStyles = getButtonStyles(isDark);
+  const shadows = getShadows(isDark);
 
   const circuit = getCircuitBySlug(slug, category);
   const { unit, toggleUnit } = useUnit();
@@ -779,90 +785,90 @@ function DetailScreen() {
 
 export default DetailScreen;
 
-const styles = StyleSheet.create({
-  wrapper: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
-  backBtn: {
-    flexDirection: 'row',
-    alignSelf: 'flex-start',
-    backgroundColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    alignItems: 'center',
-    gap: 6,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-  },
-  backText: { color: '#fff', fontWeight: '700', fontFamily: 'Roboto_700Bold' },
-  title: { fontSize: 26, fontWeight: '700', marginTop: 10, color: colors.text, fontFamily: 'Roboto_700Bold' },
-  subtitle: { color: colors.textMuted, marginTop: 4, fontFamily: 'Roboto_400Regular' },
-  actions: { position: 'absolute', right: 16, top: 8, flexDirection: 'row', gap: 4 },
-  actionBtn: { padding: 8, borderRadius: 10 },
-  content: { paddingHorizontal: 16, paddingTop: 8 },
-  updateInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.backgroundAlt,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  updateText: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-  },
+  const styles = StyleSheet.create({
+    wrapper: { flex: 1, backgroundColor: colors.background },
+    header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
+    backBtn: {
+      flexDirection: 'row',
+      alignSelf: 'flex-start',
+      backgroundColor: colors.primary,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: borderRadius.md,
+      alignItems: 'center',
+      gap: 6,
+      boxShadow: shadows.sm,
+    },
+    backText: { color: '#fff', fontWeight: '700', fontFamily: 'Roboto_700Bold' },
+    title: { fontSize: 26, fontWeight: '700', marginTop: spacing.sm + 2, color: colors.text, fontFamily: 'Roboto_700Bold' },
+    subtitle: { color: colors.textMuted, marginTop: spacing.xs, fontFamily: 'Roboto_400Regular' },
+    actions: { position: 'absolute', right: spacing.lg, top: spacing.sm, flexDirection: 'row', gap: spacing.xs },
+    actionBtn: { padding: spacing.sm, borderRadius: spacing.sm + 2 },
+    content: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+    updateInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.backgroundAlt,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    updateText: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+    },
 
-  // Sunrise & Sunset Times Styles
-  sunTimesCard: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
-    marginBottom: 16,
-  },
-  sunTimesHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  sunTimesTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    fontFamily: 'Roboto_700Bold',
-    marginLeft: 8,
-    flex: 1,
-  },
-  timeStatusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  timeStatusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: 'Roboto_500Medium',
-  },
-  sunTimesGrid: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
-  },
-  sunTimeItem: {
-    flex: 1,
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 12,
-    padding: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
+    // Sunrise & Sunset Times Styles
+    sunTimesCard: {
+      backgroundColor: colors.card,
+      borderRadius: borderRadius.lg,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      boxShadow: shadows.md,
+      marginBottom: spacing.lg,
+    },
+    sunTimesHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.lg,
+    },
+    sunTimesTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+      marginLeft: spacing.sm,
+      flex: 1,
+    },
+    timeStatusBadge: {
+      paddingHorizontal: spacing.sm + 2,
+      paddingVertical: spacing.xs,
+      borderRadius: borderRadius.md,
+    },
+    timeStatusText: {
+      fontSize: 12,
+      fontWeight: '600',
+      fontFamily: 'Roboto_500Medium',
+    },
+    sunTimesGrid: {
+      flexDirection: 'row',
+      gap: spacing.md,
+      marginBottom: spacing.xl,
+    },
+    sunTimeItem: {
+      flex: 1,
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: borderRadius.md,
+      padding: borderRadius.lg,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
   sunTimeIconContainer: {
     width: 32,
     height: 32,
@@ -996,27 +1002,27 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto_400Regular',
   },
 
-  card: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
-    marginBottom: 12,
-  },
-  chartCard: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    marginBottom: 12,
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
-  },
+    card: {
+      flex: 1,
+      backgroundColor: colors.card,
+      borderRadius: borderRadius.lg,
+      padding: borderRadius.lg,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      boxShadow: shadows.md,
+      marginBottom: spacing.md,
+    },
+    chartCard: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.card,
+      borderRadius: borderRadius.lg,
+      padding: borderRadius.lg,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      marginBottom: spacing.md,
+      boxShadow: shadows.md,
+    },
   // 72-Hour Forecast section styles
   forecast72Card: {
     backgroundColor: colors.card,
@@ -1246,17 +1252,17 @@ const styles = StyleSheet.create({
   },
   muted: { color: colors.textMuted, fontFamily: 'Roboto_400Regular' },
   error: { color: '#C62828', fontWeight: '600', fontFamily: 'Roboto_500Medium' },
-  // BottomSheet styling
-  bottomSheetBackground: {
-    backgroundColor: colors.background,
-  },
-  bottomSheetHandle: {
-    backgroundColor: colors.divider,
-  },
-  sheet: { 
-    padding: 16, 
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  sheetTitle: { fontSize: 18, fontWeight: '700', color: colors.text, fontFamily: 'Roboto_700Bold' },
-});
+    // BottomSheet styling
+    bottomSheetBackground: {
+      backgroundColor: colors.background,
+    },
+    bottomSheetHandle: {
+      backgroundColor: colors.divider,
+    },
+    sheet: { 
+      padding: spacing.lg, 
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    sheetTitle: { fontSize: 18, fontWeight: '700', color: colors.text, fontFamily: 'Roboto_700Bold' },
+  });
