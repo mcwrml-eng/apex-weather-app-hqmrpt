@@ -1,8 +1,7 @@
 
 import React, { useRef } from 'react';
 import { Text, TouchableOpacity, StyleSheet, ViewStyle, TextStyle, Animated } from 'react-native';
-import { getColors, getButtonStyles, animations, spacing, borderRadius } from '../styles/commonStyles';
-import { useTheme } from '../state/ThemeContext';
+import { colors, buttonStyles, animations, spacing, borderRadius } from '../styles/commonStyles';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface ButtonProps {
@@ -24,10 +23,6 @@ export default function Button({
   disabled = false,
   loading = false 
 }: ButtonProps) {
-  const { isDark } = useTheme();
-  const colors = getColors(isDark);
-  const buttonStyles = getButtonStyles(isDark);
-  
   const scaleValue = useRef(new Animated.Value(1)).current;
   const opacityValue = useRef(new Animated.Value(1)).current;
 

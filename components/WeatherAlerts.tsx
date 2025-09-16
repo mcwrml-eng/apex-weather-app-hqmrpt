@@ -1,8 +1,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { getColors, spacing, borderRadius, getShadows } from '../styles/commonStyles';
-import { useTheme } from '../state/ThemeContext';
+import { colors } from '../styles/commonStyles';
 import Icon from './Icon';
 
 interface WeatherAlert {
@@ -52,10 +51,6 @@ function formatAlertTime(start: string, end: string): string {
 }
 
 export default function WeatherAlerts({ alerts }: Props) {
-  const { isDark } = useTheme();
-  const colors = getColors(isDark);
-  const shadows = getShadows(isDark);
-  
   console.log('WeatherAlerts: Rendering', alerts.length, 'alerts');
 
   if (!alerts || alerts.length === 0) {
@@ -112,81 +107,81 @@ export default function WeatherAlerts({ alerts }: Props) {
   );
 }
 
-  const styles = StyleSheet.create({
-    container: {
-      backgroundColor: colors.card,
-      borderRadius: borderRadius.lg,
-      padding: spacing.lg,
-      borderWidth: 1,
-      borderColor: colors.error,
-      boxShadow: shadows.md,
-      marginBottom: spacing.md,
-    },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      marginBottom: spacing.md,
-    },
-    title: {
-      fontSize: 16,
-      fontWeight: '700',
-      color: colors.error,
-      fontFamily: 'Roboto_700Bold',
-      flex: 1,
-    },
-    scrollContainer: {
-      maxHeight: 300,
-    },
-    alertCard: {
-      backgroundColor: colors.backgroundAlt,
-      borderRadius: spacing.sm + 2,
-      padding: spacing.md,
-      marginBottom: spacing.sm,
-      borderLeftWidth: 4,
-      borderWidth: 1,
-      borderColor: colors.divider,
-    },
-    alertHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      marginBottom: spacing.sm,
-    },
-    alertTitle: {
-      fontSize: 14,
-      fontWeight: '600',
-      fontFamily: 'Roboto_500Medium',
-      flex: 1,
-    },
-    severityBadge: {
-      fontSize: 10,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_500Medium',
-      backgroundColor: colors.divider,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: 4,
-    },
-    alertDescription: {
-      fontSize: 13,
-      color: colors.text,
-      fontFamily: 'Roboto_400Regular',
-      lineHeight: 18,
-      marginBottom: 6,
-    },
-    alertTime: {
-      fontSize: 11,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      fontStyle: 'italic',
-    },
-    disclaimer: {
-      fontSize: 11,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      textAlign: 'center',
-      marginTop: spacing.sm,
-      fontStyle: 'italic',
-    },
-  });
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.error,
+    boxShadow: '0 6px 24px rgba(225,6,0,0.1)',
+    marginBottom: 12,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.error,
+    fontFamily: 'Roboto_700Bold',
+    flex: 1,
+  },
+  scrollContainer: {
+    maxHeight: 300,
+  },
+  alertCard: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+    borderLeftWidth: 4,
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  alertHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  alertTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Roboto_500Medium',
+    flex: 1,
+  },
+  severityBadge: {
+    fontSize: 10,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_500Medium',
+    backgroundColor: colors.divider,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  alertDescription: {
+    fontSize: 13,
+    color: colors.text,
+    fontFamily: 'Roboto_400Regular',
+    lineHeight: 18,
+    marginBottom: 6,
+  },
+  alertTime: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    fontStyle: 'italic',
+  },
+  disclaimer: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontFamily: 'Roboto_400Regular',
+    textAlign: 'center',
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+});

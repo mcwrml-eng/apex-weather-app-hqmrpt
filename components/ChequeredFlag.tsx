@@ -1,8 +1,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { getColors } from '../styles/commonStyles';
-import { useTheme } from '../state/ThemeContext';
+import { colors } from '../styles/commonStyles';
 
 interface ChequeredFlagProps {
   size?: number;
@@ -10,9 +9,6 @@ interface ChequeredFlagProps {
 }
 
 export default function ChequeredFlag({ size = 24, style }: ChequeredFlagProps) {
-  const { isDark } = useTheme();
-  const colors = getColors(isDark);
-  
   console.log('ChequeredFlag: Rendering chequered flag with size:', size);
 
   const squareSize = size / 6; // 6x6 grid for the chequered pattern
@@ -49,17 +45,17 @@ export default function ChequeredFlag({ size = 24, style }: ChequeredFlagProps) 
   );
 }
 
-  const styles = StyleSheet.create({
-    container: {
-      borderRadius: 2,
-      overflow: 'hidden',
-      borderWidth: 1,
-      borderColor: colors.divider,
-    },
-    row: {
-      flexDirection: 'row',
-    },
-    square: {
-      // Individual square styles are set dynamically
-    },
-  });
+const styles = StyleSheet.create({
+  container: {
+    borderRadius: 2,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  row: {
+    flexDirection: 'row',
+  },
+  square: {
+    // Individual square styles are set dynamically
+  },
+});
