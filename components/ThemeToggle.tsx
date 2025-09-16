@@ -17,16 +17,16 @@ interface Props {
   style?: any;
 }
 
-export default function ThemeToggle({ size = 24, style }: Props) {
+export default function ThemeToggle({ size = 28, style }: Props) {
   const { theme, toggleTheme, isDark } = useTheme();
   const colors = getColors(isDark);
   
   const animatedValue = useSharedValue(isDark ? 1 : 0);
   const scaleValue = useSharedValue(1);
 
-  // Calculate container size based on icon size
-  const containerSize = Math.max(size * 2, 32);
-  const isSmall = size < 16;
+  // Calculate container size based on icon size - made larger for better visibility
+  const containerSize = Math.max(size * 1.8, 44);
+  const isSmall = size < 20;
 
   React.useEffect(() => {
     console.log('ThemeToggle: Theme changed to', theme);
@@ -37,11 +37,18 @@ export default function ThemeToggle({ size = 24, style }: Props) {
     const backgroundColor = interpolateColor(
       animatedValue.value,
       [0, 1],
-      [colors.backgroundAlt, colors.backgroundAlt]
+      [colors.primarySoft, colors.backgroundTertiary]
+    );
+
+    const borderColor = interpolateColor(
+      animatedValue.value,
+      [0, 1],
+      [colors.primary, colors.textMuted]
     );
 
     return {
       backgroundColor,
+      borderColor,
       transform: [
         { scale: scaleValue.value },
         { rotate: `${animatedValue.value * 180}deg` }
@@ -66,11 +73,9 @@ export default function ThemeToggle({ size = 24, style }: Props) {
       style={[
         styles.container, 
         { 
-          borderColor: colors.border,
           width: containerSize,
           height: containerSize,
           borderRadius: containerSize / 2,
-          borderWidth: isSmall ? 0.5 : 1,
         }, 
         style
       ]}
@@ -81,12 +86,13 @@ export default function ThemeToggle({ size = 24, style }: Props) {
         animatedIconStyle,
         {
           borderRadius: containerSize / 2,
+          borderWidth: 2,
         }
       ]}>
         <Ionicons
           name={isDark ? 'moon' : 'sunny'}
           size={size}
-          color={colors.primary}
+          color={isDark ? colors.accent : colors.primary}
         />
       </Animated.View>
     </TouchableOpacity>

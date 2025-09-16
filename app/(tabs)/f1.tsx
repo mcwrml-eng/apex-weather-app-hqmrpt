@@ -1,13 +1,13 @@
 
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout } from '../../styles/commonStyles';
 import { useTheme } from '../../state/ThemeContext';
 import CircuitCard from '../../components/CircuitCard';
 import FeaturedTrackCard from '../../components/FeaturedTrackCard';
 import ChequeredFlag from '../../components/ChequeredFlag';
+import AppHeader from '../../components/AppHeader';
 import { f1Circuits } from '../../data/circuits';
 
 export default function F1Screen() {
@@ -23,33 +23,6 @@ export default function F1Screen() {
       flex: 1,
       backgroundColor: colors.background,
     },
-    header: {
-      paddingHorizontal: layout.screenPadding,
-      paddingTop: spacing.lg,
-      paddingBottom: spacing.md,
-      backgroundColor: colors.background,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.divider,
-    },
-    headerTitle: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: spacing.lg,
-    },
-    title: {
-      fontSize: 32,
-      fontWeight: '800',
-      color: colors.f1Red,
-      fontFamily: 'Roboto_700Bold',
-      marginLeft: spacing.md,
-      letterSpacing: -1,
-    },
-    subtitle: {
-      fontSize: 16,
-      color: colors.textSecondary,
-      fontFamily: 'Roboto_400Regular',
-      marginBottom: spacing.lg,
-    },
     searchContainer: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -59,6 +32,8 @@ export default function F1Screen() {
       paddingVertical: spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
+      marginHorizontal: layout.screenPadding,
+      marginBottom: spacing.lg,
     },
     searchIcon: {
       marginRight: spacing.md,
@@ -144,40 +119,35 @@ export default function F1Screen() {
   console.log('F1Screen: Rendering with', filteredCircuits.length, 'circuits, theme:', isDark ? 'dark' : 'light');
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerTitle}>
-          <ChequeredFlag size={32} />
-          <Text style={styles.title}>Formula 1</Text>
-        </View>
-        
-        <Text style={styles.subtitle}>
-          2026 Championship Calendar • {f1Circuits.length} Circuits
-        </Text>
+    <View style={styles.container}>
+      <AppHeader
+        title="Formula 1"
+        subtitle={`2026 Championship Calendar • ${f1Circuits.length} Circuits`}
+        icon={<ChequeredFlag size={32} />}
+      />
 
-        <View style={styles.searchContainer}>
+      <View style={styles.searchContainer}>
+        <Ionicons 
+          name="search" 
+          size={20} 
+          color={colors.textMuted} 
+          style={styles.searchIcon}
+        />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search circuits or countries..."
+          placeholderTextColor={colors.textMuted}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery.length > 0 && (
           <Ionicons 
-            name="search" 
+            name="close-circle" 
             size={20} 
-            color={colors.textMuted} 
-            style={styles.searchIcon}
+            color={colors.textMuted}
+            onPress={() => setSearchQuery('')}
           />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search circuits or countries..."
-            placeholderTextColor={colors.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <Ionicons 
-              name="close-circle" 
-              size={20} 
-              color={colors.textMuted}
-              onPress={() => setSearchQuery('')}
-            />
-          )}
-        </View>
+        )}
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -227,6 +197,6 @@ export default function F1Screen() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

@@ -1,10 +1,8 @@
 
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { View, StyleSheet } from 'react-native';
-import { getColors, spacing, borderRadius } from '../../styles/commonStyles';
+import { getColors, spacing } from '../../styles/commonStyles';
 import { useTheme } from '../../state/ThemeContext';
-import ThemeToggle from '../../components/ThemeToggle';
 
 export default function TabLayout() {
   const { isDark } = useTheme();
@@ -77,34 +75,10 @@ export default function TabLayout() {
         options={{
           title: 'Legal',
           tabBarIcon: ({ color, size }) => (
-            <View style={styles.settingsContainer}>
-              <Ionicons name="settings" size={size} color={color} />
-              <View style={styles.themeToggleContainer}>
-                <ThemeToggle size={12} />
-              </View>
-            </View>
+            <Ionicons name="information-circle" size={size} color={color} />
           ),
         }}
       />
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  settingsContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    width: 32,
-    height: 32,
-  },
-  themeToggleContainer: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-});
