@@ -75,12 +75,12 @@ export default function TabLayout() {
       <Tabs.Screen
         name="disclaimer"
         options={{
-          title: 'Settings',
+          title: 'Legal',
           tabBarIcon: ({ color, size }) => (
             <View style={styles.settingsContainer}>
               <Ionicons name="settings" size={size} color={color} />
               <View style={styles.themeToggleContainer}>
-                <ThemeToggle size={16} />
+                <ThemeToggle size={12} />
               </View>
             </View>
           ),
@@ -95,11 +95,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    width: 32,
+    height: 32,
   },
   themeToggleContainer: {
     position: 'absolute',
-    top: -8,
-    right: -12,
-    transform: [{ scale: 0.6 }],
+    top: -2,
+    right: -2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
 });

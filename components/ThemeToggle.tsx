@@ -24,6 +24,10 @@ export default function ThemeToggle({ size = 24, style }: Props) {
   const animatedValue = useSharedValue(isDark ? 1 : 0);
   const scaleValue = useSharedValue(1);
 
+  // Calculate container size based on icon size
+  const containerSize = Math.max(size * 2, 32);
+  const isSmall = size < 16;
+
   React.useEffect(() => {
     console.log('ThemeToggle: Theme changed to', theme);
     animatedValue.value = withSpring(isDark ? 1 : 0, animations.spring);
@@ -59,10 +63,26 @@ export default function ThemeToggle({ size = 24, style }: Props) {
   return (
     <TouchableOpacity
       onPress={handlePress}
-      style={[styles.container, { borderColor: colors.border }, style]}
+      style={[
+        styles.container, 
+        { 
+          borderColor: colors.border,
+          width: containerSize,
+          height: containerSize,
+          borderRadius: containerSize / 2,
+          borderWidth: isSmall ? 0.5 : 1,
+        }, 
+        style
+      ]}
       activeOpacity={0.7}
     >
-      <Animated.View style={[styles.iconContainer, animatedIconStyle]}>
+      <Animated.View style={[
+        styles.iconContainer, 
+        animatedIconStyle,
+        {
+          borderRadius: containerSize / 2,
+        }
+      ]}>
         <Ionicons
           name={isDark ? 'moon' : 'sunny'}
           size={size}
@@ -75,10 +95,6 @@ export default function ThemeToggle({ size = 24, style }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.round,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -88,6 +104,5 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: borderRadius.round,
   },
 });
