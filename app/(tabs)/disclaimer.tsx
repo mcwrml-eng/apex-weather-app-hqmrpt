@@ -95,7 +95,7 @@ export default function DisclaimerScreen() {
 
   const handleEmailPress = () => {
     console.log('DisclaimerScreen: Opening email client');
-    Linking.openURL('mailto:support@weatherapp.com?subject=Weather App Support');
+    Linking.openURL('mailto:support@raceweather.uk?subject=Weather App Support');
   };
 
   const scrollToSection = (sectionY: number) => {
