@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path, Circle } from 'react-native-svg';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -24,6 +25,30 @@ interface Props {
   time?: string;
   sunrise?: string;
   sunset?: string;
+}
+
+// Custom Thunderstorm Icon Component - Grey cloud with yellow thunderbolt
+function ThunderstormIcon({ size = 24, isNight = false }: { size?: number; isNight?: boolean }) {
+  const cloudColor = isNight ? '#64748B' : '#9CA3AF'; // Grey cloud
+  const boltColor = '#FCD34D'; // Yellow thunderbolt
+  
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      {/* Cloud shape */}
+      <Path
+        d="M18.5 12c0-3.31-2.69-6-6-6-.55 0-1.07.08-1.57.23C9.84 4.45 8.22 3.5 6.5 3.5c-2.48 0-4.5 2.02-4.5 4.5 0 .34.04.67.11.98C.84 9.59 0 10.71 0 12c0 1.66 1.34 3 3 3h15c1.1 0 2-.9 2-2s-.9-2-1.5-2z"
+        fill={cloudColor}
+      />
+      
+      {/* Thunderbolt */}
+      <Path
+        d="M14 10h-2l1.5-3h-3l-2 5h2l-1.5 4z"
+        fill={boltColor}
+        stroke={boltColor}
+        strokeWidth="0.5"
+      />
+    </Svg>
+  );
 }
 
 // Enhanced function to determine if it's nighttime based on actual sunrise/sunset times
@@ -67,7 +92,7 @@ function isNightTime(latitude?: number, longitude?: number, time?: string, sunri
 
 // Enhanced weather code mapping with proper night-time symbols and realistic colors
 function getWeatherSymbol(code: number, isNight: boolean = false): { 
-  name: keyof typeof Ionicons.glyphMap; 
+  name: keyof typeof Ionicons.glyphMap | 'custom-thunderstorm'; 
   color: string; 
   description: string;
   animationType: 'pulse' | 'rotate' | 'bounce' | 'float' | 'shake' | 'glow' | 'none';
@@ -231,14 +256,9 @@ function getWeatherSymbol(code: number, isNight: boolean = false): {
   // Thunderstorm: Slight/moderate (95), with slight hail (96), with heavy hail (99)
   if (code >= 95 && code <= 99) {
     const severity = code === 95 ? 'Moderate' : code === 96 ? 'With light hail' : 'With heavy hail';
-    const colorMap = { 
-      95: isNight ? '#312E81' : '#4C1D95', // Darker purple at night / Deep purple storm
-      96: isNight ? '#3730A3' : '#5B21B6', // Darker purple at night / Purple with hail
-      99: isNight ? '#1E1B4B' : '#3730A3'  // Very dark purple at night / Dark purple heavy storm
-    };
     return { 
-      name: 'thunderstorm', 
-      color: colorMap[code as keyof typeof colorMap],
+      name: 'custom-thunderstorm', 
+      color: '', // Color is handled by the custom component
       description: `Thunderstorm ${severity.toLowerCase()}`,
       animationType: 'shake'
     };
@@ -410,12 +430,16 @@ export default function WeatherSymbol({
   return (
     <View style={styles.container}>
       <Animated.View style={[animatedStyle]}>
-        <Ionicons 
-          name={symbol.name} 
-          size={size} 
-          color={iconColor}
-          accessibilityLabel={symbol.description}
-        />
+        {symbol.name === 'custom-thunderstorm' ? (
+          <ThunderstormIcon size={size} isNight={nightTime} />
+        ) : (
+          <Ionicons 
+            name={symbol.name as keyof typeof Ionicons.glyphMap} 
+            size={size} 
+            color={iconColor}
+            accessibilityLabel={symbol.description}
+          />
+        )}
       </Animated.View>
     </View>
   );
