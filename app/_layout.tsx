@@ -4,23 +4,28 @@ import { Stack, useGlobalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Platform, SafeAreaView } from 'react-native';
-import { commonStyles, colors } from '../styles/commonStyles';
+import { getCommonStyles, getColors } from '../styles/commonStyles';
 import { useEffect, useState } from 'react';
 import { setupErrorLogging } from '../utils/errorLogger';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, Roboto_400Regular, Roboto_500Medium, Roboto_700Bold } from '@expo-google-fonts/roboto';
 import { UnitProvider } from '../state/UnitContext';
+import { ThemeProvider, useTheme } from '../state/ThemeContext';
 
 const STORAGE_KEY = 'emulated_device';
 
-export default function RootLayout() {
+function AppContent() {
   const actualInsets = useSafeAreaInsets();
   const { emulate } = useGlobalSearchParams<{ emulate?: string }>();
   const [storedEmulate, setStoredEmulate] = useState<string | null>(null);
   const [fontsLoaded] = useFonts({ Roboto_400Regular, Roboto_500Medium, Roboto_700Bold });
+  const { isDark } = useTheme();
+  
+  const colors = getColors(isDark);
+  const commonStyles = getCommonStyles(isDark);
 
   useEffect(() => {
-    console.log('RootLayout: Setting up error logging');
+    console.log('AppContent: Setting up error logging');
     setupErrorLogging();
 
     if (Platform.OS === 'web') {
@@ -49,32 +54,40 @@ export default function RootLayout() {
   }
 
   if (!fontsLoaded) {
-    console.log('RootLayout: Fonts not loaded yet');
+    console.log('AppContent: Fonts not loaded yet');
     return null;
   }
 
-  console.log('RootLayout: Rendering app with insets:', insetsToUse);
+  console.log('AppContent: Rendering app with theme:', isDark ? 'dark' : 'light', 'and insets:', insetsToUse);
 
   return (
     <SafeAreaProvider>
-      <UnitProvider>
-        <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
-          <SafeAreaView style={[commonStyles.wrapper, {
-              paddingTop: insetsToUse.top,
-              paddingBottom: insetsToUse.bottom,
-              paddingLeft: insetsToUse.left,
-              paddingRight: insetsToUse.right,
-           }]}>
-            <StatusBar style="auto" />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                animation: 'default',
-              }}
-            />
-          </SafeAreaView>
-        </GestureHandlerRootView>
-      </UnitProvider>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+        <SafeAreaView style={[commonStyles.wrapper, {
+            paddingTop: insetsToUse.top,
+            paddingBottom: insetsToUse.bottom,
+            paddingLeft: insetsToUse.left,
+            paddingRight: insetsToUse.right,
+         }]}>
+          <StatusBar style={isDark ? "light" : "dark"} />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: 'default',
+            }}
+          />
+        </SafeAreaView>
+      </GestureHandlerRootView>
     </SafeAreaProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <UnitProvider>
+        <AppContent />
+      </UnitProvider>
+    </ThemeProvider>
   );
 }

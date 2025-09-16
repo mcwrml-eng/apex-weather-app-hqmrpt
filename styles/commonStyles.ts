@@ -1,7 +1,8 @@
 
 import { StyleSheet } from 'react-native';
 
-export const colors = {
+// Light theme colors
+const lightColors = {
   // Base colors - Enhanced Clean Light theme with improved contrast
   background: '#FFFFFF',
   backgroundAlt: '#F8FAFC',
@@ -133,6 +134,145 @@ export const colors = {
   gradientError: ['#DC2626', '#B91C1C'],
 };
 
+// Dark theme colors
+const darkColors = {
+  // Base colors - Dark theme with good contrast
+  background: '#0F172A',
+  backgroundAlt: '#1E293B',
+  backgroundTertiary: '#334155',
+  backgroundQuaternary: '#475569',
+  card: '#1E293B',
+  cardElevated: '#334155',
+  text: '#F8FAFC',
+  textSecondary: '#CBD5E1',
+  textMuted: '#94A3B8',
+  textDisabled: '#64748B',
+  
+  // Enhanced primary colors - Brighter for dark theme
+  primary: '#38BDF8', // Lighter Sky Blue
+  primaryLight: '#7DD3FC',
+  primaryDark: '#0EA5E9',
+  primaryGlow: 'rgba(56, 189, 248, 0.25)',
+  primarySoft: 'rgba(56, 189, 248, 0.15)',
+  
+  // Enhanced secondary colors - Brighter emerald
+  secondary: '#34D399', // Lighter Emerald
+  secondaryLight: '#6EE7B7',
+  secondaryDark: '#10B981',
+  secondaryGlow: 'rgba(52, 211, 153, 0.25)',
+  secondarySoft: 'rgba(52, 211, 153, 0.15)',
+  
+  // Enhanced accent colors - Brighter orange
+  accent: '#FB923C', // Lighter Orange
+  accentLight: '#FDBA74',
+  accentDark: '#F97316',
+  accentGlow: 'rgba(251, 146, 60, 0.25)',
+  accentSoft: 'rgba(251, 146, 60, 0.15)',
+  
+  // Enhanced F1 specific colors - Adjusted for dark theme
+  f1Red: '#EF4444',
+  f1RedLight: '#F87171',
+  f1RedDark: '#DC2626',
+  f1Silver: '#94A3B8',
+  f1Gold: '#FBBF24',
+  f1Carbon: '#475569',
+  
+  // Enhanced MotoGP specific colors - Adjusted for dark theme
+  motogpBlue: '#3B82F6',
+  motogpBlueLight: '#60A5FA',
+  motogpBlueDark: '#2563EB',
+  motogpOrange: '#FB923C',
+  motogpYellow: '#FDE047',
+  motogpPurple: '#A78BFA',
+  
+  // Enhanced IndyCar specific colors - Adjusted for dark theme
+  indycarBlue: '#3B82F6',
+  indycarBlueLight: '#60A5FA',
+  indycarBlueDark: '#2563EB',
+  indycarRed: '#EF4444',
+  indycarWhite: '#F8FAFC',
+  indycarSilver: '#CBD5E1',
+  
+  // Enhanced weather colors - Brighter for dark theme
+  temperature: '#FB923C', // Brighter Orange
+  temperatureLight: '#FDBA74',
+  temperatureDark: '#F97316',
+  wind: '#38BDF8', // Brighter Sky Blue
+  windLight: '#7DD3FC',
+  windDark: '#0EA5E9',
+  humidity: '#22D3EE', // Brighter Cyan
+  humidityLight: '#67E8F9',
+  humidityDark: '#06B6D4',
+  precipitation: '#60A5FA', // Brighter Blue
+  precipitationLight: '#93C5FD',
+  precipitationDark: '#3B82F6',
+  pressure: '#A78BFA', // Brighter Violet
+  pressureLight: '#C4B5FD',
+  pressureDark: '#8B5CF6',
+  uv: '#FBBF24', // Brighter Amber
+  uvLight: '#FDE047',
+  uvDark: '#F59E0B',
+  
+  // Enhanced status colors - Adjusted for dark theme
+  success: '#34D399',
+  successLight: '#6EE7B7',
+  successDark: '#10B981',
+  warning: '#FBBF24',
+  warningLight: '#FDE047',
+  warningDark: '#F59E0B',
+  error: '#EF4444',
+  errorLight: '#F87171',
+  errorDark: '#DC2626',
+  info: '#38BDF8',
+  infoLight: '#7DD3FC',
+  infoDark: '#0EA5E9',
+  
+  // Enhanced UI colors - Adjusted for dark theme
+  divider: '#475569',
+  dividerLight: '#334155',
+  border: '#64748B',
+  borderLight: '#475569',
+  borderDark: '#94A3B8',
+  shadow: 'rgba(0, 0, 0, 0.3)',
+  shadowMedium: 'rgba(0, 0, 0, 0.4)',
+  shadowDark: 'rgba(0, 0, 0, 0.5)',
+  shadowStrong: 'rgba(0, 0, 0, 0.6)',
+  overlay: 'rgba(0, 0, 0, 0.6)',
+  overlayLight: 'rgba(0, 0, 0, 0.4)',
+  
+  // Enhanced glass morphism effects - Adjusted for dark theme
+  glass: 'rgba(30, 41, 59, 0.85)',
+  glassBorder: 'rgba(148, 163, 184, 0.3)',
+  glassOverlay: 'rgba(15, 23, 42, 0.6)',
+  
+  // Enhanced gradients - Adjusted for dark theme
+  gradientPrimary: ['#38BDF8', '#7DD3FC'],
+  gradientSecondary: ['#34D399', '#6EE7B7'],
+  gradientAccent: ['#FB923C', '#FDBA74'],
+  gradientF1: ['#EF4444', '#FB923C'],
+  gradientMotoGP: ['#3B82F6', '#FB923C'],
+  gradientIndyCar: ['#3B82F6', '#EF4444'],
+  gradientWeather: ['#38BDF8', '#34D399'],
+  gradientSunset: ['#FB923C', '#EF4444'],
+  gradientNight: ['#1E293B', '#0F172A'],
+  gradientLight: ['#334155', '#1E293B'],
+  gradientSoft: ['#1E293B', '#334155'],
+  
+  // New enhanced gradients for dark theme
+  gradientHero: ['#38BDF8', '#34D399', '#FB923C'],
+  gradientCard: ['#1E293B', '#334155'],
+  gradientButton: ['#38BDF8', '#0EA5E9'],
+  gradientSuccess: ['#34D399', '#10B981'],
+  gradientWarning: ['#FBBF24', '#F59E0B'],
+  gradientError: ['#EF4444', '#DC2626'],
+};
+
+// Export colors based on theme
+export const getColors = (isDark: boolean) => isDark ? darkColors : lightColors;
+
+// Default to light theme for backward compatibility
+export const colors = lightColors;
+
 export const spacing = {
   xs: 4,
   sm: 8,
@@ -156,357 +296,378 @@ export const borderRadius = {
   round: 9999,
 };
 
-export const shadows = {
-  xs: `0 1px 2px ${colors.shadow}`,
-  sm: `0 1px 3px ${colors.shadow}`,
-  md: `0 4px 12px ${colors.shadowMedium}`,
-  lg: `0 8px 24px ${colors.shadowDark}`,
-  xl: `0 12px 32px ${colors.shadowStrong}`,
-  xxl: `0 16px 40px ${colors.shadowStrong}`,
-  glow: (color: string) => `0 0 20px ${color}`,
-  glowLarge: (color: string) => `0 0 40px ${color}`,
-  glowSoft: (color: string) => `0 0 12px ${color}`,
+export const getShadows = (isDark: boolean) => {
+  const themeColors = getColors(isDark);
+  return {
+    xs: `0 1px 2px ${themeColors.shadow}`,
+    sm: `0 1px 3px ${themeColors.shadow}`,
+    md: `0 4px 12px ${themeColors.shadowMedium}`,
+    lg: `0 8px 24px ${themeColors.shadowDark}`,
+    xl: `0 12px 32px ${themeColors.shadowStrong}`,
+    xxl: `0 16px 40px ${themeColors.shadowStrong}`,
+    glow: (color: string) => `0 0 20px ${color}`,
+    glowLarge: (color: string) => `0 0 40px ${color}`,
+    glowSoft: (color: string) => `0 0 12px ${color}`,
+  };
 };
 
-export const commonStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  wrapper: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  spaceBetween: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  
-  // Enhanced shadow system with more options
-  shadowXs: {
-    boxShadow: shadows.xs,
-  },
-  shadowSm: {
-    boxShadow: shadows.sm,
-  },
-  shadowMd: {
-    boxShadow: shadows.md,
-  },
-  shadowLg: {
-    boxShadow: shadows.lg,
-  },
-  shadowXl: {
-    boxShadow: shadows.xl,
-  },
-  shadowXxl: {
-    boxShadow: shadows.xxl,
-  },
-  
-  // Enhanced card system with more variants
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    boxShadow: shadows.sm,
-  },
-  cardElevated: {
-    backgroundColor: colors.cardElevated,
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    boxShadow: shadows.md,
-  },
-  cardHero: {
-    backgroundColor: colors.cardElevated,
-    borderRadius: borderRadius.xl,
-    padding: spacing.xxl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    boxShadow: shadows.lg,
-  },
-  cardGlass: {
-    backgroundColor: colors.glass,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    boxShadow: shadows.sm,
-  },
-  cardCompact: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    boxShadow: shadows.xs,
-  },
-  
-  // Enhanced Typography system with better hierarchy
-  displayLarge: {
-    fontSize: 40,
-    fontWeight: '800',
-    color: colors.text,
-    fontFamily: 'Roboto_700Bold',
-    letterSpacing: -1.2,
-    lineHeight: 48,
-  },
-  displayMedium: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: colors.text,
-    fontFamily: 'Roboto_700Bold',
-    letterSpacing: -1,
-    lineHeight: 44,
-  },
-  displaySmall: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: colors.text,
-    fontFamily: 'Roboto_700Bold',
-    letterSpacing: -0.8,
-    lineHeight: 40,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.text,
-    fontFamily: 'Roboto_700Bold',
-    letterSpacing: -0.6,
-    lineHeight: 36,
-  },
-  titleMedium: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    letterSpacing: -0.4,
-    lineHeight: 32,
-  },
-  titleSmall: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    letterSpacing: -0.3,
-    lineHeight: 28,
-  },
-  subtitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    fontFamily: 'Roboto_500Medium',
-    letterSpacing: -0.2,
-    lineHeight: 26,
-  },
-  heading: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    letterSpacing: -0.3,
-    lineHeight: 28,
-  },
-  headingSmall: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    letterSpacing: -0.1,
-    lineHeight: 24,
-  },
-  body: {
-    fontSize: 16,
-    color: colors.text,
-    fontFamily: 'Roboto_400Regular',
-    lineHeight: 24,
-    letterSpacing: 0.1,
-  },
-  bodyMedium: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontFamily: 'Roboto_400Regular',
-    lineHeight: 22,
-    letterSpacing: 0.1,
-  },
-  bodySmall: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    lineHeight: 18,
-    letterSpacing: 0.2,
-  },
-  caption: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    lineHeight: 18,
-    letterSpacing: 0.2,
-  },
-  captionSmall: {
-    fontSize: 10,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    lineHeight: 16,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-  label: {
-    fontSize: 11,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_500Medium',
-    lineHeight: 16,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    fontWeight: '500',
-  },
-});
+// Default shadows for backward compatibility
+export const shadows = getShadows(false);
 
-export const buttonStyles = StyleSheet.create({
-  primary: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: `0 4px 12px ${colors.primaryGlow}`,
-    borderWidth: 0,
-  },
-  primaryPressed: {
-    backgroundColor: colors.primaryDark,
-    transform: [{ scale: 0.97 }],
-    boxShadow: `0 2px 8px ${colors.primaryGlow}`,
-  },
-  primaryLarge: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.xxl,
-    paddingVertical: spacing.lg,
-    borderRadius: borderRadius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: `0 6px 16px ${colors.primaryGlow}`,
-    borderWidth: 0,
-  },
-  secondary: {
-    backgroundColor: colors.backgroundAlt,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    boxShadow: shadows.sm,
-  },
-  secondaryPressed: {
-    backgroundColor: colors.backgroundTertiary,
-    borderColor: colors.primary,
-    transform: [{ scale: 0.97 }],
-  },
-  accent: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: `0 4px 12px ${colors.accentGlow}`,
-    borderWidth: 0,
-  },
-  accentPressed: {
-    backgroundColor: colors.accentDark,
-    transform: [{ scale: 0.97 }],
-  },
-  ghost: {
-    backgroundColor: 'transparent',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  ghostPressed: {
-    backgroundColor: colors.backgroundAlt,
-    borderColor: colors.border,
-  },
-  outline: {
-    backgroundColor: 'transparent',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-  },
-  outlinePressed: {
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.primaryDark,
-  },
+export const getCommonStyles = (isDark: boolean) => {
+  const themeColors = getColors(isDark);
+  const themeShadows = getShadows(isDark);
   
-  // Text styles with enhanced hierarchy
-  text: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 16,
-    fontFamily: 'Roboto_500Medium',
-    letterSpacing: 0.3,
-  },
-  textLarge: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 18,
-    fontFamily: 'Roboto_500Medium',
-    letterSpacing: 0.2,
-  },
-  textSecondary: {
-    color: colors.text,
-    fontWeight: '600',
-    fontSize: 16,
-    fontFamily: 'Roboto_500Medium',
-    letterSpacing: 0.3,
-  },
-  textAccent: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 16,
-    fontFamily: 'Roboto_500Medium',
-    letterSpacing: 0.3,
-  },
-  textGhost: {
-    color: colors.text,
-    fontWeight: '500',
-    fontSize: 14,
-    fontFamily: 'Roboto_500Medium',
-    letterSpacing: 0.2,
-  },
-  textOutline: {
-    color: colors.primary,
-    fontWeight: '600',
-    fontSize: 16,
-    fontFamily: 'Roboto_500Medium',
-    letterSpacing: 0.3,
-  },
-});
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: themeColors.background,
+    },
+    wrapper: {
+      flex: 1,
+      backgroundColor: themeColors.background,
+    },
+    safeArea: {
+      flex: 1,
+      backgroundColor: themeColors.background,
+    },
+    centered: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    spaceBetween: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    
+    // Enhanced shadow system with more options
+    shadowXs: {
+      boxShadow: themeShadows.xs,
+    },
+    shadowSm: {
+      boxShadow: themeShadows.sm,
+    },
+    shadowMd: {
+      boxShadow: themeShadows.md,
+    },
+    shadowLg: {
+      boxShadow: themeShadows.lg,
+    },
+    shadowXl: {
+      boxShadow: themeShadows.xl,
+    },
+    shadowXxl: {
+      boxShadow: themeShadows.xxl,
+    },
+    
+    // Enhanced card system with more variants
+    card: {
+      backgroundColor: themeColors.card,
+      borderRadius: borderRadius.lg,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: themeColors.borderLight,
+      boxShadow: themeShadows.sm,
+    },
+    cardElevated: {
+      backgroundColor: themeColors.cardElevated,
+      borderRadius: borderRadius.lg,
+      padding: spacing.xl,
+      borderWidth: 1,
+      borderColor: themeColors.border,
+      boxShadow: themeShadows.md,
+    },
+    cardHero: {
+      backgroundColor: themeColors.cardElevated,
+      borderRadius: borderRadius.xl,
+      padding: spacing.xxl,
+      borderWidth: 1,
+      borderColor: themeColors.border,
+      boxShadow: themeShadows.lg,
+    },
+    cardGlass: {
+      backgroundColor: themeColors.glass,
+      borderRadius: borderRadius.lg,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: themeColors.glassBorder,
+      boxShadow: themeShadows.sm,
+    },
+    cardCompact: {
+      backgroundColor: themeColors.card,
+      borderRadius: borderRadius.md,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: themeColors.borderLight,
+      boxShadow: themeShadows.xs,
+    },
+    
+    // Enhanced Typography system with better hierarchy
+    displayLarge: {
+      fontSize: 40,
+      fontWeight: '800',
+      color: themeColors.text,
+      fontFamily: 'Roboto_700Bold',
+      letterSpacing: -1.2,
+      lineHeight: 48,
+    },
+    displayMedium: {
+      fontSize: 36,
+      fontWeight: '700',
+      color: themeColors.text,
+      fontFamily: 'Roboto_700Bold',
+      letterSpacing: -1,
+      lineHeight: 44,
+    },
+    displaySmall: {
+      fontSize: 32,
+      fontWeight: '700',
+      color: themeColors.text,
+      fontFamily: 'Roboto_700Bold',
+      letterSpacing: -0.8,
+      lineHeight: 40,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: themeColors.text,
+      fontFamily: 'Roboto_700Bold',
+      letterSpacing: -0.6,
+      lineHeight: 36,
+    },
+    titleMedium: {
+      fontSize: 24,
+      fontWeight: '600',
+      color: themeColors.text,
+      fontFamily: 'Roboto_500Medium',
+      letterSpacing: -0.4,
+      lineHeight: 32,
+    },
+    titleSmall: {
+      fontSize: 20,
+      fontWeight: '600',
+      color: themeColors.text,
+      fontFamily: 'Roboto_500Medium',
+      letterSpacing: -0.3,
+      lineHeight: 28,
+    },
+    subtitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: themeColors.textSecondary,
+      fontFamily: 'Roboto_500Medium',
+      letterSpacing: -0.2,
+      lineHeight: 26,
+    },
+    heading: {
+      fontSize: 20,
+      fontWeight: '600',
+      color: themeColors.text,
+      fontFamily: 'Roboto_500Medium',
+      letterSpacing: -0.3,
+      lineHeight: 28,
+    },
+    headingSmall: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: themeColors.text,
+      fontFamily: 'Roboto_500Medium',
+      letterSpacing: -0.1,
+      lineHeight: 24,
+    },
+    body: {
+      fontSize: 16,
+      color: themeColors.text,
+      fontFamily: 'Roboto_400Regular',
+      lineHeight: 24,
+      letterSpacing: 0.1,
+    },
+    bodyMedium: {
+      fontSize: 14,
+      color: themeColors.textSecondary,
+      fontFamily: 'Roboto_400Regular',
+      lineHeight: 22,
+      letterSpacing: 0.1,
+    },
+    bodySmall: {
+      fontSize: 12,
+      color: themeColors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      lineHeight: 18,
+      letterSpacing: 0.2,
+    },
+    caption: {
+      fontSize: 12,
+      color: themeColors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      lineHeight: 18,
+      letterSpacing: 0.2,
+    },
+    captionSmall: {
+      fontSize: 10,
+      color: themeColors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      lineHeight: 16,
+      letterSpacing: 0.3,
+      textTransform: 'uppercase',
+    },
+    label: {
+      fontSize: 11,
+      color: themeColors.textMuted,
+      fontFamily: 'Roboto_500Medium',
+      lineHeight: 16,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+      fontWeight: '500',
+    },
+  });
+};
+
+// Default styles for backward compatibility
+export const commonStyles = getCommonStyles(false);
+
+export const getButtonStyles = (isDark: boolean) => {
+  const themeColors = getColors(isDark);
+  
+  return StyleSheet.create({
+    primary: {
+      backgroundColor: themeColors.primary,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.md,
+      borderRadius: borderRadius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      boxShadow: `0 4px 12px ${themeColors.primaryGlow}`,
+      borderWidth: 0,
+    },
+    primaryPressed: {
+      backgroundColor: themeColors.primaryDark,
+      transform: [{ scale: 0.97 }],
+      boxShadow: `0 2px 8px ${themeColors.primaryGlow}`,
+    },
+    primaryLarge: {
+      backgroundColor: themeColors.primary,
+      paddingHorizontal: spacing.xxl,
+      paddingVertical: spacing.lg,
+      borderRadius: borderRadius.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      boxShadow: `0 6px 16px ${themeColors.primaryGlow}`,
+      borderWidth: 0,
+    },
+    secondary: {
+      backgroundColor: themeColors.backgroundAlt,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.md,
+      borderRadius: borderRadius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: themeColors.border,
+      boxShadow: getShadows(isDark).sm,
+    },
+    secondaryPressed: {
+      backgroundColor: themeColors.backgroundTertiary,
+      borderColor: themeColors.primary,
+      transform: [{ scale: 0.97 }],
+    },
+    accent: {
+      backgroundColor: themeColors.accent,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.md,
+      borderRadius: borderRadius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      boxShadow: `0 4px 12px ${themeColors.accentGlow}`,
+      borderWidth: 0,
+    },
+    accentPressed: {
+      backgroundColor: themeColors.accentDark,
+      transform: [{ scale: 0.97 }],
+    },
+    ghost: {
+      backgroundColor: 'transparent',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      borderRadius: borderRadius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: themeColors.divider,
+    },
+    ghostPressed: {
+      backgroundColor: themeColors.backgroundAlt,
+      borderColor: themeColors.border,
+    },
+    outline: {
+      backgroundColor: 'transparent',
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.md,
+      borderRadius: borderRadius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1.5,
+      borderColor: themeColors.primary,
+    },
+    outlinePressed: {
+      backgroundColor: themeColors.primarySoft,
+      borderColor: themeColors.primaryDark,
+    },
+    
+    // Text styles with enhanced hierarchy
+    text: {
+      color: '#FFFFFF',
+      fontWeight: '600',
+      fontSize: 16,
+      fontFamily: 'Roboto_500Medium',
+      letterSpacing: 0.3,
+    },
+    textLarge: {
+      color: '#FFFFFF',
+      fontWeight: '600',
+      fontSize: 18,
+      fontFamily: 'Roboto_500Medium',
+      letterSpacing: 0.2,
+    },
+    textSecondary: {
+      color: themeColors.text,
+      fontWeight: '600',
+      fontSize: 16,
+      fontFamily: 'Roboto_500Medium',
+      letterSpacing: 0.3,
+    },
+    textAccent: {
+      color: '#FFFFFF',
+      fontWeight: '600',
+      fontSize: 16,
+      fontFamily: 'Roboto_500Medium',
+      letterSpacing: 0.3,
+    },
+    textGhost: {
+      color: themeColors.text,
+      fontWeight: '500',
+      fontSize: 14,
+      fontFamily: 'Roboto_500Medium',
+      letterSpacing: 0.2,
+    },
+    textOutline: {
+      color: themeColors.primary,
+      fontWeight: '600',
+      fontSize: 16,
+      fontFamily: 'Roboto_500Medium',
+      letterSpacing: 0.3,
+    },
+  });
+};
+
+// Default button styles for backward compatibility
+export const buttonStyles = getButtonStyles(false);
 
 // Enhanced animation presets with more options
 export const animations = {
@@ -569,68 +730,75 @@ export const layout = {
 };
 
 // New utility styles for common patterns
-export const utilities = StyleSheet.create({
-  // Flex utilities
-  flex1: { flex: 1 },
-  flexRow: { flexDirection: 'row' },
-  flexColumn: { flexDirection: 'column' },
-  flexCenter: { justifyContent: 'center', alignItems: 'center' },
-  flexBetween: { justifyContent: 'space-between' },
-  flexAround: { justifyContent: 'space-around' },
-  flexEvenly: { justifyContent: 'space-evenly' },
-  flexStart: { justifyContent: 'flex-start' },
-  flexEnd: { justifyContent: 'flex-end' },
-  alignCenter: { alignItems: 'center' },
-  alignStart: { alignItems: 'flex-start' },
-  alignEnd: { alignItems: 'flex-end' },
-  alignStretch: { alignItems: 'stretch' },
+export const getUtilities = (isDark: boolean) => {
+  const themeColors = getColors(isDark);
   
-  // Position utilities
-  absolute: { position: 'absolute' },
-  relative: { position: 'relative' },
-  
-  // Size utilities
-  fullWidth: { width: '100%' },
-  fullHeight: { height: '100%' },
-  
-  // Margin utilities
-  m0: { margin: 0 },
-  mt0: { marginTop: 0 },
-  mb0: { marginBottom: 0 },
-  ml0: { marginLeft: 0 },
-  mr0: { marginRight: 0 },
-  
-  // Padding utilities
-  p0: { padding: 0 },
-  pt0: { paddingTop: 0 },
-  pb0: { paddingBottom: 0 },
-  pl0: { paddingLeft: 0 },
-  pr0: { paddingRight: 0 },
-  
-  // Border utilities
-  borderTop: { borderTopWidth: 1, borderTopColor: colors.border },
-  borderBottom: { borderBottomWidth: 1, borderBottomColor: colors.border },
-  borderLeft: { borderLeftWidth: 1, borderLeftColor: colors.border },
-  borderRight: { borderRightWidth: 1, borderRightColor: colors.border },
-  
-  // Background utilities
-  bgTransparent: { backgroundColor: 'transparent' },
-  bgPrimary: { backgroundColor: colors.primary },
-  bgSecondary: { backgroundColor: colors.secondary },
-  bgAccent: { backgroundColor: colors.accent },
-  bgCard: { backgroundColor: colors.card },
-  bgBackground: { backgroundColor: colors.background },
-  bgBackgroundAlt: { backgroundColor: colors.backgroundAlt },
-  
-  // Text utilities
-  textCenter: { textAlign: 'center' },
-  textLeft: { textAlign: 'left' },
-  textRight: { textAlign: 'right' },
-  textUppercase: { textTransform: 'uppercase' },
-  textLowercase: { textTransform: 'lowercase' },
-  textCapitalize: { textTransform: 'capitalize' },
-  
-  // Overflow utilities
-  overflowHidden: { overflow: 'hidden' },
-  overflowVisible: { overflow: 'visible' },
-});
+  return StyleSheet.create({
+    // Flex utilities
+    flex1: { flex: 1 },
+    flexRow: { flexDirection: 'row' },
+    flexColumn: { flexDirection: 'column' },
+    flexCenter: { justifyContent: 'center', alignItems: 'center' },
+    flexBetween: { justifyContent: 'space-between' },
+    flexAround: { justifyContent: 'space-around' },
+    flexEvenly: { justifyContent: 'space-evenly' },
+    flexStart: { justifyContent: 'flex-start' },
+    flexEnd: { justifyContent: 'flex-end' },
+    alignCenter: { alignItems: 'center' },
+    alignStart: { alignItems: 'flex-start' },
+    alignEnd: { alignItems: 'flex-end' },
+    alignStretch: { alignItems: 'stretch' },
+    
+    // Position utilities
+    absolute: { position: 'absolute' },
+    relative: { position: 'relative' },
+    
+    // Size utilities
+    fullWidth: { width: '100%' },
+    fullHeight: { height: '100%' },
+    
+    // Margin utilities
+    m0: { margin: 0 },
+    mt0: { marginTop: 0 },
+    mb0: { marginBottom: 0 },
+    ml0: { marginLeft: 0 },
+    mr0: { marginRight: 0 },
+    
+    // Padding utilities
+    p0: { padding: 0 },
+    pt0: { paddingTop: 0 },
+    pb0: { paddingBottom: 0 },
+    pl0: { paddingLeft: 0 },
+    pr0: { paddingRight: 0 },
+    
+    // Border utilities
+    borderTop: { borderTopWidth: 1, borderTopColor: themeColors.border },
+    borderBottom: { borderBottomWidth: 1, borderBottomColor: themeColors.border },
+    borderLeft: { borderLeftWidth: 1, borderLeftColor: themeColors.border },
+    borderRight: { borderRightWidth: 1, borderRightColor: themeColors.border },
+    
+    // Background utilities
+    bgTransparent: { backgroundColor: 'transparent' },
+    bgPrimary: { backgroundColor: themeColors.primary },
+    bgSecondary: { backgroundColor: themeColors.secondary },
+    bgAccent: { backgroundColor: themeColors.accent },
+    bgCard: { backgroundColor: themeColors.card },
+    bgBackground: { backgroundColor: themeColors.background },
+    bgBackgroundAlt: { backgroundColor: themeColors.backgroundAlt },
+    
+    // Text utilities
+    textCenter: { textAlign: 'center' },
+    textLeft: { textAlign: 'left' },
+    textRight: { textAlign: 'right' },
+    textUppercase: { textTransform: 'uppercase' },
+    textLowercase: { textTransform: 'lowercase' },
+    textCapitalize: { textTransform: 'capitalize' },
+    
+    // Overflow utilities
+    overflowHidden: { overflow: 'hidden' },
+    overflowVisible: { overflow: 'visible' },
+  });
+};
+
+// Default utilities for backward compatibility
+export const utilities = getUtilities(false);
