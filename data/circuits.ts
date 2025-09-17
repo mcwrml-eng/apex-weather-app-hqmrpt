@@ -55,25 +55,25 @@ export const motogpCircuits: Circuit[] = [
   { slug: 'valencia', name: 'Circuit Ricardo Tormo', country: 'Spain', latitude: 39.4895, longitude: -0.6262 },
 ];
 
-// IndyCar 2026 calendar circuits (updated to match new 2026 calendar released September 26, 2025)
+// IndyCar 2026 calendar circuits (reordered to match new 2026 calendar)
 export const indycarCircuits: Circuit[] = [
   { slug: 'st-pete', name: 'Streets of St. Petersburg', country: 'USA', latitude: 27.7663, longitude: -82.6404 },
-  { slug: 'thermal', name: 'Thermal Club', country: 'USA', latitude: 33.6405, longitude: -116.1669 },
-  { slug: 'long-beach', name: 'Streets of Long Beach', country: 'USA', latitude: 33.7701, longitude: -118.1937 },
+  { slug: 'phoenix', name: 'Phoenix Raceway', country: 'USA', latitude: 33.3750, longitude: -112.3111 },
+  { slug: 'arlington', name: 'Streets of Arlington', country: 'USA', latitude: 32.7357, longitude: -97.1081 },
   { slug: 'barber', name: 'Barber Motorsports Park', country: 'USA', latitude: 33.5447, longitude: -86.3928 },
-  { slug: 'indianapolis-gp', name: 'Indianapolis Motor Speedway (GP)', country: 'USA', latitude: 39.7950, longitude: -86.2336 },
-  { slug: 'indianapolis-500', name: 'Indianapolis Motor Speedway (Oval)', country: 'USA', latitude: 39.7950, longitude: -86.2336 },
+  { slug: 'long-beach', name: 'Streets of Long Beach', country: 'USA', latitude: 33.7701, longitude: -118.1937 },
+  { slug: 'indianapolis-gp', name: 'Indianapolis Motor Speedway Road Course', country: 'USA', latitude: 39.7950, longitude: -86.2336 },
+  { slug: 'indianapolis-500', name: 'The 110th Indianapolis 500', country: 'USA', latitude: 39.7950, longitude: -86.2336 },
   { slug: 'detroit', name: 'Streets of Detroit', country: 'USA', latitude: 42.3314, longitude: -83.0458 },
-  { slug: 'road-america', name: 'Road America', country: 'USA', latitude: 43.8003, longitude: -87.9890 },
-  { slug: 'toronto', name: 'Streets of Toronto', country: 'Canada', latitude: 43.6532, longitude: -79.3832 },
-  { slug: 'iowa', name: 'Iowa Speedway', country: 'USA', latitude: 41.4619, longitude: -93.4158 },
-  { slug: 'mid-ohio', name: 'Mid-Ohio Sports Car Course', country: 'USA', latitude: 40.3392, longitude: -82.6275 },
-  { slug: 'pocono', name: 'Pocono Raceway', country: 'USA', latitude: 41.0556, longitude: -75.4889 },
   { slug: 'gateway', name: 'World Wide Technology Raceway', country: 'USA', latitude: 38.6470, longitude: -90.1560 },
-  { slug: 'portland', name: 'Portland International Raceway', country: 'USA', latitude: 45.5992, longitude: -122.6928 },
-  { slug: 'laguna-seca', name: 'WeatherTech Raceway Laguna Seca', country: 'USA', latitude: 36.5844, longitude: -121.7544 },
-  { slug: 'milwaukee', name: 'Milwaukee Mile', country: 'USA', latitude: 43.0389, longitude: -88.0053 },
+  { slug: 'road-america', name: 'Road America', country: 'USA', latitude: 43.8003, longitude: -87.9890 },
+  { slug: 'mid-ohio', name: 'Mid-Ohio Sports Car Course', country: 'USA', latitude: 40.3392, longitude: -82.6275 },
   { slug: 'nashville', name: 'Nashville Superspeedway', country: 'USA', latitude: 36.2058, longitude: -86.8119 },
+  { slug: 'portland', name: 'Portland International Raceway', country: 'USA', latitude: 45.5992, longitude: -122.6928 },
+  { slug: 'markham', name: 'Streets of Markham', country: 'Canada', latitude: 43.8561, longitude: -79.3370 },
+  { slug: 'milwaukee-1', name: 'Milwaukee Mile Race 1', country: 'USA', latitude: 43.0389, longitude: -88.0053 },
+  { slug: 'milwaukee-2', name: 'Milwaukee Mile Race 2', country: 'USA', latitude: 43.0389, longitude: -88.0053 },
+  { slug: 'laguna-seca', name: 'WeatherTech Raceway Laguna Seca', country: 'USA', latitude: 36.5844, longitude: -121.7544 },
 ];
 
 export function getCircuitBySlug(slug: string, category?: 'f1' | 'motogp' | 'indycar') {

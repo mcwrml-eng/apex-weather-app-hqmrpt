@@ -158,27 +158,43 @@ const indycarSchedules: ScheduleMap = {
     { key: 'qualifying', title: 'Qualifying', day: 'Sat', time: '15:00' },
     { key: 'race', title: 'Indianapolis 500', day: 'Sun', time: '12:30' },
   ],
+  'phoenix': [
+    { key: 'p1', title: 'Practice 1', day: 'Fri', time: '12:00' },
+    { key: 'p2', title: 'Practice 2', day: 'Fri', time: '16:00' },
+    { key: 'qualifying', title: 'Qualifying', day: 'Sat', time: '12:00' },
+    { key: 'race', title: 'Race', day: 'Sat', time: '20:00' },
+  ],
+  'milwaukee-1': [
+    { key: 'p1', title: 'Practice 1', day: 'Fri', time: '12:00' },
+    { key: 'p2', title: 'Practice 2', day: 'Fri', time: '16:00' },
+    { key: 'qualifying', title: 'Qualifying', day: 'Sat', time: '12:00' },
+    { key: 'race', title: 'Race 1', day: 'Sat', time: '15:00' },
+  ],
+  'milwaukee-2': [
+    { key: 'warmup', title: 'Warm Up', day: 'Sun', time: '10:00' },
+    { key: 'race', title: 'Race 2', day: 'Sun', time: '15:00' },
+  ],
   // Other IndyCar rounds use defaults
 };
 
 const indycarRaceDates: DateMap = {
-  'st-pete': '2026-03-08',
-  'thermal': '2026-03-22',
-  'long-beach': '2026-04-12',
-  'barber': '2026-04-26',
-  'indianapolis-gp': '2026-05-09',
-  'indianapolis-500': '2026-05-24',
-  'detroit': '2026-05-31',
-  'road-america': '2026-06-21',
-  'laguna-seca': '2026-06-28',
-  'mid-ohio': '2026-07-05',
-  'toronto': '2026-07-19',
-  'iowa': '2026-07-26',
-  'pocono': '2026-08-02',
-  'gateway': '2026-08-23',
-  'portland': '2026-08-30',
-  'milwaukee': '2026-09-06',
-  'nashville': '2026-09-13',
+  'st-pete': '2026-03-01',           // Sunday, March 1 - Streets of St. Petersburg
+  'phoenix': '2026-03-07',           // Saturday, March 7 - Phoenix Raceway
+  'arlington': '2026-03-15',         // Sunday, March 15 - Streets of Arlington
+  'barber': '2026-03-29',            // Sunday, March 29 - Barber Motorsports Park
+  'long-beach': '2026-04-19',       // Sunday, April 19 - Streets of Long Beach
+  'indianapolis-gp': '2026-05-09',  // Saturday, May 9 - Indianapolis Motor Speedway Road Course
+  'indianapolis-500': '2026-05-24', // Sunday, May 24 - The 110th Indianapolis 500
+  'detroit': '2026-05-31',          // Sunday, May 31 - Streets of Detroit
+  'gateway': '2026-06-07',          // Sunday, June 7 - World Wide Technology Raceway
+  'road-america': '2026-06-21',     // Sunday, June 21 - Road America
+  'mid-ohio': '2026-07-05',         // Sunday, July 5 - Mid-Ohio Sports Car Course
+  'nashville': '2026-07-19',        // Sunday, July 19 - Nashville Superspeedway
+  'portland': '2026-08-09',         // Sunday, Aug. 9 - Portland International Raceway
+  'markham': '2026-08-16',          // Sunday, Aug. 16 - Streets of Markham
+  'milwaukee-1': '2026-08-29',      // Saturday, Aug. 29 - Milwaukee Mile Race 1
+  'milwaukee-2': '2026-08-30',      // Sunday, Aug. 30 - Milwaukee Mile Race 2
+  'laguna-seca': '2026-09-06',      // Sunday, Sept. 6 - WeatherTech Raceway Laguna Seca
 };
 
 function addDays(isoDate: string, days: number) {
