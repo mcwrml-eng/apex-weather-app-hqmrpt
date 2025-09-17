@@ -123,8 +123,13 @@ export function getTrackStatusText(trackOfWeek: TrackOfWeek): string {
   } else if (isRaceWeek && daysUntilRace > 0) {
     return `${daysUntilRace} days to go`;
   } else if (daysUntilRace > 0) {
-    // For MotoGP 2026, show more user-friendly text for longer periods
-    if (category === 'motogp' && daysUntilRace > 30) {
+    // For MotoGP, always show days instead of months
+    if (category === 'motogp') {
+      return `Next race in ${daysUntilRace} days`;
+    }
+    
+    // For F1 and IndyCar, show months for longer periods
+    if (daysUntilRace > 30) {
       const months = Math.floor(daysUntilRace / 30);
       if (months === 1) {
         return 'Next race in about 1 month';
@@ -139,5 +144,3 @@ export function getTrackStatusText(trackOfWeek: TrackOfWeek): string {
     return 'Recently completed';
   }
 }
-
-
