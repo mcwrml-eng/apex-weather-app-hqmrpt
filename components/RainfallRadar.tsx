@@ -13,7 +13,8 @@ import Animated, {
   withSpring
 } from 'react-native-reanimated';
 import Icon from './Icon';
-import { colors } from '../styles/commonStyles';
+import { useTheme } from '../state/ThemeContext';
+import { getColors } from '../styles/commonStyles';
 
 interface Props {
   latitude: number;
@@ -40,6 +41,9 @@ const RainfallRadar: React.FC<Props> = ({
   radarOpacity = 0.7,
   refreshInterval = 10
 }) => {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  
   // Check if we're running on web
   const isWeb = Platform.OS === 'web';
   
@@ -75,7 +79,8 @@ const RainfallRadar: React.FC<Props> = ({
     connectionStatus,
     retryCount,
     isWeb,
-    platform: Platform.OS
+    platform: Platform.OS,
+    isDark
   });
 
   // Simplified retry mechanism
@@ -273,7 +278,7 @@ const RainfallRadar: React.FC<Props> = ({
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 2000;
-            background: rgba(255, 59, 48, 0.95);
+            background: rgba(220, 38, 38, 0.95);
             color: white;
             padding: 20px;
             border-radius: 12px;
@@ -627,7 +632,7 @@ const RainfallRadar: React.FC<Props> = ({
     </script>
 </body>
 </html>`;
-  }, [latitude, longitude, circuitName, radarOpacity, isWeb]);
+  }, [latitude, longitude, circuitName, radarOpacity, isWeb, colors]);
 
   // WebView event handlers
   const handleWebViewLoad = useCallback(() => {
@@ -689,6 +694,249 @@ const RainfallRadar: React.FC<Props> = ({
       }
     }
   }, [showRadar, alwaysVisible, refreshRadar]);
+
+  // Create styles with theme colors
+  const styles = StyleSheet.create({
+    container: {
+      backgroundColor: colors.card,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+      marginBottom: 16,
+      overflow: 'hidden',
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+    },
+    titleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      flex: 1,
+    },
+    titleTextContainer: {
+      flex: 1,
+    },
+    title: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    subtitle: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: 2,
+    },
+    alwaysOnBadge: {
+      backgroundColor: colors.accent + '20',
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 10,
+      marginLeft: 8,
+    },
+    alwaysOnText: {
+      fontSize: 10,
+      color: colors.accent,
+      fontWeight: '600',
+    },
+    controls: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    controlButton: {
+      padding: 8,
+      borderRadius: 8,
+      backgroundColor: colors.backgroundAlt,
+    },
+    animationButton: {
+      padding: 8,
+      borderRadius: 8,
+      backgroundColor: colors.primary,
+    },
+    toggleButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 8,
+    },
+    toggleText: {
+      color: '#fff',
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    statusContainer: {
+      padding: 12,
+      paddingTop: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+      backgroundColor: colors.backgroundAlt,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    statusIndicator: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    statusDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+    },
+    statusText: {
+      fontSize: 12,
+      color: colors.text,
+      fontWeight: '600',
+    },
+    retryText: {
+      fontSize: 11,
+      color: colors.warning,
+      fontWeight: '600',
+    },
+    frameText: {
+      fontSize: 11,
+      color: colors.textMuted,
+    },
+    animatingText: {
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    previewContainer: {
+      alignItems: 'center',
+      padding: 32,
+    },
+    previewIcon: {
+      marginBottom: 16,
+    },
+    previewTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    previewDescription: {
+      fontSize: 14,
+      color: colors.textMuted,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    webViewContainer: {
+      height: 400,
+      position: 'relative',
+    },
+    webView: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    loadingContainer: {
+      height: 400,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.backgroundAlt,
+    },
+    loadingText: {
+      fontSize: 16,
+      color: colors.text,
+      marginTop: 16,
+      fontWeight: '600',
+    },
+    loadingSubtext: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: 4,
+      textAlign: 'center',
+    },
+    errorContainer: {
+      height: 400,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.backgroundAlt,
+      padding: 20,
+    },
+    errorTitle: {
+      fontSize: 18,
+      color: colors.error,
+      marginTop: 16,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    errorText: {
+      fontSize: 13,
+      color: colors.error,
+      marginTop: 8,
+      textAlign: 'center',
+    },
+    errorSubtext: {
+      fontSize: 13,
+      color: colors.textMuted,
+      marginTop: 8,
+      marginBottom: 20,
+      textAlign: 'center',
+      lineHeight: 18,
+    },
+    errorActions: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    retryButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.primary,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 8,
+    },
+    retryButtonText: {
+      color: '#fff',
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    cancelButton: {
+      backgroundColor: colors.backgroundAlt,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    cancelText: {
+      color: colors.textMuted,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    footer: {
+      padding: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+      backgroundColor: colors.backgroundAlt,
+    },
+    footerText: {
+      fontSize: 11,
+      color: colors.textMuted,
+      textAlign: 'center',
+      marginBottom: 4,
+    },
+    attribution: {
+      fontSize: 10,
+      color: colors.textMuted,
+      textAlign: 'center',
+      opacity: 0.7,
+    },
+  });
 
   // Prop validation
   if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
@@ -899,248 +1147,6 @@ const RainfallRadar: React.FC<Props> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
-    marginBottom: 16,
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-  },
-  titleTextContainer: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  alwaysOnBadge: {
-    backgroundColor: colors.accent + '20',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginLeft: 8,
-  },
-  alwaysOnText: {
-    fontSize: 10,
-    color: colors.accent,
-    fontWeight: '600',
-  },
-  controls: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  controlButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: colors.backgroundAlt,
-  },
-  animationButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: colors.primary,
-  },
-  toggleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  toggleText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  statusContainer: {
-    padding: 12,
-    paddingTop: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
-    backgroundColor: colors.backgroundAlt,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  statusIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  statusText: {
-    fontSize: 12,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  retryText: {
-    fontSize: 11,
-    color: colors.warning,
-    fontWeight: '600',
-  },
-  frameText: {
-    fontSize: 11,
-    color: colors.textMuted,
-  },
-  animatingText: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  previewContainer: {
-    alignItems: 'center',
-    padding: 32,
-  },
-  previewIcon: {
-    marginBottom: 16,
-  },
-  previewTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  previewDescription: {
-    fontSize: 14,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  webViewContainer: {
-    height: 400,
-    position: 'relative',
-  },
-  webView: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  loadingContainer: {
-    height: 400,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.backgroundAlt,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: colors.text,
-    marginTop: 16,
-    fontWeight: '600',
-  },
-  loadingSubtext: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  errorContainer: {
-    height: 400,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.backgroundAlt,
-    padding: 20,
-  },
-  errorTitle: {
-    fontSize: 18,
-    color: colors.error,
-    marginTop: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  errorText: {
-    fontSize: 13,
-    color: colors.error,
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  errorSubtext: {
-    fontSize: 13,
-    color: colors.textMuted,
-    marginTop: 8,
-    marginBottom: 20,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  errorActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  retryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  cancelButton: {
-    backgroundColor: colors.backgroundAlt,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  cancelText: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  footer: {
-    padding: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.divider,
-    backgroundColor: colors.backgroundAlt,
-  },
-  footerText: {
-    fontSize: 11,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  attribution: {
-    fontSize: 10,
-    color: colors.textMuted,
-    textAlign: 'center',
-    opacity: 0.7,
-  },
-});
-
 // Helper functions
 const getConnectionStatusColor = (status: string): string => {
   switch (status) {
@@ -1148,7 +1154,7 @@ const getConnectionStatusColor = (status: string): string => {
     case 'connecting': return '#ffaa00';
     case 'retrying': return '#ff8800';
     case 'error': return '#ff0000';
-    default: return colors.textMuted;
+    default: return '#94A3B8';
   }
 };
 
