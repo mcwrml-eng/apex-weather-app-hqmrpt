@@ -163,8 +163,8 @@ export default function IndyCarScreen() {
               <Text style={styles.statLabel}>Races</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>26</Text>
-              <Text style={styles.statLabel}>Drivers</Text>
+              <Text style={styles.statNumber}>12</Text>
+              <Text style={styles.statLabel}>Teams</Text>
             </View>
           </View>
 
