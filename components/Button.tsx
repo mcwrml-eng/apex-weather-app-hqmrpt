@@ -1,8 +1,9 @@
 
 import React, { useRef } from 'react';
 import { Text, TouchableOpacity, StyleSheet, ViewStyle, TextStyle, Animated } from 'react-native';
-import { colors, buttonStyles, animations, spacing, borderRadius } from '../styles/commonStyles';
+import { getColors, getButtonStyles, animations, spacing, borderRadius } from '../styles/commonStyles';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../state/ThemeContext';
 
 interface ButtonProps {
   text: string;
@@ -25,6 +26,10 @@ export default function Button({
 }: ButtonProps) {
   const scaleValue = useRef(new Animated.Value(1)).current;
   const opacityValue = useRef(new Animated.Value(1)).current;
+  const { isDark } = useTheme();
+  
+  const colors = getColors(isDark);
+  const buttonStyles = getButtonStyles(isDark);
 
   const handlePressIn = () => {
     if (disabled || loading) return;
@@ -107,6 +112,8 @@ export default function Button({
   };
 
   const shouldUseGradient = variant === 'primary' || variant === 'accent';
+
+  console.log('Button: Rendering with theme:', isDark ? 'dark' : 'light', 'variant:', variant);
 
   return (
     <Animated.View style={[

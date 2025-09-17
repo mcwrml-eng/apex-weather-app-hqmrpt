@@ -13,7 +13,8 @@ import Animated, {
   Easing,
   withSpring,
 } from 'react-native-reanimated';
-import { colors } from '../styles/commonStyles';
+import { getColors } from '../styles/commonStyles';
+import { useTheme } from '../state/ThemeContext';
 
 interface Props {
   weatherCode: number;
@@ -416,6 +417,8 @@ export default function WeatherSymbol({
   sunrise, 
   sunset 
 }: Props) {
+  const { isDark } = useTheme();
+  
   // Determine if it's night time with enhanced detection using actual sunrise/sunset times
   const nightTime = isNight !== undefined ? isNight : isNightTime(latitude, longitude, time, sunrise, sunset);
   
@@ -425,7 +428,7 @@ export default function WeatherSymbol({
   // Get animation style based on weather type
   const animatedStyle = useWeatherAnimation(symbol.animationType);
   
-  console.log('WeatherSymbol: Rendering', symbol.name, 'for code', weatherCode, 'isNight:', nightTime, 'color:', iconColor);
+  console.log('WeatherSymbol: Rendering', symbol.name, 'for code', weatherCode, 'isNight:', nightTime, 'color:', iconColor, 'theme:', isDark ? 'dark' : 'light');
   
   return (
     <View style={styles.container}>

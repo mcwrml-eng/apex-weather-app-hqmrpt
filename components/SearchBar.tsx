@@ -1,9 +1,10 @@
 
 import React, { useMemo, useRef } from 'react';
 import { View, TextInput, StyleSheet, TextInputProps, TouchableOpacity, Platform, Animated } from 'react-native';
-import { colors, spacing, borderRadius, shadows, commonStyles } from '../styles/commonStyles';
+import { getColors, spacing, borderRadius, getShadows, getCommonStyles } from '../styles/commonStyles';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../state/ThemeContext';
 
 interface Props extends Omit<TextInputProps, 'onChange'> {
   value: string;
@@ -12,11 +13,18 @@ interface Props extends Omit<TextInputProps, 'onChange'> {
 }
 
 export default function SearchBar({ value, onChangeText, onClear, placeholder = 'Search circuits...', ...rest }: Props) {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const shadows = getShadows(isDark);
+  const commonStyles = getCommonStyles(isDark);
+  
   const showClear = value.length > 0;
   const isFocused = value.length > 0;
   
   const focusAnimation = useRef(new Animated.Value(0)).current;
   const scaleAnimation = useRef(new Animated.Value(1)).current;
+
+  console.log('SearchBar: Rendering with theme:', isDark ? 'dark' : 'light', 'value:', value);
 
   React.useEffect(() => {
     Animated.timing(focusAnimation, {
@@ -67,6 +75,65 @@ export default function SearchBar({ value, onChangeText, onClear, placeholder = 
   const glowOpacity = focusAnimation.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 0.3],
+  });
+
+  const styles = StyleSheet.create({
+    container: {
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      borderRadius: borderRadius.xl,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      marginBottom: spacing.xl,
+      position: 'relative',
+      overflow: 'hidden',
+      boxShadow: shadows.md,
+    },
+    glowEffect: {
+      position: 'absolute',
+      top: -2,
+      left: -2,
+      right: -2,
+      bottom: -2,
+      borderRadius: borderRadius.xl + 2,
+      backgroundColor: colors.primary,
+      zIndex: -2,
+    },
+    gradientBackground: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: -1,
+    },
+    iconContainer: {
+      width: 20,
+      height: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    input: {
+      flex: 1,
+      color: colors.text,
+      fontFamily: 'Roboto_400Regular',
+      fontSize: 16,
+      lineHeight: 20,
+      paddingVertical: 0, // Remove default padding
+    } as any,
+    clearBtn: {
+      borderRadius: borderRadius.md,
+      overflow: 'hidden',
+    },
+    clearBtnGradient: {
+      padding: spacing.xs,
+      borderRadius: borderRadius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
   });
 
   return (
@@ -157,62 +224,3 @@ export default function SearchBar({ value, onChangeText, onClear, placeholder = 
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderRadius: borderRadius.xl,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.xl,
-    position: 'relative',
-    overflow: 'hidden',
-    boxShadow: shadows.md,
-  },
-  glowEffect: {
-    position: 'absolute',
-    top: -2,
-    left: -2,
-    right: -2,
-    bottom: -2,
-    borderRadius: borderRadius.xl + 2,
-    backgroundColor: colors.primary,
-    zIndex: -2,
-  },
-  gradientBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: -1,
-  },
-  iconContainer: {
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  input: {
-    flex: 1,
-    color: colors.text,
-    fontFamily: 'Roboto_400Regular',
-    fontSize: 16,
-    lineHeight: 20,
-    paddingVertical: 0, // Remove default padding
-  } as any,
-  clearBtn: {
-    borderRadius: borderRadius.md,
-    overflow: 'hidden',
-  },
-  clearBtnGradient: {
-    padding: spacing.xs,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

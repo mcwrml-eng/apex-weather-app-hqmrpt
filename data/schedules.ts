@@ -36,7 +36,7 @@ const defaultF1SprintSchedule: WeekendSession[] = [
   { key: 'race', title: 'Grand Prix', day: 'Sun', time: '15:00' },
 ];
 
-// Customize for some 2025-style weekends (others fall back to default templates)
+// Customize for some 2026-style weekends (others fall back to default templates)
 const f1Schedules: ScheduleMap = {
   bahrain: [
     { key: 'fp1', title: 'Free Practice 1', day: 'Fri', time: '13:30' },
@@ -52,6 +52,7 @@ const f1Schedules: ScheduleMap = {
   cota: defaultF1SprintSchedule,
   interlagos: defaultF1SprintSchedule,
   lusail: defaultF1SprintSchedule,
+  madrid: defaultF1Schedule, // New Madrid circuit uses standard schedule
   monaco: [
     { key: 'fp1', title: 'Free Practice 1', day: 'Fri', time: '13:30' },
     { key: 'fp2', title: 'Free Practice 2', day: 'Fri', time: '17:00' },
@@ -62,30 +63,30 @@ const f1Schedules: ScheduleMap = {
 };
 
 const f1RaceDates: DateMap = {
-  bahrain: '2025-03-16',
-  jeddah: '2025-03-23',
-  'albert-park': '2025-03-30',
-  suzuka: '2025-04-13',
-  shanghai: '2025-04-20',
-  miami: '2025-05-04',
-  imola: '2025-05-18',
-  monaco: '2025-05-25',
-  barcelona: '2025-06-01',
-  'gilles-villeneuve': '2025-06-15',
-  'red-bull-ring': '2025-06-29',
-  silverstone: '2025-07-06',
-  hungaroring: '2025-07-20',
-  spa: '2025-07-27',
-  zandvoort: '2025-09-01',
-  monza: '2025-09-08',
-  baku: '2025-09-14',
-  'marina-bay': '2025-09-21',
-  cota: '2025-10-19',
-  'mexico-city': '2025-10-26',
-  interlagos: '2025-11-09',
-  'las-vegas': '2025-11-22',
-  lusail: '2025-11-30',
-  'yas-marina': '2025-12-07',
+  'albert-park': '2026-03-08',      // March 6-8 Australia Melbourne
+  shanghai: '2026-03-15',           // March 13-15 China Shanghai
+  suzuka: '2026-03-29',             // March 27-29 Japan Suzuka
+  bahrain: '2026-04-12',            // April 10-12 Bahrain Sakhir
+  jeddah: '2026-04-19',             // April 17-19 Saudi Arabia Jeddah
+  miami: '2026-05-03',              // May 1-3 USA Miami
+  'gilles-villeneuve': '2026-05-24', // May 22-24 Canada Montreal
+  monaco: '2026-06-07',             // June 5-7 Monaco Monaco
+  barcelona: '2026-06-14',          // June 12-14 Spain Barcelona-Catalunya
+  'red-bull-ring': '2026-06-28',   // June 26-28 Austria Spielberg
+  silverstone: '2026-07-05',       // July 3-5 Great Britain Silverstone
+  spa: '2026-07-19',                // July 17-19 Belgium Spa-Francorchamps
+  hungaroring: '2026-07-26',       // July 24-26 Hungary Budapest
+  zandvoort: '2026-08-23',         // August 21-23 Netherlands Zandvoort
+  monza: '2026-09-06',             // September 4-6 Italy Monza
+  madrid: '2026-09-13',            // September 11-13 Spain Madrid
+  baku: '2026-09-26',              // September 24-26 Azerbaijan Baku
+  'marina-bay': '2026-10-11',      // October 9-11 Singapore Singapore
+  cota: '2026-10-25',              // October 23-25 USA Austin
+  'mexico-city': '2026-11-01',     // October 30 - November 1 Mexico Mexico City
+  interlagos: '2026-11-08',        // November 6-8 Brazil Sao Paulo
+  'las-vegas': '2026-11-21',       // November 19-21 USA Las Vegas
+  lusail: '2026-11-29',            // November 27-29 Qatar Lusail
+  'yas-marina': '2026-12-06',      // December 4-6 Abu Dhabi Yas Marina
 };
 
 const defaultMotoGPSchedule: WeekendSession[] = [
