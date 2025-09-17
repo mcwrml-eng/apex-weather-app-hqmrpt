@@ -114,6 +114,14 @@ export default function CoverPage() {
       marginLeft: spacing.sm,
       fontFamily: 'Roboto_400Regular',
     },
+    backgroundPattern: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      opacity: isDark ? 0.03 : 0.02,
+    },
   });
 
   useEffect(() => {
@@ -136,11 +144,19 @@ export default function CoverPage() {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={colors.gradientHero}
+        colors={isDark ? [colors.background, colors.backgroundAlt] : [colors.backgroundAlt, colors.background]}
         style={styles.gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
+        {/* Subtle background pattern */}
+        <LinearGradient
+          colors={colors.gradientPrimary}
+          style={styles.backgroundPattern}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
+        
         <View style={styles.themeToggleContainer}>
           <ThemeToggle />
         </View>
