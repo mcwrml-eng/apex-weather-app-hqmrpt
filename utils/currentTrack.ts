@@ -112,7 +112,7 @@ export function getCurrentTrackOfWeek(category: Category): TrackOfWeek | null {
 
 // Get status text for the track
 export function getTrackStatusText(trackOfWeek: TrackOfWeek): string {
-  const { daysUntilRace, isRaceWeek, category } = trackOfWeek;
+  const { daysUntilRace, isRaceWeek } = trackOfWeek;
   
   if (daysUntilRace === 0) {
     return 'Race Day!';
@@ -123,22 +123,7 @@ export function getTrackStatusText(trackOfWeek: TrackOfWeek): string {
   } else if (isRaceWeek && daysUntilRace > 0) {
     return `${daysUntilRace} days to go`;
   } else if (daysUntilRace > 0) {
-    // For MotoGP, always show days instead of months
-    if (category === 'motogp') {
-      return `Next race in ${daysUntilRace} days`;
-    }
-    
-    // For F1 and IndyCar, show months for longer periods
-    if (daysUntilRace > 30) {
-      const months = Math.floor(daysUntilRace / 30);
-      if (months === 1) {
-        return 'Next race in about 1 month';
-      } else if (months < 12) {
-        return `Next race in about ${months} months`;
-      } else {
-        return 'Next race in 2026 season';
-      }
-    }
+    // Always show days for all categories instead of months
     return `Next race in ${daysUntilRace} days`;
   } else {
     return 'Recently completed';
