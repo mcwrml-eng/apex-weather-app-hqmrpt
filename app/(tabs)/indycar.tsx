@@ -121,7 +121,7 @@ export default function IndyCarScreen() {
     <View style={styles.container}>
       <AppHeader
         title="IndyCar"
-        subtitle={`2026 Championship Calendar • ${indycarCircuits.length} Circuits`}
+        subtitle="2026 Championship Calendar • 16 Circuits"
         icon={<Ionicons name="speedometer" size={32} color={colors.indycarBlue} />}
       />
 
@@ -155,7 +155,7 @@ export default function IndyCarScreen() {
 
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{indycarCircuits.length}</Text>
+              <Text style={styles.statNumber}>16</Text>
               <Text style={styles.statLabel}>Circuits</Text>
             </View>
             <View style={styles.statItem}>
