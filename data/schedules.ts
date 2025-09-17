@@ -113,27 +113,30 @@ const motogpSchedules: ScheduleMap = {
   // Other MotoGP rounds use defaults; times vary per venue in reality.
 };
 
+// Updated MotoGP race dates in the new order you specified
 const motogpRaceDates: DateMap = {
-  losail: '2026-03-08',
-  portimao: '2026-03-22',
-  'cota-mgp': '2026-04-05',
-  jerez: '2026-04-12',
-  lemans: '2026-05-10',
-  'barcelona-mgp': '2026-05-24',
-  mugello: '2026-05-31',
-  assen: '2026-06-28',
-  sachsenring: '2026-07-05',
-  'silverstone-mgp': '2026-08-02',
-  'red-bull-ring-mgp': '2026-08-16',
-  aragon: '2026-08-30',
-  misano: '2026-09-06',
-  sokol: '2026-09-20',
-  mandalika: '2026-10-04',
-  motegi: '2026-10-11',
-  buriram: '2026-10-18',
-  'phillip-island': '2026-10-25',
-  sepang: '2026-11-08',
-  valencia: '2026-11-15',
+  buriram: '2026-03-01',            // 1. Thai Grand Prix Buriram - 27 February - 1 March
+  'interlagos-mgp': '2026-03-22',   // 2. Brazilian Grand Prix Ayrton Senna Circuit - 20-22 March
+  'cota-mgp': '2026-03-29',         // 3. Americas Grand Prix Circuit of the Americas - 27-29 March
+  losail: '2026-04-12',             // 4. Qatar Grand Prix Lusail - 10-12 April
+  jerez: '2026-04-26',              // 5. Spanish Grand Prix Jerez - 24-26 April
+  lemans: '2026-05-10',             // 6. French Grand Prix Le Mans - 8-10 May
+  'barcelona-mgp': '2026-05-17',    // 7. Catalan Grand Prix Barcelona - 15-17 May
+  mugello: '2026-05-31',            // 8. Italian Grand Prix Mugello - 29-31 May
+  'balaton-park': '2026-06-07',     // 9. Hungarian Grand Prix Balaton Park - 5-7 June
+  brno: '2026-06-21',               // 10. Czech Grand Prix Brno - 19-21 June
+  assen: '2026-06-28',              // 11. Dutch Grand Prix Assen - 26-28 June
+  sachsenring: '2026-07-12',       // 12. German Grand Prix Sachsenring - 10-12 July
+  'silverstone-mgp': '2026-08-09',  // 13. British Grand Prix Silverstone - 7-9 August
+  aragon: '2026-08-30',             // 14. Aragon Grand Prix Aragon - 28-30 August
+  misano: '2026-09-13',             // 15. San Marino Grand Prix Misano - 11-13 September
+  'red-bull-ring-mgp': '2026-09-20', // 16. Austrian Grand Prix Red Bull Ring - 18-20 September
+  motegi: '2026-10-04',             // 17. Japanese Grand Prix Motegi - 2-4 October
+  mandalika: '2026-10-11',          // 18. Indonesian Grand Prix Mandalika - 9-11 October
+  'phillip-island': '2026-10-25',   // 19. Australian Grand Prix Phillip Island - 23-25 October
+  sepang: '2026-11-01',             // 20. Malaysian Grand Prix Sepang - 30 October - 1 November
+  portimao: '2026-11-15',           // 21. Portuguese Grand Prix Portimao - 13-15 November
+  valencia: '2026-11-22',           // 22. Valencia Grand Prix Ricardo Tormo - 20-22 November
 };
 
 const defaultIndyCarSchedule: WeekendSession[] = [
