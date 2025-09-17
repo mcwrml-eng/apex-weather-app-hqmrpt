@@ -44,7 +44,7 @@ const RainfallRadar: React.FC<Props> = ({
   const isWeb = Platform.OS === 'web';
   
   // Simplified state management
-  const [isLoading, setIsLoading] = useState(!isWeb);
+  const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [showRadar, setShowRadar] = useState(alwaysVisible);
@@ -78,24 +78,8 @@ const RainfallRadar: React.FC<Props> = ({
     platform: Platform.OS
   });
 
-  // Web fallback effect
-  useEffect(() => {
-    if (isWeb) {
-      console.log('RainfallRadar: Web platform detected, showing fallback');
-      setConnectionStatus('error');
-      setIsLoading(false);
-      setHasError(true);
-      setErrorMessage('Web platform not supported');
-    }
-  }, [isWeb]);
-
   // Simplified retry mechanism
   const retryConnection = useCallback(() => {
-    if (isWeb) {
-      console.log('RainfallRadar: Retry not available on web');
-      return;
-    }
-
     if (retryCount >= MAX_RETRY_ATTEMPTS) {
       console.log('RainfallRadar: Max retry attempts reached');
       setConnectionStatus('error');
@@ -118,15 +102,10 @@ const RainfallRadar: React.FC<Props> = ({
       setWebViewKey(prev => prev + 1);
       setConnectionStatus('connecting');
     }, delay);
-  }, [retryCount, isWeb]);
+  }, [retryCount]);
 
   // Simplified refresh function
   const refreshRadar = useCallback(() => {
-    if (isWeb) {
-      console.log('RainfallRadar: Refresh not available on web');
-      return;
-    }
-
     console.log('RainfallRadar: Refreshing radar');
     setWebViewKey(prev => prev + 1);
     setIsLoading(true);
@@ -138,37 +117,30 @@ const RainfallRadar: React.FC<Props> = ({
     setConnectionStatus('connecting');
     setErrorMessage('');
     setLastUpdateTime(null);
-  }, [isWeb]);
+  }, []);
 
   // Simplified toggle animation
   const toggleAnimation = useCallback(() => {
-    if (isWeb) {
-      console.log('RainfallRadar: Animation not available on web');
-      return;
-    }
-
     console.log('RainfallRadar: Toggle animation');
     if (webViewRef.current && connectionStatus === 'connected') {
       webViewRef.current.postMessage(JSON.stringify({
         type: 'toggleAnimation'
       }));
     }
-  }, [connectionStatus, isWeb]);
+  }, [connectionStatus]);
 
   // Auto-start animation effect
   useEffect(() => {
-    if (isWeb) return;
-    
     if (autoStartAnimation && totalFrames > 1 && !isAnimating && connectionStatus === 'connected') {
       console.log('RainfallRadar: Auto-starting animation');
       const timer = setTimeout(toggleAnimation, 1500);
       return () => clearTimeout(timer);
     }
-  }, [autoStartAnimation, totalFrames, isAnimating, connectionStatus, toggleAnimation, isWeb]);
+  }, [autoStartAnimation, totalFrames, isAnimating, connectionStatus, toggleAnimation]);
 
   // Auto-refresh effect
   useEffect(() => {
-    if (isWeb || !showRadar || connectionStatus === 'error') return;
+    if (!showRadar || connectionStatus === 'error') return;
     
     const refreshTimer = setInterval(() => {
       console.log('RainfallRadar: Auto-refreshing');
@@ -176,11 +148,11 @@ const RainfallRadar: React.FC<Props> = ({
     }, refreshInterval * 60 * 1000);
     
     return () => clearInterval(refreshTimer);
-  }, [showRadar, connectionStatus, refreshInterval, refreshRadar, isWeb]);
+  }, [showRadar, connectionStatus, refreshInterval, refreshRadar]);
 
   // Loading animation effect
   useEffect(() => {
-    if (isLoading && !isWeb) {
+    if (isLoading) {
       pulseAnimation.value = withRepeat(
         withSequence(
           withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
@@ -199,7 +171,7 @@ const RainfallRadar: React.FC<Props> = ({
       pulseAnimation.value = withTiming(0, { duration: 300 });
       loadingRotation.value = withTiming(0, { duration: 300 });
     }
-  }, [isLoading, pulseAnimation, loadingRotation, isWeb]);
+  }, [isLoading, pulseAnimation, loadingRotation]);
 
   // Error shake animation effect
   useEffect(() => {
@@ -241,9 +213,9 @@ const RainfallRadar: React.FC<Props> = ({
     transform: [{ translateX: errorShake.value }]
   }));
 
-  // Simplified HTML generation
+  // Enhanced HTML generation for web compatibility
   const generateRadarHTML = useCallback(() => {
-    console.log('RainfallRadar: Generating simplified HTML');
+    console.log('RainfallRadar: Generating radar HTML for platform:', Platform.OS);
     
     const safeCircuitName = circuitName.replace(/[<>"'&]/g, '');
     const safeOpacity = Math.max(0.1, Math.min(1, radarOpacity));
@@ -319,6 +291,18 @@ const RainfallRadar: React.FC<Props> = ({
             font-size: 12px;
             color: white;
         }
+        .web-notice {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 11px;
+            color: white;
+            max-width: 200px;
+        }
     </style>
 </head>
 <body>
@@ -334,11 +318,19 @@ const RainfallRadar: React.FC<Props> = ({
     
     <div id="map"></div>
     <div id="status" class="status">Connecting...</div>
+    
+    ${isWeb ? `
+    <div class="web-notice">
+        🌐 Web Preview Mode<br>
+        Full features available on mobile
+    </div>
+    ` : ''}
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        console.log('RainfallRadar: Starting simplified radar');
+        console.log('RainfallRadar: Starting radar for platform: ${Platform.OS}');
         
+        const isWebPlatform = ${isWeb};
         let map;
         let radarLayer = null;
         let radarData = [];
@@ -378,6 +370,9 @@ const RainfallRadar: React.FC<Props> = ({
             try {
                 if (window.ReactNativeWebView) {
                     window.ReactNativeWebView.postMessage(JSON.stringify(data));
+                } else if (isWebPlatform && window.parent) {
+                    // Fallback for web preview
+                    console.log('RainfallRadar Web Message:', data);
                 }
             } catch (error) {
                 console.error('Failed to send message:', error);
@@ -407,15 +402,33 @@ const RainfallRadar: React.FC<Props> = ({
                     minZoom: 5
                 }).setView([lat, lng], 7);
                 
-                // Simple tile layer
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                // Enhanced tile layer with better web support
+                const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 10,
-                    crossOrigin: true
-                }).addTo(map);
+                    crossOrigin: true,
+                    attribution: '© OpenStreetMap contributors'
+                });
                 
-                // Circuit marker
+                tileLayer.on('load', () => {
+                    console.log('RainfallRadar: Base map loaded');
+                });
+                
+                tileLayer.on('tileerror', (e) => {
+                    console.warn('RainfallRadar: Tile load error:', e);
+                });
+                
+                tileLayer.addTo(map);
+                
+                // Circuit marker with enhanced popup
                 const marker = L.marker([lat, lng]).addTo(map);
-                marker.bindPopup('<b>${safeCircuitName}</b><br>Racing Circuit');
+                marker.bindPopup(\`
+                    <div style="text-align: center;">
+                        <b>${safeCircuitName}</b><br>
+                        Racing Circuit<br>
+                        <small>Lat: \${lat.toFixed(4)}, Lng: \${lng.toFixed(4)}</small>
+                        \${isWebPlatform ? '<br><em>Web Preview Mode</em>' : ''}
+                    </div>
+                \`);
                 
                 // Load radar data
                 await loadRadarData();
@@ -431,13 +444,23 @@ const RainfallRadar: React.FC<Props> = ({
                 console.log('RainfallRadar: Loading radar data');
                 updateStatus('Loading radar...');
                 
+                // Enhanced fetch with better error handling for web
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
+                
                 const response = await fetch('https://api.rainviewer.com/public/weather-maps.json', {
                     method: 'GET',
-                    headers: { 'Accept': 'application/json' }
+                    headers: { 
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    },
+                    signal: controller.signal
                 });
                 
+                clearTimeout(timeoutId);
+                
                 if (!response.ok) {
-                    throw new Error('HTTP ' + response.status);
+                    throw new Error(\`HTTP \${response.status}: \${response.statusText}\`);
                 }
                 
                 const data = await response.json();
@@ -450,12 +473,13 @@ const RainfallRadar: React.FC<Props> = ({
                         currentFrame = radarData.length - 1;
                         
                         hideLoading();
-                        updateStatus('Connected');
+                        updateStatus(isWebPlatform ? 'Connected (Web)' : 'Connected');
                         
                         sendMessage({
                             type: 'connected',
                             totalFrames: radarData.length,
-                            currentFrame: currentFrame
+                            currentFrame: currentFrame,
+                            platform: isWebPlatform ? 'web' : 'native'
                         });
                         
                         showRadarFrame(currentFrame);
@@ -467,7 +491,11 @@ const RainfallRadar: React.FC<Props> = ({
                 }
             } catch (error) {
                 console.error('Failed to load radar data:', error);
-                showError('Failed to load radar: ' + error.message);
+                if (error.name === 'AbortError') {
+                    showError('Request timeout - please try again');
+                } else {
+                    showError('Failed to load radar: ' + error.message);
+                }
             }
         }
         
@@ -486,8 +514,19 @@ const RainfallRadar: React.FC<Props> = ({
                 
                 radarLayer = L.tileLayer(radarUrl, {
                     opacity: ${safeOpacity},
-                    crossOrigin: true
-                }).addTo(map);
+                    crossOrigin: true,
+                    errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+                });
+                
+                radarLayer.on('load', () => {
+                    console.log('RainfallRadar: Frame', frameIndex, 'loaded');
+                });
+                
+                radarLayer.on('tileerror', (e) => {
+                    console.warn('RainfallRadar: Radar tile error:', e);
+                });
+                
+                radarLayer.addTo(map);
                 
                 currentFrame = frameIndex;
                 
@@ -506,7 +545,7 @@ const RainfallRadar: React.FC<Props> = ({
             if (isAnimating || radarData.length <= 1) return;
             
             isAnimating = true;
-            updateStatus('Animating...');
+            updateStatus(isWebPlatform ? 'Animating (Web)' : 'Animating...');
             
             sendMessage({
                 type: 'animationStarted'
@@ -522,7 +561,7 @@ const RainfallRadar: React.FC<Props> = ({
             if (!isAnimating) return;
             
             isAnimating = false;
-            updateStatus('Connected');
+            updateStatus(isWebPlatform ? 'Connected (Web)' : 'Connected');
             
             if (animationInterval) {
                 clearInterval(animationInterval);
@@ -542,8 +581,8 @@ const RainfallRadar: React.FC<Props> = ({
             }
         }
         
-        // Message handling
-        window.addEventListener('message', function(event) {
+        // Enhanced message handling for web compatibility
+        function handleMessage(event) {
             try {
                 const message = JSON.parse(event.data);
                 
@@ -551,28 +590,44 @@ const RainfallRadar: React.FC<Props> = ({
                     case 'toggleAnimation':
                         toggleAnimation();
                         break;
+                    case 'refresh':
+                        location.reload();
+                        break;
                 }
             } catch (error) {
-                console.log('Non-JSON message received');
+                console.log('Non-JSON message received:', event.data);
             }
-        });
+        }
+        
+        // Message handling for both native and web
+        if (window.addEventListener) {
+            window.addEventListener('message', handleMessage);
+        }
+        if (document.addEventListener) {
+            document.addEventListener('message', handleMessage);
+        }
         
         // Initialize when ready
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('RainfallRadar: DOM ready, initializing');
+            console.log('RainfallRadar: DOM ready, initializing for platform:', isWebPlatform ? 'web' : 'native');
             initMap();
         });
         
-        // Error handling
+        // Enhanced error handling
         window.addEventListener('error', function(event) {
             console.error('Global error:', event.error);
-            showError('Script error occurred');
+            showError('Script error: ' + (event.error?.message || 'Unknown error'));
+        });
+        
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('Unhandled promise rejection:', event.reason);
+            showError('Network error: ' + (event.reason?.message || 'Connection failed'));
         });
         
     </script>
 </body>
 </html>`;
-  }, [latitude, longitude, circuitName, radarOpacity]);
+  }, [latitude, longitude, circuitName, radarOpacity, isWeb]);
 
   // WebView event handlers
   const handleWebViewLoad = useCallback(() => {
@@ -629,11 +684,11 @@ const RainfallRadar: React.FC<Props> = ({
     console.log('RainfallRadar: Toggling radar view');
     if (!alwaysVisible) {
       setShowRadar(!showRadar);
-      if (!showRadar && !isWeb) {
+      if (!showRadar) {
         refreshRadar();
       }
     }
-  }, [showRadar, alwaysVisible, refreshRadar, isWeb]);
+  }, [showRadar, alwaysVisible, refreshRadar]);
 
   // Prop validation
   if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
@@ -651,63 +706,6 @@ const RainfallRadar: React.FC<Props> = ({
           <Text style={styles.errorText}>Invalid Location Data</Text>
           <Text style={styles.errorSubtext}>
             Cannot display radar for this circuit.
-          </Text>
-        </View>
-      </View>
-    );
-  }
-
-  // Web platform fallback
-  if (isWeb) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.titleContainer}>
-            <Icon name="rainy" size={20} color={colors.precipitation} />
-            <View style={styles.titleTextContainer}>
-              <Text style={styles.title}>Rainfall Radar</Text>
-              <Text style={styles.subtitle}>{circuitName}</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.webNotSupportedContainer}>
-          <Icon name="desktop" size={56} color={colors.textMuted} />
-          <Text style={styles.webNotSupportedTitle}>Web Preview Not Supported</Text>
-          <Text style={styles.webNotSupportedText}>
-            The rainfall radar feature uses native WebView components that are not supported in the web preview environment.
-          </Text>
-          <Text style={styles.webNotSupportedSubtext}>
-            To view the live rainfall radar for {circuitName}, please use the mobile app on iOS or Android devices.
-          </Text>
-          
-          <View style={styles.webFeaturesList}>
-            <Text style={styles.webFeaturesTitle}>Mobile Features Include:</Text>
-            <View style={styles.webFeatureItem}>
-              <Icon name="checkmark-circle" size={16} color={colors.success} />
-              <Text style={styles.webFeatureText}>Live animated radar data</Text>
-            </View>
-            <View style={styles.webFeatureItem}>
-              <Icon name="checkmark-circle" size={16} color={colors.success} />
-              <Text style={styles.webFeatureText}>Interactive map controls</Text>
-            </View>
-            <View style={styles.webFeatureItem}>
-              <Icon name="checkmark-circle" size={16} color={colors.success} />
-              <Text style={styles.webFeatureText}>Auto-refresh every {refreshInterval} minutes</Text>
-            </View>
-            <View style={styles.webFeatureItem}>
-              <Icon name="checkmark-circle" size={16} color={colors.success} />
-              <Text style={styles.webFeatureText}>Precipitation intensity overlay</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Available on mobile • Updates every {refreshInterval} minutes
-          </Text>
-          <Text style={styles.attribution}>
-            Powered by RainViewer API
           </Text>
         </View>
       </View>
@@ -736,6 +734,7 @@ const RainfallRadar: React.FC<Props> = ({
           <Text style={styles.previewTitle}>Reliable & Fast</Text>
           <Text style={styles.previewDescription}>
             Live radar with improved connection stability for {circuitName}
+            {isWeb && ' (Web Preview Mode)'}
           </Text>
         </View>
       </View>
@@ -749,11 +748,16 @@ const RainfallRadar: React.FC<Props> = ({
           <Icon name="rainy" size={20} color={colors.precipitation} />
           <View style={styles.titleTextContainer}>
             <Text style={styles.title}>Rainfall Radar</Text>
-            <Text style={styles.subtitle}>{circuitName}</Text>
+            <Text style={styles.subtitle}>
+              {circuitName}
+              {isWeb && ' • Web Preview'}
+            </Text>
           </View>
           {alwaysVisible && (
             <View style={styles.alwaysOnBadge}>
-              <Text style={styles.alwaysOnText}>Always On</Text>
+              <Text style={styles.alwaysOnText}>
+                {isWeb ? 'Web Mode' : 'Always On'}
+              </Text>
             </View>
           )}
         </View>
@@ -784,7 +788,10 @@ const RainfallRadar: React.FC<Props> = ({
       <View style={styles.statusContainer}>
         <View style={styles.statusIndicator}>
           <View style={[styles.statusDot, { backgroundColor: getConnectionStatusColor(connectionStatus) }]} />
-          <Text style={styles.statusText}>{getConnectionStatusText(connectionStatus)}</Text>
+          <Text style={styles.statusText}>
+            {getConnectionStatusText(connectionStatus)}
+            {isWeb && connectionStatus === 'connected' && ' (Web)'}
+          </Text>
         </View>
         
         {retryCount > 0 && (
@@ -812,7 +819,9 @@ const RainfallRadar: React.FC<Props> = ({
           <Text style={styles.loadingSubtext}>
             {connectionStatus === 'retrying' 
               ? `Attempt ${retryCount}/${MAX_RETRY_ATTEMPTS}` 
-              : 'Simplified connection handling'
+              : isWeb 
+                ? 'Web preview mode - enhanced compatibility'
+                : 'Optimized connection handling'
             }
           </Text>
         </Animated.View>
@@ -824,6 +833,7 @@ const RainfallRadar: React.FC<Props> = ({
           <Text style={styles.errorTitle}>Connection Failed</Text>
           <Text style={styles.errorSubtext}>
             {errorMessage || 'Unable to connect to radar services'}
+            {isWeb && '\n\nNote: Some features may be limited in web preview mode.'}
           </Text>
           <View style={styles.errorActions}>
             <TouchableOpacity onPress={refreshRadar} style={styles.retryButton}>
@@ -879,6 +889,7 @@ const RainfallRadar: React.FC<Props> = ({
         <Text style={styles.footerText}>
           Live radar • Updates every {refreshInterval} minutes
           {lastUpdateTime && ` • Last: ${lastUpdateTime.toLocaleTimeString()}`}
+          {isWeb && ' • Web Preview Mode'}
         </Text>
         <Text style={styles.attribution}>
           Powered by RainViewer API
@@ -1024,59 +1035,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
-  },
-  // Web not supported styles
-  webNotSupportedContainer: {
-    alignItems: 'center',
-    padding: 32,
-    backgroundColor: colors.backgroundAlt,
-  },
-  webNotSupportedTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    marginTop: 16,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  webNotSupportedText: {
-    fontSize: 14,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 8,
-  },
-  webNotSupportedSubtext: {
-    fontSize: 13,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 24,
-  },
-  webFeaturesList: {
-    alignSelf: 'stretch',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  webFeaturesTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  webFeatureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  webFeatureText: {
-    fontSize: 13,
-    color: colors.textMuted,
-    flex: 1,
   },
   webViewContainer: {
     height: 400,
