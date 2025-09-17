@@ -7,6 +7,7 @@ import { useTheme } from '../../state/ThemeContext';
 import CircuitCard from '../../components/CircuitCard';
 import FeaturedTrackCard from '../../components/FeaturedTrackCard';
 import AppHeader from '../../components/AppHeader';
+import IndyCarIcon from '../../components/IndyCarIcon';
 import { indycarCircuits } from '../../data/circuits';
 
 export default function IndyCarScreen() {
@@ -122,7 +123,7 @@ export default function IndyCarScreen() {
       <AppHeader
         title="IndyCar"
         subtitle="2026 Championship Calendar • 16 Circuits"
-        icon={<Ionicons name="speedometer" size={32} color={colors.indycarBlue} />}
+        icon={<IndyCarIcon size={32} color={colors.indycarBlue} />}
       />
 
       <View style={styles.searchContainer}>

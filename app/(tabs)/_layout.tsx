@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getColors, spacing } from '../../styles/commonStyles';
 import { useTheme } from '../../state/ThemeContext';
 import F1CarIcon from '../../components/F1CarIcon';
+import IndyCarIcon from '../../components/IndyCarIcon';
 
 export default function TabLayout() {
   const { isDark } = useTheme();
@@ -58,7 +59,7 @@ export default function TabLayout() {
         options={{
           title: 'IndyCar',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="speedometer" size={size} color={color} />
+            <IndyCarIcon size={size} color={color} />
           ),
         }}
       />
