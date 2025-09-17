@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { LineChart, AreaChart, YAxis, XAxis } from 'react-native-svg-charts';
 import { colors } from '../styles/commonStyles';
 import { getPrecipitationUnit } from '../hooks/useWeather';
@@ -138,32 +138,64 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
     return value.toFixed(1);
   };
 
-  // Enhanced time formatting for 3-hour intervals on 24-hour day
+  // Enhanced time formatting with dynamic scaling based on data length and screen width
   const formatTimeLabel = (timeString: string, index: number, totalPoints: number) => {
     const date = new Date(timeString);
     const hour = date.getHours();
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
     
-    // For 24-hour display with 3-hour intervals, show: 0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h
-    return `${hour.toString().padStart(2, '0')}h`;
+    // Get screen width to determine how many labels we can fit
+    const screenWidth = Dimensions.get('window').width;
+    const availableWidth = screenWidth - 100; // Account for Y-axis and padding
+    const maxLabels = Math.floor(availableWidth / 45); // Minimum 45px per label to prevent overlap
+    
+    // Determine optimal label frequency based on data length and screen space
+    let labelFrequency: number;
+    
+    if (totalPoints <= 12) {
+      // For 12 hours or less, show every hour if space allows
+      labelFrequency = Math.max(1, Math.ceil(totalPoints / maxLabels));
+    } else if (totalPoints <= 24) {
+      // For 24 hours, show every 3-4 hours
+      labelFrequency = Math.max(3, Math.ceil(totalPoints / maxLabels));
+    } else if (totalPoints <= 48) {
+      // For 48 hours, show every 6 hours
+      labelFrequency = Math.max(6, Math.ceil(totalPoints / maxLabels));
+    } else {
+      // For 72+ hours, show every 8-12 hours
+      labelFrequency = Math.max(8, Math.ceil(totalPoints / maxLabels));
+    }
+    
+    // Always show first and last labels
+    const isFirstOrLast = index === 0 || index === totalPoints - 1;
+    const isKeyInterval = index % labelFrequency === 0;
+    const isNewDay = hour === 0 && index > 0;
+    
+    if (isFirstOrLast || isKeyInterval || isNewDay) {
+      if (totalPoints <= 24) {
+        // For shorter periods, show just the hour
+        return `${hour.toString().padStart(2, '0')}h`;
+      } else {
+        // For longer periods, show hour with day context for new days
+        if (isNewDay || index === 0) {
+          return `${hour.toString().padStart(2, '0')}h\n${day}/${month}`;
+        } else {
+          return `${hour.toString().padStart(2, '0')}h`;
+        }
+      }
+    }
+    
+    return '';
   };
 
-  // Generate time labels at 3-hour intervals for 24-hour day
+  // Generate optimized time labels that fit within screen bounds
   const generateTimeLabels = () => {
     const totalPoints = validData.length;
-    console.log('WeatherChart: Generating 3-hour interval labels for', totalPoints, 'data points');
-    
-    // For 24-hour period, we want labels at 3-hour intervals: 0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h
-    const targetHours = [0, 3, 6, 9, 12, 15, 18, 21];
+    console.log('WeatherChart: Generating optimized time labels for', totalPoints, 'data points');
     
     return validData.map((point, index) => {
-      const date = new Date(point.time);
-      const hour = date.getHours();
-      
-      // Show label if this hour matches one of our target 3-hour intervals
-      if (targetHours.includes(hour)) {
-        return formatTimeLabel(point.time, index, totalPoints);
-      }
-      return '';
+      return formatTimeLabel(point.time, index, totalPoints);
     });
   };
 
@@ -313,28 +345,40 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
         </View>
       </View>
       
-      {/* Enhanced X-axis with 3-hour interval time scales */}
+      {/* Enhanced X-axis with responsive time scales that prevent overflow */}
       <View style={styles.xAxisContainer}>
-        <View style={styles.xAxisLabelsContainer}>
-          {timeLabels.map((label, index) => (
-            <View key={index} style={[
-              styles.xAxisLabelWrapper,
-              { flex: 1 }
-            ]}>
-              <Text style={[
-                styles.xAxisLabel,
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.xAxisScrollContent}
+        >
+          <View style={styles.xAxisLabelsContainer}>
+            {timeLabels.map((label, index) => (
+              <View key={index} style={[
+                styles.xAxisLabelWrapper,
                 { 
-                  opacity: label ? 1 : 0,
-                  fontSize: 10,
-                  fontWeight: label ? '500' : '400'
+                  minWidth: label ? 40 : 20,
+                  opacity: label ? 1 : 0
                 }
               ]}>
-                {label}
-              </Text>
-            </View>
-          ))}
-        </View>
-        <Text style={styles.xAxisTitle}>Time Scale (3-hour intervals)</Text>
+                <Text style={[
+                  styles.xAxisLabel,
+                  { 
+                    fontSize: validData.length > 48 ? 9 : 10,
+                    fontWeight: label ? '500' : '400',
+                    textAlign: 'center',
+                    lineHeight: validData.length > 48 ? 11 : 12,
+                  }
+                ]}>
+                  {label}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+        <Text style={styles.xAxisTitle}>
+          Time Scale ({validData.length <= 24 ? 'Hourly' : validData.length <= 48 ? '6-hour intervals' : '8-12 hour intervals'})
+        </Text>
       </View>
 
       {/* Enhanced statistics panel */}
@@ -431,12 +475,14 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingLeft: 55, // Account for Y-axis width
   },
+  xAxisScrollContent: {
+    paddingHorizontal: 4,
+  },
   xAxisLabelsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
-    minHeight: 16,
+    minHeight: 24,
+    gap: 2,
   },
   xAxisLabelWrapper: {
     alignItems: 'center',
@@ -448,14 +494,13 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: 'Roboto_400Regular',
     textAlign: 'center',
-    lineHeight: 12,
   },
   xAxisTitle: {
     fontSize: 11,
     color: colors.textMuted,
     fontFamily: 'Roboto_500Medium',
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 8,
     fontWeight: '500',
   },
   statsPanel: {
