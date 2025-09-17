@@ -164,7 +164,7 @@ export default function F1Screen() {
               <Text style={styles.statLabel}>Races</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>20</Text>
+              <Text style={styles.statNumber}>11</Text>
               <Text style={styles.statLabel}>Teams</Text>
             </View>
           </View>
