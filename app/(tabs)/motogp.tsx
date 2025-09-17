@@ -163,8 +163,8 @@ export default function MotoGPScreen() {
               <Text style={styles.statLabel}>Races</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>24</Text>
-              <Text style={styles.statLabel}>Riders</Text>
+              <Text style={styles.statNumber}>11</Text>
+              <Text style={styles.statLabel}>Teams</Text>
             </View>
           </View>
 
