@@ -35,35 +35,74 @@ export function getCurrentTrackOfWeek(category: Category): TrackOfWeek | null {
   let closestTrack: TrackOfWeek | null = null;
   let minDaysUntilRace = Infinity;
   
-  // Find the next upcoming race or current race week
-  for (const [slug, dateString] of Object.entries(raceDates)) {
-    const raceDate = new Date(dateString + 'T00:00:00');
-    const daysUntilRace = daysBetween(today, raceDate);
-    
-    // Consider it "race week" if it's within 7 days before the race or 1 day after
-    const isRaceWeek = daysUntilRace >= -1 && daysUntilRace <= 7;
-    
-    // If we're in race week, prioritize this track
-    if (isRaceWeek && daysUntilRace < minDaysUntilRace) {
-      closestTrack = {
-        slug,
-        category,
-        raceDate: dateString,
-        daysUntilRace,
-        isRaceWeek: true
-      };
-      minDaysUntilRace = daysUntilRace;
+  // For MotoGP in 2026, always show the next upcoming race
+  if (category === 'motogp') {
+    // Find the next race in 2026
+    for (const [slug, dateString] of Object.entries(raceDates)) {
+      const raceDate = new Date(dateString + 'T00:00:00');
+      const daysUntilRace = daysBetween(today, raceDate);
+      
+      // For 2026 races, find the next upcoming one (even if it's far in the future)
+      if (daysUntilRace >= 0 && daysUntilRace < minDaysUntilRace) {
+        const isRaceWeek = daysUntilRace >= -1 && daysUntilRace <= 7;
+        closestTrack = {
+          slug,
+          category,
+          raceDate: dateString,
+          daysUntilRace,
+          isRaceWeek
+        };
+        minDaysUntilRace = daysUntilRace;
+      }
     }
-    // If no race week found yet, find the next upcoming race
-    else if (!closestTrack?.isRaceWeek && daysUntilRace >= 0 && daysUntilRace < minDaysUntilRace) {
-      closestTrack = {
-        slug,
-        category,
-        raceDate: dateString,
-        daysUntilRace,
-        isRaceWeek: false
-      };
-      minDaysUntilRace = daysUntilRace;
+    
+    // If no future race found (all races have passed), show the first race of the season
+    if (!closestTrack) {
+      const sortedRaces = Object.entries(raceDates).sort(([, a], [, b]) => a.localeCompare(b));
+      if (sortedRaces.length > 0) {
+        const [slug, dateString] = sortedRaces[0];
+        const raceDate = new Date(dateString + 'T00:00:00');
+        const daysUntilRace = daysBetween(today, raceDate);
+        closestTrack = {
+          slug,
+          category,
+          raceDate: dateString,
+          daysUntilRace,
+          isRaceWeek: false
+        };
+      }
+    }
+  } else {
+    // Original logic for F1 and IndyCar
+    for (const [slug, dateString] of Object.entries(raceDates)) {
+      const raceDate = new Date(dateString + 'T00:00:00');
+      const daysUntilRace = daysBetween(today, raceDate);
+      
+      // Consider it "race week" if it's within 7 days before the race or 1 day after
+      const isRaceWeek = daysUntilRace >= -1 && daysUntilRace <= 7;
+      
+      // If we're in race week, prioritize this track
+      if (isRaceWeek && daysUntilRace < minDaysUntilRace) {
+        closestTrack = {
+          slug,
+          category,
+          raceDate: dateString,
+          daysUntilRace,
+          isRaceWeek: true
+        };
+        minDaysUntilRace = daysUntilRace;
+      }
+      // If no race week found yet, find the next upcoming race
+      else if (!closestTrack?.isRaceWeek && daysUntilRace >= 0 && daysUntilRace < minDaysUntilRace) {
+        closestTrack = {
+          slug,
+          category,
+          raceDate: dateString,
+          daysUntilRace,
+          isRaceWeek: false
+        };
+        minDaysUntilRace = daysUntilRace;
+      }
     }
   }
   
@@ -73,7 +112,7 @@ export function getCurrentTrackOfWeek(category: Category): TrackOfWeek | null {
 
 // Get status text for the track
 export function getTrackStatusText(trackOfWeek: TrackOfWeek): string {
-  const { daysUntilRace, isRaceWeek } = trackOfWeek;
+  const { daysUntilRace, isRaceWeek, category } = trackOfWeek;
   
   if (daysUntilRace === 0) {
     return 'Race Day!';
@@ -84,6 +123,17 @@ export function getTrackStatusText(trackOfWeek: TrackOfWeek): string {
   } else if (isRaceWeek && daysUntilRace > 0) {
     return `${daysUntilRace} days to go`;
   } else if (daysUntilRace > 0) {
+    // For MotoGP 2026, show more user-friendly text for longer periods
+    if (category === 'motogp' && daysUntilRace > 30) {
+      const months = Math.floor(daysUntilRace / 30);
+      if (months === 1) {
+        return 'Next race in about 1 month';
+      } else if (months < 12) {
+        return `Next race in about ${months} months`;
+      } else {
+        return 'Next race in 2026 season';
+      }
+    }
     return `Next race in ${daysUntilRace} days`;
   } else {
     return 'Recently completed';
