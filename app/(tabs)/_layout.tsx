@@ -3,7 +3,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getColors, spacing } from '../../styles/commonStyles';
 import { useTheme } from '../../state/ThemeContext';
-import F1CarIcon from '../../components/F1CarIcon';
+import ChequeredFlag from '../../components/ChequeredFlag';
 import IndyCarIcon from '../../components/IndyCarIcon';
 
 export default function TabLayout() {
@@ -41,7 +41,7 @@ export default function TabLayout() {
         options={{
           title: 'F1',
           tabBarIcon: ({ color, size }) => (
-            <F1CarIcon size={size} color={color} />
+            <ChequeredFlag size={size} />
           ),
         }}
       />

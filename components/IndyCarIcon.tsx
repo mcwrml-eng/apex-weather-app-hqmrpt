@@ -12,6 +12,8 @@ export default function IndyCarIcon({ size = 24, color = '#000' }: Props) {
   const accentColor = isDark ? '#666' : '#ccc';
   const wheelColor = isDark ? '#333' : '#222';
   
+  console.log('IndyCarIcon: Rendering open-wheeled race car with size:', size, 'color:', color);
+  
   return (
     <Svg width={size} height={size} viewBox="0 0 40 20" fill="none">
       <Defs>
@@ -98,17 +100,17 @@ export default function IndyCarIcon({ size = 24, color = '#000' }: Props) {
       {/* Rear wing support struts */}
       <Path d="M28.5 7 L28.5 13" stroke={accentColor} strokeWidth="0.3" />
       
-      {/* Front wheels - IndyCar open wheel design */}
-      <Circle cx="7" cy="15.5" r="2.3" fill="url(#indyWheelGradient)" />
-      <Circle cx="7" cy="15.5" r="1.6" fill={wheelColor} />
-      <Circle cx="7" cy="15.5" r="0.9" fill={accentColor} />
-      <Circle cx="7" cy="15.5" r="0.3" fill={color} />
+      {/* Front wheels - Prominent open wheel design */}
+      <Circle cx="7" cy="15.5" r="2.5" fill="url(#indyWheelGradient)" />
+      <Circle cx="7" cy="15.5" r="1.8" fill={wheelColor} />
+      <Circle cx="7" cy="15.5" r="1.1" fill={accentColor} />
+      <Circle cx="7" cy="15.5" r="0.4" fill={color} />
       
-      {/* Rear wheels - IndyCar proportions */}
-      <Circle cx="25" cy="15.5" r="2.4" fill="url(#indyWheelGradient)" />
-      <Circle cx="25" cy="15.5" r="1.7" fill={wheelColor} />
-      <Circle cx="25" cy="15.5" r="1" fill={accentColor} />
-      <Circle cx="25" cy="15.5" r="0.4" fill={color} />
+      {/* Rear wheels - Slightly larger for IndyCar proportions */}
+      <Circle cx="25" cy="15.5" r="2.6" fill="url(#indyWheelGradient)" />
+      <Circle cx="25" cy="15.5" r="1.9" fill={wheelColor} />
+      <Circle cx="25" cy="15.5" r="1.2" fill={accentColor} />
+      <Circle cx="25" cy="15.5" r="0.5" fill={color} />
       
       {/* Suspension - IndyCar suspension elements */}
       <Path d="M7 13.2 L7 14" stroke={color} strokeWidth="0.5" />
