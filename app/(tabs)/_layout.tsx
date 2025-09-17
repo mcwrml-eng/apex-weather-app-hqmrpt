@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getColors, spacing } from '../../styles/commonStyles';
 import { useTheme } from '../../state/ThemeContext';
+import F1CarIcon from '../../components/F1CarIcon';
 
 export default function TabLayout() {
   const { isDark } = useTheme();
@@ -39,7 +40,7 @@ export default function TabLayout() {
         options={{
           title: 'F1',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="car-sport" size={size} color={color} />
+            <F1CarIcon size={size} color={color} />
           ),
         }}
       />
