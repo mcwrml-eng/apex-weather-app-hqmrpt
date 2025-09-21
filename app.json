@@ -8,6 +8,7 @@
     "icon": "./assets/images/natively-dark.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "sdkVersion": "54.0.0",
     "splash": {
       "image": "./assets/images/natively-dark.png",
       "resizeMode": "contain",
