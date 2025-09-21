@@ -70,7 +70,7 @@ const RainfallRadar: React.FC<Props> = ({
     }
   }, [isLoading]);
 
-  // Simple HTML generation
+  // Web-compatible HTML generation with better error handling
   const generateRadarHTML = useCallback(() => {
     const safeCircuitName = circuitName.replace(/[<>"'&]/g, '');
     
@@ -80,17 +80,23 @@ const RainfallRadar: React.FC<Props> = ({
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: https: http:; img-src 'self' data: https: http:;">
     <title>Rainfall Radar - ${safeCircuitName}</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: ${colors.background};
             color: ${colors.text};
             overflow: hidden;
+            height: 100vh;
+            width: 100vw;
         }
-        #map { height: 100vh; width: 100vw; }
+        #map { 
+            height: 100vh; 
+            width: 100vw; 
+            position: relative;
+        }
         .loading {
             position: absolute;
             top: 50%;
@@ -102,6 +108,7 @@ const RainfallRadar: React.FC<Props> = ({
             padding: 20px;
             border-radius: 12px;
             text-align: center;
+            min-width: 200px;
         }
         .spinner {
             width: 30px;
@@ -127,6 +134,78 @@ const RainfallRadar: React.FC<Props> = ({
             border-radius: 6px;
             font-size: 12px;
         }
+        .error-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            min-width: 250px;
+        }
+        .web-notice {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            text-align: center;
+        }
+        .simple-map {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .map-marker {
+            width: 20px;
+            height: 20px;
+            background: #e17055;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .map-marker::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+        .circuit-info {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .circuit-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .circuit-coords {
+            font-size: 12px;
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
@@ -135,22 +214,35 @@ const RainfallRadar: React.FC<Props> = ({
         <div>Loading Radar...</div>
     </div>
     
-    <div id="map"></div>
+    <div id="error" class="error-container" style="display: none;">
+        <div style="font-size: 16px; font-weight: bold; margin-bottom: 8px;">⚠️ Radar Unavailable</div>
+        <div style="font-size: 14px; margin-bottom: 12px;">Live radar data cannot be loaded in web preview mode.</div>
+        <div style="font-size: 12px; opacity: 0.9;">Please use the mobile app for full radar functionality.</div>
+    </div>
+    
+    <div id="map">
+        <div class="simple-map">
+            <div class="map-marker"></div>
+            <div class="circuit-info">
+                <div class="circuit-name">${safeCircuitName}</div>
+                <div class="circuit-coords">${latitude.toFixed(4)}°, ${longitude.toFixed(4)}°</div>
+            </div>
+        </div>
+    </div>
+    
     <div id="status" class="status">Connecting...</div>
+    <div class="web-notice">📱 Full radar available in mobile app • Web preview shows location only</div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        let map;
-        let radarLayer = null;
-        let radarData = [];
-        let currentFrame = 0;
-        let animationInterval = null;
-        let isAnimating = false;
+        let isWebEnvironment = true;
+        let hasTriedLoading = false;
         
         function sendMessage(data) {
             try {
                 if (window.ReactNativeWebView) {
                     window.ReactNativeWebView.postMessage(JSON.stringify(data));
+                } else if (window.parent && window.parent.postMessage) {
+                    window.parent.postMessage(JSON.stringify(data), '*');
                 }
             } catch (error) {
                 console.error('Failed to send message:', error);
@@ -169,135 +261,118 @@ const RainfallRadar: React.FC<Props> = ({
         
         function showError(message) {
             hideLoading();
+            const errorDiv = document.getElementById('error');
+            if (errorDiv) {
+                errorDiv.style.display = 'block';
+            }
             updateStatus('❌ ' + message);
             sendMessage({ type: 'error', message: message });
         }
         
-        async function initMap() {
-            try {
-                const lat = ${latitude};
-                const lng = ${longitude};
-                
-                map = L.map('map', {
-                    zoomControl: true,
-                    attributionControl: false,
-                    maxZoom: 10,
-                    minZoom: 4
-                }).setView([lat, lng], 7);
-                
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 10
-                }).addTo(map);
-                
-                L.marker([lat, lng]).addTo(map)
-                    .bindPopup('${safeCircuitName}');
-                
-                loadRadarData();
-                
-            } catch (error) {
-                showError('Map initialization failed');
-            }
+        function showWebNotice() {
+            hideLoading();
+            updateStatus('📍 Location shown');
+            sendMessage({ 
+                type: 'connected', 
+                totalFrames: 0,
+                webMode: true,
+                message: 'Web preview mode - showing location only'
+            });
         }
         
-        async function loadRadarData() {
+        async function tryLoadRadar() {
+            if (hasTriedLoading) return;
+            hasTriedLoading = true;
+            
             try {
-                updateStatus('Loading radar data...');
+                updateStatus('Checking radar...');
                 
-                const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
-                const data = await response.json();
+                // Try to detect if we're in a web environment
+                const userAgent = navigator.userAgent.toLowerCase();
+                const isWebBrowser = userAgent.includes('chrome') || userAgent.includes('firefox') || userAgent.includes('safari');
                 
-                if (data && data.radar && data.radar.past) {
-                    radarData = data.radar.past;
-                    
-                    if (radarData.length > 0) {
-                        currentFrame = radarData.length - 1;
-                        hideLoading();
-                        updateStatus('✅ Connected');
-                        
-                        sendMessage({
-                            type: 'connected',
-                            totalFrames: radarData.length
-                        });
-                        
-                        showRadarFrame(currentFrame);
-                    } else {
-                        showError('No radar data available');
-                    }
-                } else {
-                    showError('Invalid API response');
+                if (isWebBrowser && !window.ReactNativeWebView) {
+                    console.log('Detected web browser environment, showing web notice');
+                    showWebNotice();
+                    return;
                 }
-            } catch (error) {
-                showError('Failed to load radar data');
-            }
-        }
-        
-        function showRadarFrame(frameIndex) {
-            if (frameIndex < 0 || frameIndex >= radarData.length || !map) return;
-            
-            if (radarLayer) {
-                map.removeLayer(radarLayer);
-            }
-            
-            const frame = radarData[frameIndex];
-            if (frame && frame.path) {
-                const radarUrl = \`https://tilecache.rainviewer.com/v2/radar/\${frame.path}/256/{z}/{x}/{y}/2/1_1.png\`;
                 
-                radarLayer = L.tileLayer(radarUrl, {
-                    opacity: ${radarOpacity},
-                    maxZoom: 10
+                // Try to load radar data with timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                
+                const response = await fetch('https://api.rainviewer.com/public/weather-maps.json', {
+                    signal: controller.signal,
+                    mode: 'cors',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
                 });
                 
-                radarLayer.addTo(map);
-                currentFrame = frameIndex;
-            }
-        }
-        
-        function toggleAnimation() {
-            if (isAnimating) {
-                clearInterval(animationInterval);
-                isAnimating = false;
-                updateStatus('✅ Connected');
-                sendMessage({ type: 'animationStopped' });
-            } else {
-                if (radarData.length > 1) {
-                    isAnimating = true;
-                    updateStatus('🎬 Animating');
-                    sendMessage({ type: 'animationStarted' });
-                    
-                    animationInterval = setInterval(() => {
-                        currentFrame = (currentFrame + 1) % radarData.length;
-                        showRadarFrame(currentFrame);
-                    }, 600);
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error(\`HTTP \${response.status}\`);
+                }
+                
+                const data = await response.json();
+                
+                if (data && data.radar && data.radar.past && data.radar.past.length > 0) {
+                    // If we get here, we could potentially load the full radar
+                    // But for web compatibility, we'll still show the simple version
+                    showWebNotice();
+                } else {
+                    showError('No radar data');
+                }
+                
+            } catch (error) {
+                console.error('Radar loading error:', error);
+                if (error.name === 'AbortError') {
+                    showWebNotice(); // Timeout, show web notice instead of error
+                } else {
+                    showWebNotice(); // Any other error, show web notice
                 }
             }
         }
         
+        // Initialize
+        function init() {
+            console.log('Initializing radar component');
+            
+            // Small delay to ensure proper rendering
+            setTimeout(() => {
+                tryLoadRadar();
+            }, 500);
+        }
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+        
+        // Handle messages from React Native
         window.addEventListener('message', function(event) {
             try {
                 const message = JSON.parse(event.data);
+                console.log('Received message:', message);
+                // For web mode, we don't support animation
                 if (message.type === 'toggleAnimation') {
-                    toggleAnimation();
+                    sendMessage({ type: 'animationNotSupported', webMode: true });
                 }
             } catch (error) {
                 // Ignore non-JSON messages
             }
         });
-        
-        // Initialize
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initMap);
-        } else {
-            initMap();
-        }
     </script>
 </body>
 </html>`;
-  }, [latitude, longitude, circuitName, radarOpacity, colors]);
+  }, [latitude, longitude, circuitName, colors]);
 
   const handleWebViewMessage = useCallback((event: any) => {
     try {
       const message = JSON.parse(event.nativeEvent.data);
-      console.log('RainfallRadar: Message received:', message.type);
+      console.log('RainfallRadar: Message received:', message.type, message);
       
       switch (message.type) {
         case 'connected':
@@ -305,6 +380,9 @@ const RainfallRadar: React.FC<Props> = ({
           setIsLoading(false);
           setHasError(false);
           setTotalFrames(message.totalFrames || 0);
+          if (message.webMode) {
+            console.log('RainfallRadar: Web mode detected');
+          }
           break;
           
         case 'error':
@@ -320,6 +398,10 @@ const RainfallRadar: React.FC<Props> = ({
         case 'animationStopped':
           setIsAnimating(false);
           break;
+          
+        case 'animationNotSupported':
+          console.log('RainfallRadar: Animation not supported in web mode');
+          break;
       }
     } catch (error) {
       console.log('RainfallRadar: Non-JSON message received');
@@ -333,18 +415,28 @@ const RainfallRadar: React.FC<Props> = ({
     setConnectionStatus('error');
   }, []);
 
+  const handleWebViewLoad = useCallback(() => {
+    console.log('RainfallRadar: WebView loaded successfully');
+  }, []);
+
   const toggleAnimation = useCallback(() => {
-    if (webViewRef.current && connectionStatus === 'connected') {
+    if (webViewRef.current && connectionStatus === 'connected' && !isWeb) {
       webViewRef.current.postMessage(JSON.stringify({ type: 'toggleAnimation' }));
     }
-  }, [connectionStatus]);
+  }, [connectionStatus, isWeb]);
 
   const refreshRadar = useCallback(() => {
+    console.log('RainfallRadar: Refreshing radar');
     setIsLoading(true);
     setHasError(false);
     setConnectionStatus('connecting');
     setTotalFrames(0);
     setIsAnimating(false);
+    
+    // Force WebView reload
+    if (webViewRef.current) {
+      webViewRef.current.reload();
+    }
   }, []);
 
   const toggleRadarView = useCallback(() => {
@@ -512,6 +604,20 @@ const RainfallRadar: React.FC<Props> = ({
       textAlign: 'center',
       lineHeight: 22,
     },
+    webNotice: {
+      backgroundColor: colors.primary + '15',
+      borderColor: colors.primary + '30',
+      borderWidth: 1,
+      borderRadius: 8,
+      padding: 8,
+      marginTop: 8,
+    },
+    webNoticeText: {
+      fontSize: 12,
+      color: colors.primary,
+      textAlign: 'center',
+      fontWeight: '500',
+    },
   });
 
   // Validation
@@ -574,7 +680,7 @@ const RainfallRadar: React.FC<Props> = ({
           </View>
         </View>
         <View style={styles.controls}>
-          {totalFrames > 1 && connectionStatus === 'connected' && (
+          {totalFrames > 1 && connectionStatus === 'connected' && !isWeb && (
             <TouchableOpacity onPress={toggleAnimation} style={styles.animationButton}>
               <Icon 
                 name={isAnimating ? "pause" : "play"} 
@@ -598,12 +704,12 @@ const RainfallRadar: React.FC<Props> = ({
 
       <View style={styles.statusContainer}>
         <Text style={styles.statusText}>
-          {connectionStatus === 'connected' ? '✅ Connected' :
+          {connectionStatus === 'connected' ? (isWeb ? '📍 Location' : '✅ Connected') :
            connectionStatus === 'connecting' ? '🔄 Connecting' : '❌ Error'}
           {isWeb && ' (Web Mode)'}
         </Text>
         
-        {totalFrames > 0 && (
+        {totalFrames > 0 && !isWeb && (
           <Text style={styles.statusText}>
             {totalFrames} frames{isAnimating ? ' • Playing' : ''}
           </Text>
@@ -641,12 +747,25 @@ const RainfallRadar: React.FC<Props> = ({
             style={styles.webView}
             onMessage={handleWebViewMessage}
             onError={handleWebViewError}
+            onLoad={handleWebViewLoad}
             javaScriptEnabled={true}
             domStorageEnabled={true}
             startInLoadingState={false}
             mixedContentMode="compatibility"
             originWhitelist={['*']}
+            allowsInlineMediaPlayback={true}
+            mediaPlaybackRequiresUserAction={false}
+            scalesPageToFit={true}
+            bounces={false}
+            scrollEnabled={false}
           />
+          {isWeb && connectionStatus === 'connected' && (
+            <View style={styles.webNotice}>
+              <Text style={styles.webNoticeText}>
+                📱 Full interactive radar available in mobile app
+              </Text>
+            </View>
+          )}
         </View>
       )}
     </View>

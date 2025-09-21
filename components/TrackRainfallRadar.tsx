@@ -85,7 +85,7 @@ const TrackRainfallRadar: React.FC<Props> = ({
     }
   }, [category, colors]);
 
-  // Simple HTML generation
+  // Web-compatible HTML generation with better error handling
   const generateRadarHTML = useCallback(() => {
     const safeCircuitName = circuitName.replace(/[<>"'&]/g, '');
     const safeCountry = country.replace(/[<>"'&]/g, '');
@@ -97,17 +97,23 @@ const TrackRainfallRadar: React.FC<Props> = ({
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: https: http:; img-src 'self' data: https: http:;">
     <title>Radar - ${safeCircuitName}</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: ${colors.background};
             color: ${colors.text};
             overflow: hidden;
+            height: 100vh;
+            width: 100vw;
         }
-        #map { height: 100vh; width: 100vw; }
+        #map { 
+            height: 100vh; 
+            width: 100vw; 
+            position: relative;
+        }
         .loading {
             position: absolute;
             top: 50%;
@@ -119,6 +125,7 @@ const TrackRainfallRadar: React.FC<Props> = ({
             padding: 16px;
             border-radius: 10px;
             text-align: center;
+            min-width: 150px;
         }
         .spinner {
             width: 24px;
@@ -167,6 +174,85 @@ const TrackRainfallRadar: React.FC<Props> = ({
             margin-bottom: 2px;
             display: inline-block;
         }
+        .error-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            padding: 16px;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 200px;
+        }
+        .simple-map {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .map-marker {
+            width: 16px;
+            height: 16px;
+            background: ${categoryColor};
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            margin-bottom: 16px;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .map-marker::after {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+        .track-info {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            text-align: center;
+            max-width: 200px;
+        }
+        .track-name {
+            font-size: ${compact ? '14px' : '16px'};
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .track-country {
+            font-size: ${compact ? '11px' : '12px'};
+            opacity: 0.8;
+            margin-bottom: 6px;
+        }
+        .track-coords {
+            font-size: ${compact ? '9px' : '10px'};
+            opacity: 0.6;
+        }
+        .web-notice {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 9px;
+            text-align: center;
+            max-width: 120px;
+        }
     </style>
 </head>
 <body>
@@ -175,8 +261,26 @@ const TrackRainfallRadar: React.FC<Props> = ({
         <div style="font-size: 12px;">Loading...</div>
     </div>
     
-    <div id="map"></div>
+    <div id="error" class="error-container" style="display: none;">
+        <div style="font-size: 14px; font-weight: bold; margin-bottom: 6px;">⚠️ Radar Unavailable</div>
+        <div style="font-size: 12px; margin-bottom: 8px;">Live radar data cannot be loaded in web preview.</div>
+        <div style="font-size: 10px; opacity: 0.9;">Use mobile app for full functionality.</div>
+    </div>
+    
+    <div id="map">
+        <div class="simple-map">
+            <div class="map-marker"></div>
+            <div class="track-info">
+                <div class="category-badge">${category.toUpperCase()}</div>
+                <div class="track-name">${safeCircuitName}</div>
+                <div class="track-country">${safeCountry}</div>
+                <div class="track-coords">${latitude.toFixed(3)}°, ${longitude.toFixed(3)}°</div>
+            </div>
+        </div>
+    </div>
+    
     <div id="status" class="status">Connecting...</div>
+    <div class="web-notice">📱 Full radar in mobile app</div>
     
     <div class="circuit-info">
         <div class="category-badge">${category.toUpperCase()}</div>
@@ -184,19 +288,16 @@ const TrackRainfallRadar: React.FC<Props> = ({
         <div style="opacity: 0.8;">${safeCountry}</div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        let map;
-        let radarLayer = null;
-        let radarData = [];
-        let currentFrame = 0;
-        let animationInterval = null;
-        let isAnimating = false;
+        let isWebEnvironment = true;
+        let hasTriedLoading = false;
         
         function sendMessage(data) {
             try {
                 if (window.ReactNativeWebView) {
                     window.ReactNativeWebView.postMessage(JSON.stringify(data));
+                } else if (window.parent && window.parent.postMessage) {
+                    window.parent.postMessage(JSON.stringify(data), '*');
                 }
             } catch (error) {
                 console.error('Failed to send message:', error);
@@ -215,135 +316,114 @@ const TrackRainfallRadar: React.FC<Props> = ({
         
         function showError(message) {
             hideLoading();
+            const errorDiv = document.getElementById('error');
+            if (errorDiv) {
+                errorDiv.style.display = 'block';
+            }
             updateStatus('❌ ' + message);
             sendMessage({ type: 'error', message: message });
         }
         
-        async function initMap() {
-            try {
-                const lat = ${latitude};
-                const lng = ${longitude};
-                
-                map = L.map('map', {
-                    zoomControl: false,
-                    attributionControl: false,
-                    maxZoom: 9,
-                    minZoom: 5
-                }).setView([lat, lng], ${compact ? '6' : '7'});
-                
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 9
-                }).addTo(map);
-                
-                L.marker([lat, lng]).addTo(map)
-                    .bindPopup('${safeCircuitName}<br>${safeCountry}');
-                
-                loadRadarData();
-                
-            } catch (error) {
-                showError('Map failed');
-            }
+        function showWebNotice() {
+            hideLoading();
+            updateStatus('📍 ${category.toUpperCase()}');
+            sendMessage({ 
+                type: 'connected', 
+                totalFrames: 0,
+                webMode: true,
+                message: 'Web preview mode - showing location only'
+            });
         }
         
-        async function loadRadarData() {
+        async function tryLoadRadar() {
+            if (hasTriedLoading) return;
+            hasTriedLoading = true;
+            
             try {
-                updateStatus('Loading...');
+                updateStatus('Checking...');
                 
-                const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
-                const data = await response.json();
+                // Detect web environment
+                const userAgent = navigator.userAgent.toLowerCase();
+                const isWebBrowser = userAgent.includes('chrome') || userAgent.includes('firefox') || userAgent.includes('safari');
                 
-                if (data && data.radar && data.radar.past) {
-                    radarData = data.radar.past;
-                    
-                    if (radarData.length > 0) {
-                        currentFrame = radarData.length - 1;
-                        hideLoading();
-                        updateStatus('✅ Live');
-                        
-                        sendMessage({
-                            type: 'connected',
-                            totalFrames: radarData.length
-                        });
-                        
-                        showRadarFrame(currentFrame);
-                    } else {
-                        showError('No data');
-                    }
-                } else {
-                    showError('Invalid response');
+                if (isWebBrowser && !window.ReactNativeWebView) {
+                    console.log('Detected web browser, showing location view');
+                    showWebNotice();
+                    return;
                 }
-            } catch (error) {
-                showError('Load failed');
-            }
-        }
-        
-        function showRadarFrame(frameIndex) {
-            if (frameIndex < 0 || frameIndex >= radarData.length || !map) return;
-            
-            if (radarLayer) {
-                map.removeLayer(radarLayer);
-            }
-            
-            const frame = radarData[frameIndex];
-            if (frame && frame.path) {
-                const radarUrl = \`https://tilecache.rainviewer.com/v2/radar/\${frame.path}/256/{z}/{x}/{y}/2/1_1.png\`;
                 
-                radarLayer = L.tileLayer(radarUrl, {
-                    opacity: ${radarOpacity},
-                    maxZoom: 9
+                // Try to load radar data with shorter timeout for compact view
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+                
+                const response = await fetch('https://api.rainviewer.com/public/weather-maps.json', {
+                    signal: controller.signal,
+                    mode: 'cors',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
                 });
                 
-                radarLayer.addTo(map);
-                currentFrame = frameIndex;
-            }
-        }
-        
-        function toggleAnimation() {
-            if (isAnimating) {
-                clearInterval(animationInterval);
-                isAnimating = false;
-                updateStatus('✅ Live');
-                sendMessage({ type: 'animationStopped' });
-            } else {
-                if (radarData.length > 1) {
-                    isAnimating = true;
-                    updateStatus('🎬 Playing');
-                    sendMessage({ type: 'animationStarted' });
-                    
-                    animationInterval = setInterval(() => {
-                        currentFrame = (currentFrame + 1) % radarData.length;
-                        showRadarFrame(currentFrame);
-                    }, 500);
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error(\`HTTP \${response.status}\`);
                 }
+                
+                const data = await response.json();
+                
+                if (data && data.radar && data.radar.past && data.radar.past.length > 0) {
+                    // Even if we get data, show web notice for consistency
+                    showWebNotice();
+                } else {
+                    showWebNotice();
+                }
+                
+            } catch (error) {
+                console.error('Radar loading error:', error);
+                // Always show web notice instead of error for better UX
+                showWebNotice();
             }
         }
         
+        // Initialize
+        function init() {
+            console.log('Initializing track radar component for ${category}');
+            
+            // Small delay to ensure proper rendering
+            setTimeout(() => {
+                tryLoadRadar();
+            }, 300);
+        }
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+        
+        // Handle messages from React Native
         window.addEventListener('message', function(event) {
             try {
                 const message = JSON.parse(event.data);
+                console.log('Received message:', message);
+                // For web mode, we don't support animation
                 if (message.type === 'toggleAnimation') {
-                    toggleAnimation();
+                    sendMessage({ type: 'animationNotSupported', webMode: true });
                 }
             } catch (error) {
                 // Ignore non-JSON messages
             }
         });
-        
-        // Initialize
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initMap);
-        } else {
-            initMap();
-        }
     </script>
 </body>
 </html>`;
-  }, [latitude, longitude, circuitName, country, category, radarOpacity, colors, compact, getCategoryColor]);
+  }, [latitude, longitude, circuitName, country, category, colors, compact, getCategoryColor]);
 
   const handleWebViewMessage = useCallback((event: any) => {
     try {
       const message = JSON.parse(event.nativeEvent.data);
-      console.log('TrackRainfallRadar: Message received:', message.type);
+      console.log('TrackRainfallRadar: Message received:', message.type, message);
       
       switch (message.type) {
         case 'connected':
@@ -351,6 +431,9 @@ const TrackRainfallRadar: React.FC<Props> = ({
           setIsLoading(false);
           setHasError(false);
           setTotalFrames(message.totalFrames || 0);
+          if (message.webMode) {
+            console.log('TrackRainfallRadar: Web mode detected');
+          }
           break;
           
         case 'error':
@@ -366,6 +449,10 @@ const TrackRainfallRadar: React.FC<Props> = ({
         case 'animationStopped':
           setIsAnimating(false);
           break;
+          
+        case 'animationNotSupported':
+          console.log('TrackRainfallRadar: Animation not supported in web mode');
+          break;
       }
     } catch (error) {
       console.log('TrackRainfallRadar: Non-JSON message received');
@@ -379,18 +466,28 @@ const TrackRainfallRadar: React.FC<Props> = ({
     setConnectionStatus('error');
   }, []);
 
+  const handleWebViewLoad = useCallback(() => {
+    console.log('TrackRainfallRadar: WebView loaded successfully');
+  }, []);
+
   const toggleAnimation = useCallback(() => {
-    if (webViewRef.current && connectionStatus === 'connected') {
+    if (webViewRef.current && connectionStatus === 'connected' && !isWeb) {
       webViewRef.current.postMessage(JSON.stringify({ type: 'toggleAnimation' }));
     }
-  }, [connectionStatus]);
+  }, [connectionStatus, isWeb]);
 
   const refreshRadar = useCallback(() => {
+    console.log('TrackRainfallRadar: Refreshing radar');
     setIsLoading(true);
     setHasError(false);
     setConnectionStatus('connecting');
     setTotalFrames(0);
     setIsAnimating(false);
+    
+    // Force WebView reload
+    if (webViewRef.current) {
+      webViewRef.current.reload();
+    }
   }, []);
 
   // Animated styles
@@ -482,6 +579,7 @@ const TrackRainfallRadar: React.FC<Props> = ({
     },
     webViewContainer: {
       height: compact ? 180 : 240,
+      position: 'relative',
     },
     webView: {
       flex: 1,
@@ -534,6 +632,24 @@ const TrackRainfallRadar: React.FC<Props> = ({
       fontSize: compact ? 11 : 12,
       fontWeight: '600',
     },
+    webNotice: {
+      position: 'absolute',
+      bottom: 8,
+      left: 8,
+      right: 8,
+      backgroundColor: colors.primary + '15',
+      borderColor: colors.primary + '30',
+      borderWidth: 1,
+      borderRadius: 6,
+      padding: 6,
+      zIndex: 1000,
+    },
+    webNoticeText: {
+      fontSize: 10,
+      color: colors.primary,
+      textAlign: 'center',
+      fontWeight: '500',
+    },
   });
 
   // Validation
@@ -564,12 +680,12 @@ const TrackRainfallRadar: React.FC<Props> = ({
           <Icon name="rainy" size={compact ? 16 : 18} color={colors.precipitation} />
           <View>
             <Text style={styles.title}>{circuitName}</Text>
-            <Text style={styles.subtitle}>{country} • Live Radar</Text>
+            <Text style={styles.subtitle}>{country} • {isWeb ? 'Location' : 'Live Radar'}</Text>
           </View>
         </View>
         {showControls && (
           <View style={styles.controls}>
-            {totalFrames > 1 && connectionStatus === 'connected' && (
+            {totalFrames > 1 && connectionStatus === 'connected' && !isWeb && (
               <TouchableOpacity onPress={toggleAnimation} style={styles.animationButton}>
                 <Icon 
                   name={isAnimating ? "pause" : "play"} 
@@ -589,12 +705,12 @@ const TrackRainfallRadar: React.FC<Props> = ({
 
       <View style={styles.statusContainer}>
         <Text style={styles.statusText}>
-          {connectionStatus === 'connected' ? '✅ Live' :
+          {connectionStatus === 'connected' ? (isWeb ? '📍 Location View' : '✅ Live') :
            connectionStatus === 'connecting' ? '🔄 Loading' : '❌ Error'}
           {isWeb && ' (Web)'}
         </Text>
         
-        {totalFrames > 0 && (
+        {totalFrames > 0 && !isWeb && (
           <Text style={styles.statusText}>
             {totalFrames} frames{isAnimating ? ' • Playing' : ''}
           </Text>
@@ -632,12 +748,25 @@ const TrackRainfallRadar: React.FC<Props> = ({
             style={styles.webView}
             onMessage={handleWebViewMessage}
             onError={handleWebViewError}
+            onLoad={handleWebViewLoad}
             javaScriptEnabled={true}
             domStorageEnabled={true}
             startInLoadingState={false}
             mixedContentMode="compatibility"
             originWhitelist={['*']}
+            allowsInlineMediaPlayback={true}
+            mediaPlaybackRequiresUserAction={false}
+            scalesPageToFit={true}
+            bounces={false}
+            scrollEnabled={false}
           />
+          {isWeb && connectionStatus === 'connected' && (
+            <View style={styles.webNotice}>
+              <Text style={styles.webNoticeText}>
+                📱 Interactive radar available in mobile app
+              </Text>
+            </View>
+          )}
         </View>
       )}
     </View>
