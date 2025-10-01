@@ -158,7 +158,9 @@ export default function CoverPage() {
       try {
         router.replace('/(tabs)/f1');
       } catch (error) {
-        console.error('[CoverPage] Navigation error:', error);
+        if (__DEV__) {
+          console.error('[CoverPage] Navigation error:', error);
+        }
       }
     }, 3000);
 

@@ -26,16 +26,20 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
-    console.error('[ErrorBoundary] Caught error:', error);
+    if (__DEV__) {
+      console.error('[ErrorBoundary] Caught error:', error);
+    }
     return { hasError: true };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('[ErrorBoundary] Error details:', {
-      error: error.toString(),
-      errorInfo: errorInfo.componentStack,
-      timestamp: new Date().toISOString(),
-    });
+    if (__DEV__) {
+      console.error('[ErrorBoundary] Error details:', {
+        error: error.toString(),
+        errorInfo: errorInfo.componentStack,
+        timestamp: new Date().toISOString(),
+      });
+    }
     
     this.setState({
       error,
@@ -47,13 +51,17 @@ class ErrorBoundary extends Component<Props, State> {
       try {
         this.props.onError(error, errorInfo);
       } catch (callbackError) {
-        console.error('[ErrorBoundary] Error in onError callback:', callbackError);
+        if (__DEV__) {
+          console.error('[ErrorBoundary] Error in onError callback:', callbackError);
+        }
       }
     }
   }
 
   handleReset = () => {
-    console.log('[ErrorBoundary] Resetting error state');
+    if (__DEV__) {
+      console.log('[ErrorBoundary] Resetting error state');
+    }
     this.setState({
       hasError: false,
       error: null,

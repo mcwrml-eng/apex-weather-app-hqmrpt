@@ -5,7 +5,7 @@ import { Platform } from "react-native";
 
 // Simple debouncing to prevent duplicate errors
 const recentErrors: { [key: string]: number } = {};
-const ERROR_DEBOUNCE_MS = 2000;
+const ERROR_DEBOUNCE_MS = 5000;
 
 const clearErrorAfterDelay = (errorKey: string) => {
   setTimeout(() => delete recentErrors[errorKey], ERROR_DEBOUNCE_MS);
@@ -48,30 +48,6 @@ const sendErrorToParent = (level: string, message: string, data: any) => {
   }
 };
 
-// Function to extract meaningful source location from stack trace
-const extractSourceLocation = (stack: string): string => {
-  if (!stack) return '';
-
-  // Look for various patterns in the stack trace
-  const patterns = [
-    // Pattern for app files: app/filename.tsx:line:column
-    /at .+\/(app\/[^:)]+):(\d+):(\d+)/,
-    // Pattern for components: components/filename.tsx:line:column
-    /at .+\/(components\/[^:)]+):(\d+):(\d+)/,
-    // Pattern for any .tsx/.ts files
-    /at .+\/([^/]+\.tsx?):(\d+):(\d+)/,
-  ];
-
-  for (const pattern of patterns) {
-    const match = stack.match(pattern);
-    if (match) {
-      return ` | Source: ${match[1]}:${match[2]}:${match[3]}`;
-    }
-  }
-
-  return '';
-};
-
 // List of known non-critical error patterns to ignore
 const isNonCriticalError = (message: string): boolean => {
   const nonCriticalPatterns = [
@@ -95,13 +71,51 @@ const isNonCriticalError = (message: string): boolean => {
     'Initializing',
     'Error logging',
     'Polyfills',
+    'AppDiagnostics',
+    'Navigation',
+    'Font',
+    'Splash',
+    'Setting up',
+    'setup complete',
+    'mounted at',
+    'Resolved entry point',
+    'Using app as the root',
+    '[ErrorLogger]',
+    '[AppContent]',
+    '[RootLayout]',
+    '[CoverPage]',
+    '[Polyfills]',
   ];
 
   return nonCriticalPatterns.some(pattern => message.includes(pattern));
 };
 
+// Check if error is actually critical
+const isCriticalError = (message: string): boolean => {
+  const criticalPatterns = [
+    'TypeError:',
+    'ReferenceError:',
+    'SyntaxError:',
+    'RangeError:',
+    'Cannot read property',
+    'Cannot read properties',
+    'is not a function',
+    'is not defined',
+    'Uncaught',
+    'Unhandled',
+    'Failed to',
+    'Network request failed',
+    'Invariant Violation',
+  ];
+
+  return criticalPatterns.some(pattern => message.includes(pattern));
+};
+
 export const setupErrorLogging = () => {
-  console.log('[ErrorLogger] Setting up error logging...');
+  // Only log setup in development
+  if (__DEV__) {
+    console.log('[ErrorLogger] Setting up error logging...');
+  }
 
   // Capture unhandled errors in web environment
   if (typeof window !== 'undefined') {
@@ -117,6 +131,11 @@ export const setupErrorLogging = () => {
           return false;
         }
 
+        // Only report critical errors
+        if (!isCriticalError(errorMessage)) {
+          return false;
+        }
+
         const sourceFile = source ? source.split('/').pop() : 'unknown';
         const errorData = {
           message: errorMessage,
@@ -127,7 +146,7 @@ export const setupErrorLogging = () => {
           timestamp: new Date().toISOString()
         };
 
-        console.error('[ErrorLogger] Runtime Error:', errorData);
+        console.error('[ErrorLogger] Critical Runtime Error:', errorData);
         sendErrorToParent('error', 'JavaScript Runtime Error', errorData);
       } catch (loggingError) {
         // Silently fail
@@ -149,6 +168,11 @@ export const setupErrorLogging = () => {
           
           // Skip non-critical errors
           if (isNonCriticalError(reason)) {
+            return;
+          }
+
+          // Only report critical errors
+          if (!isCriticalError(reason)) {
             return;
           }
 
@@ -182,17 +206,14 @@ export const setupErrorLogging = () => {
         return;
       }
 
-      const stack = new Error().stack || '';
-      const sourceInfo = extractSourceLocation(stack);
+      // Only send critical errors to parent
+      if (isCriticalError(message)) {
+        const stack = new Error().stack || '';
+        sendErrorToParent('error', 'Console Error', message);
+      }
       
-      // Create enhanced message with source information
-      const enhancedMessage = message + sourceInfo;
-      
-      // Log to console
+      // Always log to console
       originalConsoleError(...args);
-      
-      // Send to parent only for critical errors
-      sendErrorToParent('error', 'Console Error', enhancedMessage);
     } catch (loggingError) {
       // Fallback to original console.error
       originalConsoleError(...args);
@@ -202,14 +223,6 @@ export const setupErrorLogging = () => {
   // Override console.warn - but don't send to parent
   console.warn = (...args: any[]) => {
     try {
-      const message = args.join(' ');
-      
-      // Skip non-critical warnings
-      if (isNonCriticalError(message)) {
-        originalConsoleWarn(...args);
-        return;
-      }
-
       // Just log warnings, don't send to parent
       originalConsoleWarn(...args);
     } catch (loggingError) {
@@ -218,5 +231,8 @@ export const setupErrorLogging = () => {
     }
   };
 
-  console.log('[ErrorLogger] Error logging setup complete');
+  // Only log completion in development
+  if (__DEV__) {
+    console.log('[ErrorLogger] Error logging setup complete');
+  }
 };

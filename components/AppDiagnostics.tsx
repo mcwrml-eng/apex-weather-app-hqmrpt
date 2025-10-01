@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { getColors, spacing, borderRadius } from '../styles/commonStyles';
 import { useTheme } from '../state/ThemeContext';
 import { useUnit } from '../state/UnitContext';
@@ -12,9 +12,12 @@ export default function AppDiagnostics() {
   const colors = getColors(isDark);
 
   useEffect(() => {
-    console.log('AppDiagnostics: Component mounted at', mountTime);
-    console.log('AppDiagnostics: Theme:', theme);
-    console.log('AppDiagnostics: Unit:', unit);
+    // Only log in development mode
+    if (__DEV__) {
+      console.log('AppDiagnostics: Component mounted at', mountTime);
+      console.log('AppDiagnostics: Theme:', theme);
+      console.log('AppDiagnostics: Unit:', unit);
+    }
   }, [mountTime, theme, unit]);
 
   const styles = StyleSheet.create({

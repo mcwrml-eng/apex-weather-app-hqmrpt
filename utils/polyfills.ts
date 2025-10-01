@@ -21,7 +21,9 @@ if (typeof Reflect === 'undefined' || !Reflect.construct) {
         
         return instance;
       } catch (error) {
-        console.error('[Polyfills] Error in Reflect.construct:', error);
+        if (__DEV__) {
+          console.error('[Polyfills] Error in Reflect.construct:', error);
+        }
         throw error;
       }
     };
@@ -40,7 +42,9 @@ if (typeof Reflect === 'undefined' || !Reflect.apply) {
       try {
         return Function.prototype.apply.call(target, thisArgument, argumentsList || []);
       } catch (error) {
-        console.error('[Polyfills] Error in Reflect.apply:', error);
+        if (__DEV__) {
+          console.error('[Polyfills] Error in Reflect.apply:', error);
+        }
         throw error;
       }
     };
@@ -56,7 +60,9 @@ if (!Object.setPrototypeOf) {
       obj.__proto__ = proto;
       return obj;
     } catch (error) {
-      console.error('[Polyfills] Error in Object.setPrototypeOf:', error);
+      if (__DEV__) {
+        console.error('[Polyfills] Error in Object.setPrototypeOf:', error);
+      }
       return obj;
     }
   };
@@ -70,7 +76,9 @@ if (!Object.getPrototypeOf) {
       // @ts-expect-error - Using __proto__ for polyfill
       return obj.__proto__ || Object.prototype;
     } catch (error) {
-      console.error('[Polyfills] Error in Object.getPrototypeOf:', error);
+      if (__DEV__) {
+        console.error('[Polyfills] Error in Object.getPrototypeOf:', error);
+      }
       return Object.prototype;
     }
   };
@@ -87,7 +95,9 @@ if (originalApply) {
       const args = argArray === null || argArray === undefined ? [] : Array.from(argArray);
       return originalApply.call(this, thisArg, args);
     } catch (error) {
-      console.error('[Polyfills] Error in Function.prototype.apply:', error);
+      if (__DEV__) {
+        console.error('[Polyfills] Error in Function.prototype.apply:', error);
+      }
       throw error;
     }
   };
@@ -99,19 +109,23 @@ if (typeof global !== 'undefined') {
   
   if ((global as any).ErrorUtils && (global as any).ErrorUtils.setGlobalHandler) {
     (global as any).ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
-      console.error('[Polyfills] Global error caught:', {
-        error: error.toString(),
-        stack: error.stack,
-        isFatal,
-        timestamp: new Date().toISOString(),
-      });
+      if (__DEV__) {
+        console.error('[Polyfills] Global error caught:', {
+          error: error.toString(),
+          stack: error.stack,
+          isFatal,
+          timestamp: new Date().toISOString(),
+        });
+      }
       
       // Call original handler if it exists
       if (originalErrorHandler && typeof originalErrorHandler === 'function') {
         try {
           originalErrorHandler(error, isFatal);
         } catch (handlerError) {
-          console.error('[Polyfills] Error in original error handler:', handlerError);
+          if (__DEV__) {
+            console.error('[Polyfills] Error in original error handler:', handlerError);
+          }
         }
       }
     });

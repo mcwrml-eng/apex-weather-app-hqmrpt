@@ -25,7 +25,9 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 try {
   setupErrorLogging();
 } catch (error) {
-  console.error('[RootLayout] Failed to setup error logging:', error);
+  if (__DEV__) {
+    console.error('[RootLayout] Failed to setup error logging:', error);
+  }
 }
 
 function LoadingScreen({ isDark }: { isDark: boolean }) {
@@ -66,7 +68,9 @@ function AppContent() {
   useEffect(() => {
     // Add global error handler for uncaught errors
     const errorHandler = (error: any) => {
-      console.error('[AppContent] Uncaught error:', error);
+      if (__DEV__) {
+        console.error('[AppContent] Uncaught error:', error);
+      }
       return true; // Prevent default error handling
     };
 
@@ -81,7 +85,7 @@ function AppContent() {
       try {
         // Wait for fonts to load or error
         if (fontsLoaded || fontError) {
-          if (fontError) {
+          if (fontError && __DEV__) {
             console.warn('[AppContent] Font loading error, continuing anyway');
           }
           
@@ -91,7 +95,9 @@ function AppContent() {
           setAppIsReady(true);
         }
       } catch (e) {
-        console.error('[AppContent] Error preparing app:', e);
+        if (__DEV__) {
+          console.error('[AppContent] Error preparing app:', e);
+        }
         // Continue anyway to prevent app from being stuck
         setAppIsReady(true);
       }
@@ -106,7 +112,9 @@ function AppContent() {
         try {
           await SplashScreen.hideAsync();
         } catch (e) {
-          console.warn('[AppContent] Error hiding splash screen:', e);
+          if (__DEV__) {
+            console.warn('[AppContent] Error hiding splash screen:', e);
+          }
         }
       }
     }
