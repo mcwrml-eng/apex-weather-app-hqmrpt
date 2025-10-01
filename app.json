@@ -57,6 +57,13 @@
       "eas": {
         "projectId": "your-project-id"
       }
-    }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "enabled": false
+    },
+    "owner": "anonymous"
   }
 }
