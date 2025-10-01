@@ -7,12 +7,12 @@ console.log('[Polyfills] Loading polyfills...');
 if (typeof Reflect === 'undefined' || !Reflect.construct) {
   console.warn('[Polyfills] Reflect.construct not available, adding polyfill');
   
-  // @ts-ignore
+  // @ts-expect-error - Polyfill for missing Reflect API
   global.Reflect = global.Reflect || {};
   
-  // @ts-ignore
+  // @ts-expect-error - Polyfill for missing Reflect.construct
   if (!global.Reflect.construct) {
-    // @ts-ignore
+    // @ts-expect-error - Polyfill implementation
     global.Reflect.construct = function(Target: any, args: any[], newTarget?: any) {
       try {
         // Use the new operator with spread args
@@ -36,12 +36,12 @@ if (typeof Reflect === 'undefined' || !Reflect.construct) {
 if (typeof Reflect === 'undefined' || !Reflect.apply) {
   console.warn('[Polyfills] Reflect.apply not available, adding polyfill');
   
-  // @ts-ignore
+  // @ts-expect-error - Polyfill for missing Reflect API
   global.Reflect = global.Reflect || {};
   
-  // @ts-ignore
+  // @ts-expect-error - Polyfill for missing Reflect.apply
   if (!global.Reflect.apply) {
-    // @ts-ignore
+    // @ts-expect-error - Polyfill implementation
     global.Reflect.apply = function(target: any, thisArgument: any, argumentsList: any[]) {
       try {
         return Function.prototype.apply.call(target, thisArgument, argumentsList || []);
@@ -57,10 +57,10 @@ if (typeof Reflect === 'undefined' || !Reflect.apply) {
 if (!Object.setPrototypeOf) {
   console.warn('[Polyfills] Object.setPrototypeOf not available, adding polyfill');
   
-  // @ts-ignore
+  // @ts-expect-error - Polyfill for missing Object.setPrototypeOf
   Object.setPrototypeOf = function(obj: any, proto: any) {
     try {
-      // @ts-ignore
+      // @ts-expect-error - Using __proto__ for polyfill
       obj.__proto__ = proto;
       return obj;
     } catch (error) {
@@ -76,7 +76,7 @@ if (!Object.getPrototypeOf) {
   
   Object.getPrototypeOf = function(obj: any) {
     try {
-      // @ts-ignore
+      // @ts-expect-error - Using __proto__ for polyfill
       return obj.__proto__ || Object.prototype;
     } catch (error) {
       console.error('[Polyfills] Error in Object.getPrototypeOf:', error);
@@ -86,8 +86,10 @@ if (!Object.getPrototypeOf) {
 }
 
 // Patch Function.prototype.apply to be more robust
+// eslint-disable-next-line no-extend-native
 const originalApply = Function.prototype.apply;
 if (originalApply) {
+  // eslint-disable-next-line no-extend-native
   Function.prototype.apply = function(thisArg: any, argArray?: any) {
     try {
       // Ensure argArray is an array or undefined

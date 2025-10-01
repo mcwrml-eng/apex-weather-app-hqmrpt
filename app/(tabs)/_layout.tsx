@@ -15,7 +15,7 @@ export default function TabLayout() {
     console.log('TabLayout: Component mounted');
     console.log('TabLayout: Theme is', isDark ? 'dark' : 'light');
     console.log('TabLayout: Colors loaded:', colors.primary);
-  }, []);
+  }, [isDark, colors.primary]);
 
   useEffect(() => {
     console.log('TabLayout: Theme changed to', isDark ? 'dark' : 'light');

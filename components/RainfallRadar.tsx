@@ -68,7 +68,7 @@ const RainfallRadar: React.FC<Props> = ({
       pulseAnimation.value = withTiming(0, { duration: 300 });
       loadingRotation.value = withTiming(0, { duration: 300 });
     }
-  }, [isLoading]);
+  }, [isLoading, pulseAnimation, loadingRotation]);
 
   // Web-compatible HTML generation with better error handling
   const generateRadarHTML = useCallback(() => {

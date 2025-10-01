@@ -22,7 +22,7 @@ export default function F1Screen() {
     console.log('F1Screen: Component mounted');
     console.log('F1Screen: Loaded', f1Circuits.length, 'F1 circuits');
     console.log('F1Screen: Theme is', isDark ? 'dark' : 'light');
-  }, []);
+  }, [isDark]);
 
   const styles = StyleSheet.create({
     container: {

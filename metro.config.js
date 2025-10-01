@@ -31,14 +31,9 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     console.warn('[Metro] Error resolving module:', moduleName, error?.message || error);
     
     // Try to return empty module as fallback
-    try {
-      return {
-        type: 'empty',
-      };
-    } catch (fallbackError) {
-      // If even that fails, rethrow original error
-      throw error;
-    }
+    return {
+      type: 'empty',
+    };
   }
 };
 

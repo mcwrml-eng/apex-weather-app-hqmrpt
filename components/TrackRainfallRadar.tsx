@@ -73,7 +73,7 @@ const TrackRainfallRadar: React.FC<Props> = ({
       pulseAnimation.value = withTiming(0, { duration: 300 });
       loadingRotation.value = withTiming(0, { duration: 300 });
     }
-  }, [isLoading]);
+  }, [isLoading, pulseAnimation, loadingRotation]);
 
   // Get category color
   const getCategoryColor = useCallback(() => {

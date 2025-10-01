@@ -15,7 +15,7 @@ export default function AppDiagnostics() {
     console.log('AppDiagnostics: Component mounted at', mountTime);
     console.log('AppDiagnostics: Theme:', theme);
     console.log('AppDiagnostics: Unit:', unit);
-  }, []);
+  }, [mountTime, theme, unit]);
 
   const styles = StyleSheet.create({
     container: {
