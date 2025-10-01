@@ -37,18 +37,7 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   }
 };
 
-// Add transformer options for better error handling
-config.transformer = {
-  ...config.transformer,
-  babelTransformerPath: require.resolve('metro-react-native-babel-transformer'),
-  minifierConfig: {
-    keep_classnames: true,
-    keep_fnames: true,
-    mangle: {
-      keep_classnames: true,
-      keep_fnames: true,
-    },
-  },
-};
+// Transformer options are already configured by expo/metro-config
+// No need to manually set babelTransformerPath as it's handled by Expo
 
 module.exports = config;
