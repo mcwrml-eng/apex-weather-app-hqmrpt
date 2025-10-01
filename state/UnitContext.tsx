@@ -16,7 +16,6 @@ export function UnitProvider({ children }: { children: React.ReactNode }) {
   const toggleUnit = useCallback(() => {
     setUnit((currentUnit) => {
       const newUnit = currentUnit === 'metric' ? 'imperial' : 'metric';
-      console.log('[UnitContext] Toggling unit from', currentUnit, 'to', newUnit);
       return newUnit;
     });
   }, []);
@@ -25,8 +24,6 @@ export function UnitProvider({ children }: { children: React.ReactNode }) {
     unit,
     toggleUnit,
   };
-
-  console.log('[UnitProvider] Rendering with unit:', unit);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

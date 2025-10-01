@@ -25,10 +25,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
           const savedTheme = window.localStorage.getItem(STORAGE_KEY);
           if (savedTheme === 'light' || savedTheme === 'dark') {
-            console.log('[ThemeProvider] Loading saved theme:', savedTheme);
             setTheme(savedTheme);
-          } else {
-            console.log('[ThemeProvider] No saved theme, using default: light');
           }
         }
       } catch (error) {
@@ -44,7 +41,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const toggleTheme = useCallback(() => {
     setTheme((currentTheme) => {
       const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-      console.log('[ThemeProvider] Toggling theme from', currentTheme, 'to', newTheme);
       
       // Save theme preference
       if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
@@ -69,8 +65,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   if (!isInitialized) {
     return null;
   }
-
-  console.log('[ThemeProvider] Rendering with theme:', theme);
 
   return (
     <ThemeContext.Provider value={value}>

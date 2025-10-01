@@ -1,12 +1,8 @@
 
 // Polyfills for compatibility with React Native 0.80.0 and React 19
 
-console.log('[Polyfills] Loading polyfills...');
-
 // Ensure Reflect.construct is available and works correctly
 if (typeof Reflect === 'undefined' || !Reflect.construct) {
-  console.warn('[Polyfills] Reflect.construct not available, adding polyfill');
-  
   // @ts-expect-error - Polyfill for missing Reflect API
   global.Reflect = global.Reflect || {};
   
@@ -34,8 +30,6 @@ if (typeof Reflect === 'undefined' || !Reflect.construct) {
 
 // Ensure Reflect.apply is available
 if (typeof Reflect === 'undefined' || !Reflect.apply) {
-  console.warn('[Polyfills] Reflect.apply not available, adding polyfill');
-  
   // @ts-expect-error - Polyfill for missing Reflect API
   global.Reflect = global.Reflect || {};
   
@@ -55,8 +49,6 @@ if (typeof Reflect === 'undefined' || !Reflect.apply) {
 
 // Ensure Object.setPrototypeOf is available
 if (!Object.setPrototypeOf) {
-  console.warn('[Polyfills] Object.setPrototypeOf not available, adding polyfill');
-  
   // @ts-expect-error - Polyfill for missing Object.setPrototypeOf
   Object.setPrototypeOf = function(obj: any, proto: any) {
     try {
@@ -72,8 +64,7 @@ if (!Object.setPrototypeOf) {
 
 // Ensure Object.getPrototypeOf is available
 if (!Object.getPrototypeOf) {
-  console.warn('[Polyfills] Object.getPrototypeOf not available, adding polyfill');
-  
+  // @ts-expect-error - Polyfill for missing Object.getPrototypeOf
   Object.getPrototypeOf = function(obj: any) {
     try {
       // @ts-expect-error - Using __proto__ for polyfill
@@ -152,7 +143,5 @@ console.warn = function(...args: any[]) {
     }
   }
 };
-
-console.log('[Polyfills] All polyfills loaded successfully');
 
 export {};

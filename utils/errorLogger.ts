@@ -5,7 +5,7 @@ import { Platform } from "react-native";
 
 // Simple debouncing to prevent duplicate errors
 const recentErrors: { [key: string]: number } = {};
-const ERROR_DEBOUNCE_MS = 1000;
+const ERROR_DEBOUNCE_MS = 2000;
 
 const clearErrorAfterDelay = (errorKey: string) => {
   setTimeout(() => delete recentErrors[errorKey], ERROR_DEBOUNCE_MS);
@@ -13,6 +13,11 @@ const clearErrorAfterDelay = (errorKey: string) => {
 
 // Function to send errors to parent window (React frontend)
 const sendErrorToParent = (level: string, message: string, data: any) => {
+  // Only send actual errors, not warnings or info
+  if (level !== 'error') {
+    return;
+  }
+
   // Create a simple key to identify duplicate errors
   const errorKey = `${level}:${message}`;
   const now = Date.now();
@@ -40,7 +45,6 @@ const sendErrorToParent = (level: string, message: string, data: any) => {
     }
   } catch (error) {
     // Silently fail to avoid infinite error loops
-    console.warn('[ErrorLogger] Failed to send error to parent:', error);
   }
 };
 
@@ -68,6 +72,34 @@ const extractSourceLocation = (stack: string): string => {
   return '';
 };
 
+// List of known non-critical error patterns to ignore
+const isNonCriticalError = (message: string): boolean => {
+  const nonCriticalPatterns = [
+    'VirtualizedLists should never be nested',
+    'Require cycle:',
+    'deprecated',
+    'peer dependencies',
+    'componentWillReceiveProps',
+    'componentWillMount',
+    'TabLayout:',
+    'ThemeProvider',
+    'UnitProvider',
+    'AppContent',
+    'CoverPage',
+    'RootLayout',
+    'Logs will appear',
+    'Component mounted',
+    'Rendering',
+    'Theme',
+    'Loading',
+    'Initializing',
+    'Error logging',
+    'Polyfills',
+  ];
+
+  return nonCriticalPatterns.some(pattern => message.includes(pattern));
+};
+
 export const setupErrorLogging = () => {
   console.log('[ErrorLogger] Setting up error logging...');
 
@@ -78,9 +110,16 @@ export const setupErrorLogging = () => {
     
     window.onerror = (message, source, lineno, colno, error) => {
       try {
+        const errorMessage = String(message);
+        
+        // Skip non-critical errors
+        if (isNonCriticalError(errorMessage)) {
+          return false;
+        }
+
         const sourceFile = source ? source.split('/').pop() : 'unknown';
         const errorData = {
-          message: String(message),
+          message: errorMessage,
           source: `${sourceFile}:${lineno}:${colno}`,
           line: lineno,
           column: colno,
@@ -88,10 +127,10 @@ export const setupErrorLogging = () => {
           timestamp: new Date().toISOString()
         };
 
-        console.error('[ErrorLogger] 🚨 RUNTIME ERROR:', errorData);
+        console.error('[ErrorLogger] Runtime Error:', errorData);
         sendErrorToParent('error', 'JavaScript Runtime Error', errorData);
       } catch (loggingError) {
-        console.warn('[ErrorLogger] Error while logging error:', loggingError);
+        // Silently fail
       }
 
       // Call original handler if it exists
@@ -106,16 +145,23 @@ export const setupErrorLogging = () => {
     if (Platform.OS === 'web') {
       window.addEventListener('unhandledrejection', (event) => {
         try {
+          const reason = String(event.reason);
+          
+          // Skip non-critical errors
+          if (isNonCriticalError(reason)) {
+            return;
+          }
+
           const errorData = {
             reason: event.reason,
             promise: String(event.promise),
             timestamp: new Date().toISOString()
           };
 
-          console.error('[ErrorLogger] 🚨 UNHANDLED PROMISE REJECTION:', errorData);
+          console.error('[ErrorLogger] Unhandled Promise Rejection:', errorData);
           sendErrorToParent('error', 'Unhandled Promise Rejection', errorData);
         } catch (loggingError) {
-          console.warn('[ErrorLogger] Error while logging promise rejection:', loggingError);
+          // Silently fail
         }
       });
     }
@@ -125,62 +171,47 @@ export const setupErrorLogging = () => {
   const originalConsoleError = console.error;
   const originalConsoleWarn = console.warn;
 
-  // Override console.error to capture more detailed information
+  // Override console.error to capture only critical errors
   console.error = (...args: any[]) => {
     try {
+      const message = args.join(' ');
+      
+      // Skip non-critical errors
+      if (isNonCriticalError(message)) {
+        originalConsoleError(...args);
+        return;
+      }
+
       const stack = new Error().stack || '';
       const sourceInfo = extractSourceLocation(stack);
       
-      // Filter out known non-critical errors
-      const message = args.join(' ');
-      const isKnownNonCritical = 
-        message.includes('VirtualizedLists should never be nested') ||
-        message.includes('Require cycle:') ||
-        message.includes('deprecated') ||
-        message.includes('peer dependencies');
-
-      if (!isKnownNonCritical) {
-        // Create enhanced message with source information
-        const enhancedMessage = message + sourceInfo;
-        
-        // Add timestamp and make it stand out in Metro logs
-        originalConsoleError('[ErrorLogger] 🔥 ERROR:', new Date().toISOString(), enhancedMessage);
-        
-        // Also send to parent
-        sendErrorToParent('error', 'Console Error', enhancedMessage);
-      } else {
-        // Just log normally for non-critical errors
-        originalConsoleError(...args);
-      }
+      // Create enhanced message with source information
+      const enhancedMessage = message + sourceInfo;
+      
+      // Log to console
+      originalConsoleError(...args);
+      
+      // Send to parent only for critical errors
+      sendErrorToParent('error', 'Console Error', enhancedMessage);
     } catch (loggingError) {
       // Fallback to original console.error
       originalConsoleError(...args);
     }
   };
 
-  // Override console.warn to capture warnings with source location
+  // Override console.warn - but don't send to parent
   console.warn = (...args: any[]) => {
     try {
       const message = args.join(' ');
       
-      // Filter out known non-critical warnings
-      const isKnownNonCritical = 
-        message.includes('componentWillReceiveProps') ||
-        message.includes('componentWillMount') ||
-        message.includes('deprecated') ||
-        message.includes('peer dependencies');
-
-      if (!isKnownNonCritical) {
-        const stack = new Error().stack || '';
-        const sourceInfo = extractSourceLocation(stack);
-        const enhancedMessage = message + sourceInfo;
-
-        originalConsoleWarn('[ErrorLogger] ⚠️ WARNING:', new Date().toISOString(), enhancedMessage);
-        sendErrorToParent('warn', 'Console Warning', enhancedMessage);
-      } else {
-        // Just log normally for non-critical warnings
+      // Skip non-critical warnings
+      if (isNonCriticalError(message)) {
         originalConsoleWarn(...args);
+        return;
       }
+
+      // Just log warnings, don't send to parent
+      originalConsoleWarn(...args);
     } catch (loggingError) {
       // Fallback to original console.warn
       originalConsoleWarn(...args);

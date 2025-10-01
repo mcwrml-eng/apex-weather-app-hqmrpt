@@ -12,16 +12,8 @@ export default function TabLayout() {
   const colors = getColors(isDark);
 
   useEffect(() => {
-    console.log('TabLayout: Component mounted');
-    console.log('TabLayout: Theme is', isDark ? 'dark' : 'light');
-    console.log('TabLayout: Colors loaded:', colors.primary);
+    // Component mounted - no need to log
   }, [isDark, colors.primary]);
-
-  useEffect(() => {
-    console.log('TabLayout: Theme changed to', isDark ? 'dark' : 'light');
-  }, [isDark]);
-
-  console.log('TabLayout: Rendering tabs');
 
   return (
     <Tabs
@@ -52,7 +44,6 @@ export default function TabLayout() {
         options={{
           title: 'F1',
           tabBarIcon: ({ color, size }) => {
-            console.log('TabLayout: Rendering F1 icon');
             return <ChequeredFlag size={size} />;
           },
         }}
@@ -62,7 +53,6 @@ export default function TabLayout() {
         options={{
           title: 'MotoGP',
           tabBarIcon: ({ color, size }) => {
-            console.log('TabLayout: Rendering MotoGP icon');
             return <Ionicons name="bicycle" size={size} color={color} />;
           },
         }}
@@ -72,7 +62,6 @@ export default function TabLayout() {
         options={{
           title: 'IndyCar',
           tabBarIcon: ({ color, size }) => {
-            console.log('TabLayout: Rendering IndyCar icon');
             return <IndyCarIcon size={size} color={color} />;
           },
         }}
@@ -82,7 +71,6 @@ export default function TabLayout() {
         options={{
           title: 'Calendar',
           tabBarIcon: ({ color, size }) => {
-            console.log('TabLayout: Rendering Calendar icon');
             return <Ionicons name="calendar" size={size} color={color} />;
           },
         }}
@@ -92,7 +80,6 @@ export default function TabLayout() {
         options={{
           title: 'Legal',
           tabBarIcon: ({ color, size }) => {
-            console.log('TabLayout: Rendering Legal icon');
             return <Ionicons name="information-circle" size={size} color={color} />;
           },
         }}

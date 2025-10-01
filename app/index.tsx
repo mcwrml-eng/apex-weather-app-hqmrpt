@@ -132,11 +132,8 @@ export default function CoverPage() {
   });
 
   useEffect(() => {
-    console.log('[CoverPage] Component mounted with theme:', isDark ? 'dark' : 'light');
-    
     // Small delay to ensure everything is ready
     const readyTimer = setTimeout(() => {
-      console.log('[CoverPage] Setting ready state');
       setIsReady(true);
     }, 100);
 
@@ -144,14 +141,11 @@ export default function CoverPage() {
   }, [isDark]);
 
   const startAnimation = useCallback(() => {
-    console.log('[CoverPage] Starting fade animation');
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 1000,
       useNativeDriver: true,
-    }).start(() => {
-      console.log('[CoverPage] Fade animation complete');
-    });
+    }).start();
   }, [fadeAnim]);
 
   useEffect(() => {
@@ -161,7 +155,6 @@ export default function CoverPage() {
 
     // Auto-navigate after 3 seconds
     const timer = setTimeout(() => {
-      console.log('[CoverPage] Auto-navigating to F1 tab');
       try {
         router.replace('/(tabs)/f1');
       } catch (error) {

@@ -17,14 +17,13 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import { setupErrorLogging } from '../utils/errorLogger';
 
 // Keep the splash screen visible while we fetch resources
-SplashScreen.preventAutoHideAsync().catch((error) => {
-  console.log('[RootLayout] SplashScreen.preventAutoHideAsync failed:', error);
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Silently handle error
 });
 
 // Setup error logging as early as possible
 try {
   setupErrorLogging();
-  console.log('[RootLayout] Error logging initialized');
 } catch (error) {
   console.error('[RootLayout] Failed to setup error logging:', error);
 }
@@ -65,8 +64,6 @@ function AppContent() {
   const commonStyles = getCommonStyles(isDark);
 
   useEffect(() => {
-    console.log('[AppContent] Component mounted');
-    
     // Add global error handler for uncaught errors
     const errorHandler = (error: any) => {
       console.error('[AppContent] Uncaught error:', error);
@@ -82,19 +79,15 @@ function AppContent() {
   useEffect(() => {
     async function prepare() {
       try {
-        console.log('[AppContent] Preparing app...');
-        console.log('[AppContent] Fonts loaded:', fontsLoaded, 'Font error:', fontError);
-        
         // Wait for fonts to load or error
         if (fontsLoaded || fontError) {
           if (fontError) {
-            console.warn('[AppContent] Font loading error, continuing anyway:', fontError);
+            console.warn('[AppContent] Font loading error, continuing anyway');
           }
           
           // Small delay to ensure everything is ready
           await new Promise(resolve => setTimeout(resolve, 150));
           
-          console.log('[AppContent] App is ready');
           setAppIsReady(true);
         }
       } catch (e) {
@@ -112,7 +105,6 @@ function AppContent() {
       if (appIsReady) {
         try {
           await SplashScreen.hideAsync();
-          console.log('[AppContent] Splash screen hidden');
         } catch (e) {
           console.warn('[AppContent] Error hiding splash screen:', e);
         }
@@ -124,11 +116,8 @@ function AppContent() {
 
   // Show loading screen while app is not ready
   if (!appIsReady) {
-    console.log('[AppContent] Waiting for app to be ready...');
     return <LoadingScreen isDark={isDark} />;
   }
-
-  console.log('[AppContent] Rendering app with theme:', isDark ? 'dark' : 'light');
 
   return (
     <SafeAreaProvider>
@@ -151,8 +140,6 @@ function AppContent() {
 }
 
 export default function RootLayout() {
-  console.log('[RootLayout] Initializing app...');
-  
   return (
     <ErrorBoundary>
       <ThemeProvider>
