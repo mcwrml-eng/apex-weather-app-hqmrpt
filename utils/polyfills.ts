@@ -1,6 +1,18 @@
 
 // Polyfills for compatibility with React Native 0.80.0 and React 19
 
+// Ensure global is defined
+if (typeof global === 'undefined') {
+  // @ts-expect-error - Define global for web environments
+  window.global = window;
+}
+
+// Ensure process is defined for web
+if (typeof process === 'undefined') {
+  // @ts-expect-error - Define process for web environments
+  global.process = { env: { NODE_ENV: __DEV__ ? 'development' : 'production' } };
+}
+
 // Ensure Reflect.construct is available and works correctly
 if (typeof Reflect === 'undefined' || !Reflect.construct) {
   // @ts-expect-error - Polyfill for missing Reflect API
@@ -84,8 +96,25 @@ if (!Object.getPrototypeOf) {
   };
 }
 
+// React 19 compatibility: Ensure Symbol.for is available
+if (typeof Symbol !== 'undefined' && typeof Symbol.for === 'function') {
+  // Ensure React symbols are properly defined
+  const REACT_ELEMENT_TYPE = Symbol.for('react.element');
+  const REACT_PORTAL_TYPE = Symbol.for('react.portal');
+  const REACT_FRAGMENT_TYPE = Symbol.for('react.fragment');
+  
+  // Store them on global for React Native compatibility
+  if (typeof global !== 'undefined') {
+    // @ts-expect-error - Adding React symbols to global
+    global.REACT_ELEMENT_TYPE = REACT_ELEMENT_TYPE;
+    // @ts-expect-error - Adding React symbols to global
+    global.REACT_PORTAL_TYPE = REACT_PORTAL_TYPE;
+    // @ts-expect-error - Adding React symbols to global
+    global.REACT_FRAGMENT_TYPE = REACT_FRAGMENT_TYPE;
+  }
+}
+
 // Patch Function.prototype.apply to be more robust
-// eslint-disable-next-line no-extend-native
 const originalApply = Function.prototype.apply;
 if (originalApply) {
   // eslint-disable-next-line no-extend-native
@@ -157,5 +186,10 @@ console.warn = function(...args: any[]) {
     }
   }
 };
+
+// Log polyfills loaded
+if (__DEV__) {
+  console.log('[Polyfills] Compatibility polyfills loaded for React 19 + React Native 0.80');
+}
 
 export {};
