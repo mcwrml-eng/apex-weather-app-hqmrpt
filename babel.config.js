@@ -12,8 +12,6 @@ module.exports = function (api) {
       ]
     ],
     plugins: [
-      // Reanimated plugin must be last
-      'react-native-reanimated/plugin',
       [
         'module-resolver',
         {
@@ -22,6 +20,8 @@ module.exports = function (api) {
           },
         },
       ],
+      // Reanimated plugin must be last
+      'react-native-reanimated/plugin',
     ],
     env: {
       production: {
