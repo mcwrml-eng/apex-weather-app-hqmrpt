@@ -9,6 +9,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "sdkVersion": "54.0.0",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "splash": {
       "image": "./assets/images/natively-dark.png",
       "resizeMode": "contain",
