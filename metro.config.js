@@ -1,12 +1,28 @@
 
 const { getDefaultConfig } = require('expo/metro-config');
 
-const config = getDefaultConfig(__dirname);
+module.exports = (async () => {
+  const config = await getDefaultConfig(__dirname);
 
-// Ensure proper source extensions
-config.resolver.sourceExts = ['js', 'jsx', 'json', 'ts', 'tsx', 'cjs', 'mjs'];
+  // Ensure proper source extensions
+  config.resolver.sourceExts = ['js', 'jsx', 'json', 'ts', 'tsx', 'cjs', 'mjs'];
 
-// Ensure proper asset extensions
-config.resolver.assetExts = ['glb', 'gltf', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'ttf', 'otf', 'woff', 'woff2'];
+  // Add CSS to asset extensions
+  config.resolver.assetExts = ['glb', 'gltf', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'ttf', 'otf', 'woff', 'woff2', 'css'];
 
-module.exports = config;
+  // Custom resolver to handle CSS imports
+  config.resolver.resolveRequest = (context, moduleName, platform) => {
+    // If the module is a CSS file, return an empty module
+    if (moduleName.endsWith('.css') || moduleName.endsWith('.module.css')) {
+      return {
+        filePath: require.resolve('react-native/Libraries/Core/Devtools/empty.js'),
+        type: 'sourceFile',
+      };
+    }
+
+    // Otherwise, use the default resolver
+    return context.resolveRequest(context, moduleName, platform);
+  };
+
+  return config;
+})();
