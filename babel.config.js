@@ -7,12 +7,12 @@ module.exports = function (api) {
         'babel-preset-expo',
         {
           jsxRuntime: 'automatic',
-          // Use classic runtime for better compatibility with React 19
           jsxImportSource: 'react',
         }
       ]
     ],
     plugins: [
+      // Reanimated plugin must be last
       'react-native-reanimated/plugin',
       [
         'module-resolver',
@@ -23,5 +23,10 @@ module.exports = function (api) {
         },
       ],
     ],
+    env: {
+      production: {
+        plugins: ['transform-remove-console'],
+      },
+    },
   };
 };

@@ -1,4 +1,6 @@
 
+// Import polyfills FIRST before anything else
+import '../utils/polyfills';
 import 'react-native-gesture-handler';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -16,7 +18,7 @@ import { setupErrorLogging } from '../utils/errorLogger';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync().catch((error) => {
-  console.log('SplashScreen.preventAutoHideAsync failed:', error);
+  console.log('[RootLayout] SplashScreen.preventAutoHideAsync failed:', error);
 });
 
 // Setup error logging as early as possible
@@ -66,7 +68,7 @@ function AppContent() {
     console.log('[AppContent] Component mounted');
     
     // Add global error handler for uncaught errors
-    const errorHandler = (error: ErrorEvent) => {
+    const errorHandler = (error: any) => {
       console.error('[AppContent] Uncaught error:', error);
       return true; // Prevent default error handling
     };

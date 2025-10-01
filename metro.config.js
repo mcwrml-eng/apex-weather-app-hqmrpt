@@ -27,9 +27,33 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     
     return context.resolveRequest(context, moduleName, platform);
   } catch (error) {
-    console.error('[Metro] Error resolving module:', moduleName, error);
-    throw error;
+    // Log error but don't crash
+    console.warn('[Metro] Error resolving module:', moduleName, error?.message || error);
+    
+    // Try to return empty module as fallback
+    try {
+      return {
+        type: 'empty',
+      };
+    } catch (fallbackError) {
+      // If even that fails, rethrow original error
+      throw error;
+    }
   }
+};
+
+// Add transformer options for better error handling
+config.transformer = {
+  ...config.transformer,
+  babelTransformerPath: require.resolve('metro-react-native-babel-transformer'),
+  minifierConfig: {
+    keep_classnames: true,
+    keep_fnames: true,
+    mangle: {
+      keep_classnames: true,
+      keep_fnames: true,
+    },
+  },
 };
 
 module.exports = config;
