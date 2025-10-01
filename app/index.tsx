@@ -5,13 +5,14 @@ import Logo from '../components/Logo';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Animated, ActivityIndicator } from 'react-native';
 import WeatherSymbol from '../components/WeatherSymbol';
 import { useTheme } from '../state/ThemeContext';
 import ThemeToggle from '../components/ThemeToggle';
 
 export default function CoverPage() {
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [isReady, setIsReady] = useState(false);
   const { isDark } = useTheme();
   
   const colors = getColors(isDark);
@@ -122,24 +123,62 @@ export default function CoverPage() {
       bottom: 0,
       opacity: isDark ? 0.03 : 0.02,
     },
+    initialLoadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+    },
   });
 
   useEffect(() => {
-    console.log('CoverPage: Starting fade animation with theme:', isDark ? 'dark' : 'light');
+    console.log('CoverPage: Component mounted with theme:', isDark ? 'dark' : 'light');
+    
+    // Small delay to ensure everything is ready
+    const readyTimer = setTimeout(() => {
+      console.log('CoverPage: Setting ready state');
+      setIsReady(true);
+    }, 100);
+
+    return () => clearTimeout(readyTimer);
+  }, []);
+
+  useEffect(() => {
+    if (!isReady) return;
+
+    console.log('CoverPage: Starting fade animation');
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 1000,
       useNativeDriver: true,
-    }).start();
+    }).start(() => {
+      console.log('CoverPage: Fade animation complete');
+    });
 
     // Auto-navigate after 3 seconds
     const timer = setTimeout(() => {
       console.log('CoverPage: Auto-navigating to F1 tab');
-      router.replace('/(tabs)/f1');
+      try {
+        router.replace('/(tabs)/f1');
+      } catch (error) {
+        console.error('CoverPage: Navigation error:', error);
+      }
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [fadeAnim]);
+  }, [fadeAnim, isReady]);
+
+  // Show initial loading state
+  if (!isReady) {
+    return (
+      <View style={styles.initialLoadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { marginTop: spacing.lg }]}>
+          Initializing...
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
