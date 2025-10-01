@@ -1,5 +1,6 @@
 
 const { getDefaultConfig } = require('expo/metro-config');
+const path = require('path');
 
 module.exports = (async () => {
   const config = await getDefaultConfig(__dirname);
@@ -15,7 +16,7 @@ module.exports = (async () => {
     // If the module is a CSS file, return an empty module
     if (moduleName.endsWith('.css') || moduleName.endsWith('.module.css')) {
       return {
-        filePath: require.resolve('react-native/Libraries/Core/Devtools/empty.js'),
+        filePath: path.resolve(__dirname, 'utils/empty.js'),
         type: 'sourceFile',
       };
     }
