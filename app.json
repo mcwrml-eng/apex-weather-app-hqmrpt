@@ -2,11 +2,11 @@
 {
   "expo": {
     "name": "Meteorological Services",
-    "slug": "meteorological-services",
+    "slug": "Meteorological Services",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/natively-dark.png",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "sdkVersion": "54.0.0",
     "splash": {
@@ -16,7 +16,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.natively.meteorological",
+      "bundleIdentifier": "com.anonymous.Natively",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -26,7 +26,8 @@
         "foregroundImage": "./assets/images/natively-dark.png",
         "backgroundColor": "#FFFFFF"
       },
-      "package": "com.natively.meteorological"
+      "edgeToEdgeEnabled": true,
+      "package": "com.anonymous.Natively"
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
@@ -34,27 +35,14 @@
     },
     "plugins": [
       "expo-font",
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#FFFFFF",
-          "image": "./assets/images/natively-dark.png",
-          "imageWidth": 200
-        }
-      ]
+      "expo-router"
     ],
-    "scheme": "meteorological",
+    "scheme": "natively",
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "router": {
-        "origin": false
-      },
-      "eas": {
-        "projectId": "your-project-id"
-      }
+      "router": {}
     }
   }
 }

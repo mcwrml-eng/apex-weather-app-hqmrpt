@@ -22,7 +22,7 @@ module.exports = function (api) {
           alias: {
             '@': './',
             '@components': './components',
-            '@styles': './styles',
+            '@style': './style',
             '@hooks': './hooks',
             '@types': './types',
             '@data': './data',
