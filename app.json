@@ -8,7 +8,6 @@
     "icon": "./assets/images/natively-dark.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "sdkVersion": "54.0.0",
     "platforms": [
       "ios",
       "android",
@@ -31,7 +30,6 @@
         "foregroundImage": "./assets/images/natively-dark.png",
         "backgroundColor": "#0EA5E9"
       },
-      "edgeToEdgeEnabled": true,
       "package": "com.raceweather.pro"
     },
     "web": {
@@ -40,7 +38,13 @@
     },
     "plugins": [
       "expo-font",
-      "expo-router"
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0EA5E9"
+        }
+      ]
     ],
     "scheme": "raceweather",
     "experiments": {
@@ -49,6 +53,9 @@
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "your-project-id"
       }
     }
   }
