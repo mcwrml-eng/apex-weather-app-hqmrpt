@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Platform } from 'react-native';
 
 export type Theme = 'light' | 'dark';
@@ -16,36 +16,48 @@ const STORAGE_KEY = 'app_theme';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light');
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     // Load saved theme preference
-    if (Platform.OS === 'web') {
+    const loadTheme = async () => {
       try {
-        const savedTheme = localStorage.getItem(STORAGE_KEY) as Theme;
-        if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
-          console.log('ThemeProvider: Loading saved theme:', savedTheme);
-          setTheme(savedTheme);
+        if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+          const savedTheme = window.localStorage.getItem(STORAGE_KEY);
+          if (savedTheme === 'light' || savedTheme === 'dark') {
+            console.log('[ThemeProvider] Loading saved theme:', savedTheme);
+            setTheme(savedTheme);
+          } else {
+            console.log('[ThemeProvider] No saved theme, using default: light');
+          }
         }
       } catch (error) {
-        console.error('ThemeProvider: Error loading theme:', error);
+        console.error('[ThemeProvider] Error loading theme:', error);
+      } finally {
+        setIsInitialized(true);
       }
-    }
+    };
+
+    loadTheme();
   }, []);
 
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    console.log('ThemeProvider: Toggling theme from', theme, 'to', newTheme);
-    setTheme(newTheme);
-    
-    // Save theme preference
-    if (Platform.OS === 'web') {
-      try {
-        localStorage.setItem(STORAGE_KEY, newTheme);
-      } catch (error) {
-        console.error('ThemeProvider: Error saving theme:', error);
+  const toggleTheme = useCallback(() => {
+    setTheme((currentTheme) => {
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      console.log('[ThemeProvider] Toggling theme from', currentTheme, 'to', newTheme);
+      
+      // Save theme preference
+      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+        try {
+          window.localStorage.setItem(STORAGE_KEY, newTheme);
+        } catch (error) {
+          console.error('[ThemeProvider] Error saving theme:', error);
+        }
       }
-    }
-  };
+      
+      return newTheme;
+    });
+  }, []);
 
   const value: ThemeContextType = {
     theme,
@@ -53,7 +65,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     toggleTheme,
   };
 
-  console.log('ThemeProvider: Current theme is', theme);
+  // Don't render children until theme is initialized
+  if (!isInitialized) {
+    return null;
+  }
+
+  console.log('[ThemeProvider] Rendering with theme:', theme);
 
   return (
     <ThemeContext.Provider value={value}>
@@ -65,12 +82,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function useTheme(): ThemeContextType {
   const context = useContext(ThemeContext);
   if (!context) {
-    console.log('useTheme: Context not found, using default light theme');
+    console.warn('[useTheme] Context not found, using default light theme');
     return { 
       theme: 'light' as Theme, 
       isDark: false, 
       toggleTheme: () => {
-        console.log('useTheme: toggleTheme called but no context available');
+        console.warn('[useTheme] toggleTheme called but no context available');
       }
     };
   }

@@ -1,6 +1,6 @@
 
 import { getColors, getCommonStyles, spacing, borderRadius, getShadows } from '../styles/commonStyles';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Logo from '../components/Logo';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -132,41 +132,45 @@ export default function CoverPage() {
   });
 
   useEffect(() => {
-    console.log('CoverPage: Component mounted with theme:', isDark ? 'dark' : 'light');
+    console.log('[CoverPage] Component mounted with theme:', isDark ? 'dark' : 'light');
     
     // Small delay to ensure everything is ready
     const readyTimer = setTimeout(() => {
-      console.log('CoverPage: Setting ready state');
+      console.log('[CoverPage] Setting ready state');
       setIsReady(true);
     }, 100);
 
     return () => clearTimeout(readyTimer);
-  }, []);
+  }, [isDark]);
 
-  useEffect(() => {
-    if (!isReady) return;
-
-    console.log('CoverPage: Starting fade animation');
+  const startAnimation = useCallback(() => {
+    console.log('[CoverPage] Starting fade animation');
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 1000,
       useNativeDriver: true,
     }).start(() => {
-      console.log('CoverPage: Fade animation complete');
+      console.log('[CoverPage] Fade animation complete');
     });
+  }, [fadeAnim]);
+
+  useEffect(() => {
+    if (!isReady) return;
+
+    startAnimation();
 
     // Auto-navigate after 3 seconds
     const timer = setTimeout(() => {
-      console.log('CoverPage: Auto-navigating to F1 tab');
+      console.log('[CoverPage] Auto-navigating to F1 tab');
       try {
         router.replace('/(tabs)/f1');
       } catch (error) {
-        console.error('CoverPage: Navigation error:', error);
+        console.error('[CoverPage] Navigation error:', error);
       }
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [fadeAnim, isReady]);
+  }, [isReady, startAnimation]);
 
   // Show initial loading state
   if (!isReady) {

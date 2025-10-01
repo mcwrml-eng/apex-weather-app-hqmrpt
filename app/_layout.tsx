@@ -12,11 +12,20 @@ import * as SplashScreen from 'expo-splash-screen';
 import { UnitProvider } from '../state/UnitContext';
 import { ThemeProvider, useTheme } from '../state/ThemeContext';
 import ErrorBoundary from '../components/ErrorBoundary';
+import { setupErrorLogging } from '../utils/errorLogger';
 
 // Keep the splash screen visible while we fetch resources
-SplashScreen.preventAutoHideAsync().catch(() => {
-  console.log('SplashScreen.preventAutoHideAsync failed');
+SplashScreen.preventAutoHideAsync().catch((error) => {
+  console.log('SplashScreen.preventAutoHideAsync failed:', error);
 });
+
+// Setup error logging as early as possible
+try {
+  setupErrorLogging();
+  console.log('[RootLayout] Error logging initialized');
+} catch (error) {
+  console.error('[RootLayout] Failed to setup error logging:', error);
+}
 
 function LoadingScreen({ isDark }: { isDark: boolean }) {
   const colors = getColors(isDark);
@@ -55,26 +64,40 @@ function AppContent() {
 
   useEffect(() => {
     console.log('[AppContent] Component mounted');
+    
+    // Add global error handler for uncaught errors
+    const errorHandler = (error: ErrorEvent) => {
+      console.error('[AppContent] Uncaught error:', error);
+      return true; // Prevent default error handling
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('error', errorHandler);
+      return () => window.removeEventListener('error', errorHandler);
+    }
   }, []);
 
   useEffect(() => {
     async function prepare() {
       try {
         console.log('[AppContent] Preparing app...');
+        console.log('[AppContent] Fonts loaded:', fontsLoaded, 'Font error:', fontError);
         
-        // Wait for fonts to load
+        // Wait for fonts to load or error
         if (fontsLoaded || fontError) {
-          console.log('[AppContent] Fonts status - loaded:', fontsLoaded, 'error:', fontError);
+          if (fontError) {
+            console.warn('[AppContent] Font loading error, continuing anyway:', fontError);
+          }
           
           // Small delay to ensure everything is ready
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 150));
           
-          setAppIsReady(true);
           console.log('[AppContent] App is ready');
+          setAppIsReady(true);
         }
       } catch (e) {
         console.error('[AppContent] Error preparing app:', e);
-        // Continue anyway
+        // Continue anyway to prevent app from being stuck
         setAppIsReady(true);
       }
     }
@@ -115,6 +138,7 @@ function AppContent() {
               screenOptions={{
                 headerShown: false,
                 animation: 'default',
+                contentStyle: { backgroundColor: colors.background },
               }}
             />
           </ErrorBoundary>
@@ -131,7 +155,9 @@ export default function RootLayout() {
     <ErrorBoundary>
       <ThemeProvider>
         <UnitProvider>
-          <AppContent />
+          <ErrorBoundary>
+            <AppContent />
+          </ErrorBoundary>
         </UnitProvider>
       </ThemeProvider>
     </ErrorBoundary>

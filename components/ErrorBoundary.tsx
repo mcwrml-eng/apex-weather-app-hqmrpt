@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
 }
 
 interface State {
@@ -25,20 +26,34 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
-    console.error('ErrorBoundary: Caught error:', error);
+    console.error('[ErrorBoundary] Caught error:', error);
     return { hasError: true };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary: Error details:', error, errorInfo);
+    console.error('[ErrorBoundary] Error details:', {
+      error: error.toString(),
+      errorInfo: errorInfo.componentStack,
+      timestamp: new Date().toISOString(),
+    });
+    
     this.setState({
       error,
       errorInfo,
     });
+
+    // Call optional error callback
+    if (this.props.onError) {
+      try {
+        this.props.onError(error, errorInfo);
+      } catch (callbackError) {
+        console.error('[ErrorBoundary] Error in onError callback:', callbackError);
+      }
+    }
   }
 
   handleReset = () => {
-    console.log('ErrorBoundary: Resetting error state');
+    console.log('[ErrorBoundary] Resetting error state');
     this.setState({
       hasError: false,
       error: null,
@@ -64,10 +79,17 @@ class ErrorBoundary extends Component<Props, State> {
             {this.state.error && (
               <ScrollView style={styles.errorDetails}>
                 <Text style={styles.errorTitle}>Error Details:</Text>
-                <Text style={styles.errorText}>{this.state.error.toString()}</Text>
+                <Text style={styles.errorText}>
+                  {this.state.error.toString()}
+                </Text>
+                {this.state.error.stack && (
+                  <Text style={styles.errorStack}>
+                    {this.state.error.stack.substring(0, 500)}
+                  </Text>
+                )}
                 {this.state.errorInfo && (
                   <Text style={styles.errorStack}>
-                    {this.state.errorInfo.componentStack}
+                    {this.state.errorInfo.componentStack?.substring(0, 500)}
                   </Text>
                 )}
               </ScrollView>
