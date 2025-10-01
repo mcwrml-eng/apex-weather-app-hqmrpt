@@ -1,0 +1,62 @@
+
+module.exports = ({ config }) => {
+  return {
+    ...config,
+    name: 'RaceWeather Pro',
+    slug: 'raceweather-pro',
+    version: '1.0.0',
+    orientation: 'portrait',
+    icon: './assets/images/natively-dark.png',
+    userInterfaceStyle: 'automatic',
+    newArchEnabled: true,
+    platforms: ['ios', 'android', 'web'],
+    splash: {
+      image: './assets/images/natively-dark.png',
+      resizeMode: 'contain',
+      backgroundColor: '#0EA5E9'
+    },
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: 'com.raceweather.pro',
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false
+      }
+    },
+    android: {
+      adaptiveIcon: {
+        foregroundImage: './assets/images/natively-dark.png',
+        backgroundColor: '#0EA5E9'
+      },
+      package: 'com.raceweather.pro'
+    },
+    web: {
+      favicon: './assets/images/final_quest_240x240.png',
+      bundler: 'metro'
+    },
+    plugins: [
+      'expo-font',
+      'expo-router',
+      [
+        'expo-splash-screen',
+        {
+          backgroundColor: '#0EA5E9'
+        }
+      ]
+    ],
+    scheme: 'raceweather',
+    experiments: {
+      typedRoutes: true
+    },
+    extra: {
+      router: {
+        origin: false
+      }
+    },
+    runtimeVersion: {
+      policy: 'appVersion'
+    },
+    updates: {
+      enabled: false
+    }
+  };
+};

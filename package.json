@@ -1,12 +1,14 @@
+
 {
   "name": "Natively",
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
-    "dev": "EXPO_NO_TELEMETRY=1 npx expo start --tunnel",
-    "android": "EXPO_NO_TELEMETRY=1 npx expo start --android",
-    "ios": "EXPO_NO_TELEMETRY=1 npx expo start --ios",
-    "web": "EXPO_NO_TELEMETRY=1 npx expo start --web",
+    "start": "npx expo start",
+    "dev": "npx expo start --tunnel",
+    "android": "npx expo start --android",
+    "ios": "npx expo start --ios",
+    "web": "npx expo start --web",
     "build:web": "npx expo export -p web && npx workbox generateSW workbox-config.js",
     "build:android": "npx expo prebuild -p android",
     "lint": "eslint ."
