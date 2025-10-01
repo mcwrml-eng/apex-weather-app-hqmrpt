@@ -1,3 +1,4 @@
+
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
@@ -5,17 +6,20 @@
     "baseUrl": ".",
     "jsx": "react-jsx",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"],
+      "@components/*": ["./components/*"],
+      "@hooks/*": ["./hooks/*"],
+      "@data/*": ["./data/*"],
+      "@utils/*": ["./utils/*"],
+      "@state/*": ["./state/*"],
+      "@styles/*": ["./styles/*"]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts",
-    "workbox-config.js",
+    "expo-env.d.ts"
   ],
   "exclude": [
     "node_modules"
