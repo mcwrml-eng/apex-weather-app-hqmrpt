@@ -17,10 +17,7 @@ module.exports = ({ config }) => {
     },
     ios: {
       supportsTablet: true,
-      bundleIdentifier: 'com.raceweather.pro',
-      infoPlist: {
-        ITSAppUsesNonExemptEncryption: false
-      }
+      bundleIdentifier: 'com.raceweather.pro'
     },
     android: {
       adaptiveIcon: {
@@ -51,12 +48,6 @@ module.exports = ({ config }) => {
       router: {
         origin: false
       }
-    },
-    runtimeVersion: {
-      policy: 'appVersion'
-    },
-    updates: {
-      enabled: false
     }
   };
 };
