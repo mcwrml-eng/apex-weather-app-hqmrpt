@@ -8,7 +8,6 @@ module.exports = ({ config }) => {
     orientation: 'portrait',
     icon: './assets/images/natively-dark.png',
     userInterfaceStyle: 'automatic',
-    newArchEnabled: true,
     platforms: ['ios', 'android', 'web'],
     splash: {
       image: './assets/images/natively-dark.png',
@@ -43,11 +42,6 @@ module.exports = ({ config }) => {
     scheme: 'raceweather',
     experiments: {
       typedRoutes: true
-    },
-    extra: {
-      router: {
-        origin: false
-      }
     }
   };
 };
