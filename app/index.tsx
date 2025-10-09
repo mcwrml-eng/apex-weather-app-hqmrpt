@@ -139,7 +139,7 @@ export default function CoverPage() {
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [fadeAnim]);
+  }, [fadeAnim, isDark]);
 
   return (
     <View style={styles.container}>
