@@ -31,7 +31,7 @@ export default function ThemeToggle({ size = 28, style }: Props) {
   React.useEffect(() => {
     console.log('ThemeToggle: Theme changed to', theme);
     animatedValue.value = withSpring(isDark ? 1 : 0, animations.spring);
-  }, [isDark, theme, animatedValue]);
+  }, [isDark]);
 
   const animatedIconStyle = useAnimatedStyle(() => {
     const backgroundColor = interpolateColor(

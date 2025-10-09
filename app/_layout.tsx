@@ -1,147 +1,82 @@
 
-// Import polyfills FIRST before anything else
-import '../utils/polyfills';
 import 'react-native-gesture-handler';
-import { Stack } from 'expo-router';
+import { Stack, useGlobalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Platform, SafeAreaView } from 'react-native';
 import { getCommonStyles, getColors } from '../styles/commonStyles';
 import { useEffect, useState } from 'react';
+import { setupErrorLogging } from '../utils/errorLogger';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, Roboto_400Regular, Roboto_500Medium, Roboto_700Bold } from '@expo-google-fonts/roboto';
-import * as SplashScreen from 'expo-splash-screen';
 import { UnitProvider } from '../state/UnitContext';
 import { ThemeProvider, useTheme } from '../state/ThemeContext';
-import ErrorBoundary from '../components/ErrorBoundary';
-import { setupErrorLogging } from '../utils/errorLogger';
 
-// Keep the splash screen visible while we fetch resources
-SplashScreen.preventAutoHideAsync().catch(() => {
-  // Silently handle error
-});
-
-// Setup error logging as early as possible
-try {
-  setupErrorLogging();
-} catch (error) {
-  if (__DEV__) {
-    console.error('[RootLayout] Failed to setup error logging:', error);
-  }
-}
-
-function LoadingScreen({ isDark }: { isDark: boolean }) {
-  const colors = getColors(isDark);
-  
-  return (
-    <View style={{ 
-      flex: 1, 
-      backgroundColor: colors.background, 
-      justifyContent: 'center', 
-      alignItems: 'center' 
-    }}>
-      <ActivityIndicator size="large" color={colors.primary} />
-      <Text style={{ 
-        marginTop: 16, 
-        color: colors.textSecondary, 
-        fontSize: 16,
-        fontFamily: 'System'
-      }}>
-        Loading RaceWeather Pro...
-      </Text>
-    </View>
-  );
-}
+const STORAGE_KEY = 'emulated_device';
 
 function AppContent() {
-  const [appIsReady, setAppIsReady] = useState(false);
-  const [fontsLoaded, fontError] = useFonts({ 
-    Roboto_400Regular, 
-    Roboto_500Medium, 
-    Roboto_700Bold 
-  });
+  const actualInsets = useSafeAreaInsets();
+  const { emulate } = useGlobalSearchParams<{ emulate?: string }>();
+  const [storedEmulate, setStoredEmulate] = useState<string | null>(null);
+  const [fontsLoaded] = useFonts({ Roboto_400Regular, Roboto_500Medium, Roboto_700Bold });
   const { isDark } = useTheme();
   
   const colors = getColors(isDark);
   const commonStyles = getCommonStyles(isDark);
 
   useEffect(() => {
-    // Add global error handler for uncaught errors
-    const errorHandler = (error: any) => {
-      if (__DEV__) {
-        console.error('[AppContent] Uncaught error:', error);
-      }
-      return true; // Prevent default error handling
-    };
+    console.log('AppContent: Setting up error logging');
+    setupErrorLogging();
 
-    if (typeof window !== 'undefined') {
-      window.addEventListener('error', errorHandler);
-      return () => window.removeEventListener('error', errorHandler);
-    }
-  }, []);
-
-  useEffect(() => {
-    async function prepare() {
-      try {
-        // Wait for fonts to load or error
-        if (fontsLoaded || fontError) {
-          if (fontError && __DEV__) {
-            console.warn('[AppContent] Font loading error, continuing anyway');
-          }
-          
-          // Small delay to ensure everything is ready
-          await new Promise(resolve => setTimeout(resolve, 150));
-          
-          setAppIsReady(true);
-        }
-      } catch (e) {
-        if (__DEV__) {
-          console.error('[AppContent] Error preparing app:', e);
-        }
-        // Continue anyway to prevent app from being stuck
-        setAppIsReady(true);
-      }
-    }
-
-    prepare();
-  }, [fontsLoaded, fontError]);
-
-  useEffect(() => {
-    async function hideSplash() {
-      if (appIsReady) {
-        try {
-          await SplashScreen.hideAsync();
-        } catch (e) {
-          if (__DEV__) {
-            console.warn('[AppContent] Error hiding splash screen:', e);
-          }
+    if (Platform.OS === 'web') {
+      if (emulate) {
+        localStorage.setItem(STORAGE_KEY, emulate);
+        setStoredEmulate(emulate);
+      } else {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          setStoredEmulate(stored);
         }
       }
     }
+  }, [emulate]);
 
-    hideSplash();
-  }, [appIsReady]);
+  let insetsToUse = actualInsets;
 
-  // Show loading screen while app is not ready
-  if (!appIsReady) {
-    return <LoadingScreen isDark={isDark} />;
+  if (Platform.OS === 'web') {
+    const simulatedInsets = {
+      ios: { top: 47, bottom: 20, left: 0, right: 0 },
+      android: { top: 40, bottom: 0, left: 0, right: 0 },
+    } as const;
+
+    const deviceToEmulate = storedEmulate || emulate;
+    insetsToUse = deviceToEmulate ? (simulatedInsets as any)[deviceToEmulate as keyof typeof simulatedInsets] || actualInsets : actualInsets;
   }
+
+  if (!fontsLoaded) {
+    console.log('AppContent: Fonts not loaded yet');
+    return null;
+  }
+
+  console.log('AppContent: Rendering app with theme:', isDark ? 'dark' : 'light', 'and insets:', insetsToUse);
 
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
-        <View style={[commonStyles.wrapper, { flex: 1 }]}>
+        <SafeAreaView style={[commonStyles.wrapper, {
+            paddingTop: insetsToUse.top,
+            paddingBottom: insetsToUse.bottom,
+            paddingLeft: insetsToUse.left,
+            paddingRight: insetsToUse.right,
+         }]}>
           <StatusBar style={isDark ? "light" : "dark"} />
-          <ErrorBoundary>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                animation: 'default',
-                contentStyle: { backgroundColor: colors.background },
-              }}
-            />
-          </ErrorBoundary>
-        </View>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: 'default',
+            }}
+          />
+        </SafeAreaView>
       </GestureHandlerRootView>
     </SafeAreaProvider>
   );
@@ -149,14 +84,10 @@ function AppContent() {
 
 export default function RootLayout() {
   return (
-    <ErrorBoundary>
-      <ThemeProvider>
-        <UnitProvider>
-          <ErrorBoundary>
-            <AppContent />
-          </ErrorBoundary>
-        </UnitProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+    <ThemeProvider>
+      <UnitProvider>
+        <AppContent />
+      </UnitProvider>
+    </ThemeProvider>
   );
 }

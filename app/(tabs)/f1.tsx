@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout } from '../../styles/commonStyles';
@@ -17,12 +17,6 @@ export default function F1Screen() {
   const colors = getColors(isDark);
   const commonStyles = getCommonStyles(isDark);
   const shadows = getShadows(isDark);
-
-  useEffect(() => {
-    console.log('F1Screen: Component mounted');
-    console.log('F1Screen: Loaded', f1Circuits.length, 'F1 circuits');
-    console.log('F1Screen: Theme is', isDark ? 'dark' : 'light');
-  }, [isDark]);
 
   const styles = StyleSheet.create({
     container: {
@@ -116,16 +110,13 @@ export default function F1Screen() {
     if (!searchQuery.trim()) return f1Circuits;
     
     const query = searchQuery.toLowerCase().trim();
-    const filtered = f1Circuits.filter(circuit => 
+    return f1Circuits.filter(circuit => 
       circuit.name.toLowerCase().includes(query) ||
       circuit.country.toLowerCase().includes(query)
     );
-    
-    console.log('F1Screen: Filtered to', filtered.length, 'circuits for query:', query);
-    return filtered;
   }, [searchQuery]);
 
-  console.log('F1Screen: Rendering with', filteredCircuits.length, 'circuits');
+  console.log('F1Screen: Rendering with', filteredCircuits.length, 'circuits, theme:', isDark ? 'dark' : 'light');
 
   return (
     <View style={styles.container}>

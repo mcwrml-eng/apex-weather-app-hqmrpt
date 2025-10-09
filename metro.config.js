@@ -1,29 +1,12 @@
-
 const { getDefaultConfig } = require('expo/metro-config');
+const { FileStore } = require('metro-cache');
 const path = require('path');
 
-module.exports = (async () => {
-  const config = await getDefaultConfig(__dirname);
+const config = getDefaultConfig(__dirname);
 
-  // Ensure proper source extensions
-  config.resolver.sourceExts = ['js', 'jsx', 'json', 'ts', 'tsx', 'cjs', 'mjs'];
+// Use turborepo to restore the cache when possible
+config.cacheStores = [
+    new FileStore({ root: path.join(__dirname, 'node_modules', '.cache', 'metro') }),
+  ];
 
-  // Add CSS to asset extensions
-  config.resolver.assetExts = ['glb', 'gltf', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'ttf', 'otf', 'woff', 'woff2', 'css'];
-
-  // Custom resolver to handle CSS imports
-  config.resolver.resolveRequest = (context, moduleName, platform) => {
-    // If the module is a CSS file, return an empty module
-    if (moduleName.endsWith('.css') || moduleName.endsWith('.module.css')) {
-      return {
-        filePath: path.resolve(__dirname, 'utils/empty.js'),
-        type: 'sourceFile',
-      };
-    }
-
-    // Otherwise, use the default resolver
-    return context.resolveRequest(context, moduleName, platform);
-  };
-
-  return config;
-})();
+module.exports = config;

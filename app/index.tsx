@@ -1,18 +1,17 @@
 
 import { getColors, getCommonStyles, spacing, borderRadius, getShadows } from '../styles/commonStyles';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import Logo from '../components/Logo';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { View, Text, StyleSheet, Animated, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
 import WeatherSymbol from '../components/WeatherSymbol';
 import { useTheme } from '../state/ThemeContext';
 import ThemeToggle from '../components/ThemeToggle';
 
 export default function CoverPage() {
   const [fadeAnim] = useState(new Animated.Value(0));
-  const [isReady, setIsReady] = useState(false);
   const { isDark } = useTheme();
   
   const colors = getColors(isDark);
@@ -123,61 +122,24 @@ export default function CoverPage() {
       bottom: 0,
       opacity: isDark ? 0.03 : 0.02,
     },
-    initialLoadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: colors.background,
-    },
   });
 
   useEffect(() => {
-    // Small delay to ensure everything is ready
-    const readyTimer = setTimeout(() => {
-      setIsReady(true);
-    }, 100);
-
-    return () => clearTimeout(readyTimer);
-  }, [isDark]);
-
-  const startAnimation = useCallback(() => {
+    console.log('CoverPage: Starting fade animation with theme:', isDark ? 'dark' : 'light');
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 1000,
       useNativeDriver: true,
     }).start();
-  }, [fadeAnim]);
-
-  useEffect(() => {
-    if (!isReady) return;
-
-    startAnimation();
 
     // Auto-navigate after 3 seconds
     const timer = setTimeout(() => {
-      try {
-        router.replace('/(tabs)/f1');
-      } catch (error) {
-        if (__DEV__) {
-          console.error('[CoverPage] Navigation error:', error);
-        }
-      }
+      console.log('CoverPage: Auto-navigating to F1 tab');
+      router.replace('/(tabs)/f1');
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [isReady, startAnimation]);
-
-  // Show initial loading state
-  if (!isReady) {
-    return (
-      <View style={styles.initialLoadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { marginTop: spacing.lg }]}>
-          Initializing...
-        </Text>
-      </View>
-    );
-  }
+  }, [fadeAnim]);
 
   return (
     <View style={styles.container}>

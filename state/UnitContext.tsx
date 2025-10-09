@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 
 type Unit = 'metric' | 'imperial';
 
@@ -13,31 +13,27 @@ const Ctx = createContext<UnitCtx | null>(null);
 export function UnitProvider({ children }: { children: React.ReactNode }) {
   const [unit, setUnit] = useState<Unit>('metric');
   
-  const toggleUnit = useCallback(() => {
-    setUnit((currentUnit) => {
-      const newUnit = currentUnit === 'metric' ? 'imperial' : 'metric';
-      return newUnit;
-    });
-  }, []);
+  const value = useMemo(
+    () => ({
+      unit,
+      toggleUnit: () => {
+        console.log('UnitContext: Toggling unit from', unit);
+        setUnit((u) => (u === 'metric' ? 'imperial' : 'metric'));
+      },
+    }),
+    [unit]
+  );
 
-  const value: UnitCtx = {
-    unit,
-    toggleUnit,
-  };
+  console.log('UnitProvider: Current unit is', unit);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
-export function useUnit(): UnitCtx {
+export function useUnit() {
   const c = useContext(Ctx);
   if (!c) {
-    console.warn('[useUnit] Context not found, using default values');
-    return { 
-      unit: 'metric' as Unit, 
-      toggleUnit: () => {
-        console.warn('[useUnit] toggleUnit called but no context available');
-      }
-    };
+    console.log('useUnit: Context not found, using default values');
+    return { unit: 'metric' as Unit, toggleUnit: () => {} };
   }
   return c;
 }

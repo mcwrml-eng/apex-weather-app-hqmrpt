@@ -1,32 +1,32 @@
 
 {
   "expo": {
-    "name": "RaceWeather Pro",
-    "slug": "raceweather-pro",
+    "name": "Meteorological Services",
+    "slug": "Meteorological Services",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/natively-dark.png",
-    "userInterfaceStyle": "automatic",
-    "platforms": [
-      "ios",
-      "android",
-      "web"
-    ],
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/natively-dark.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0EA5E9"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.raceweather.pro"
+      "bundleIdentifier": "com.anonymous.Natively",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/natively-dark.png",
-        "backgroundColor": "#0EA5E9"
+        "backgroundColor": "#FFFFFF"
       },
-      "package": "com.raceweather.pro"
+      "edgeToEdgeEnabled": true,
+      "package": "com.anonymous.Natively"
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
@@ -34,17 +34,14 @@
     },
     "plugins": [
       "expo-font",
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#0EA5E9"
-        }
-      ]
+      "expo-router"
     ],
-    "scheme": "raceweather",
+    "scheme": "natively",
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {}
     }
   }
 }

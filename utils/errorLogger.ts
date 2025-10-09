@@ -1,34 +1,25 @@
-
 // Global error logging for runtime errors
 
 import { Platform } from "react-native";
 
 // Simple debouncing to prevent duplicate errors
-const recentErrors: { [key: string]: number } = {};
-const ERROR_DEBOUNCE_MS = 5000;
-
+const recentErrors: { [key: string]: boolean } = {};
 const clearErrorAfterDelay = (errorKey: string) => {
-  setTimeout(() => delete recentErrors[errorKey], ERROR_DEBOUNCE_MS);
+  setTimeout(() => delete recentErrors[errorKey], 100);
 };
 
 // Function to send errors to parent window (React frontend)
 const sendErrorToParent = (level: string, message: string, data: any) => {
-  // Only send actual errors, not warnings or info
-  if (level !== 'error') {
-    return;
-  }
-
   // Create a simple key to identify duplicate errors
-  const errorKey = `${level}:${message}`;
-  const now = Date.now();
+  const errorKey = `${level}:${message}:${JSON.stringify(data)}`;
 
   // Skip if we've seen this exact error recently
-  if (recentErrors[errorKey] && (now - recentErrors[errorKey]) < ERROR_DEBOUNCE_MS) {
+  if (recentErrors[errorKey]) {
     return;
   }
 
-  // Mark this error as seen with timestamp
-  recentErrors[errorKey] = now;
+  // Mark this error as seen and schedule cleanup
+  recentErrors[errorKey] = true;
   clearErrorAfterDelay(errorKey);
 
   try {
@@ -42,151 +33,98 @@ const sendErrorToParent = (level: string, message: string, data: any) => {
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
         source: 'expo-template'
       }, '*');
+    } else {
+      // Fallback to console if no parent window
+      console.error('🚨 ERROR (no parent):', level, message, data);
     }
   } catch (error) {
-    // Silently fail to avoid infinite error loops
+    console.error('❌ Failed to send error to parent:', error);
   }
 };
 
-// List of known non-critical error patterns to ignore
-const isNonCriticalError = (message: string): boolean => {
-  const nonCriticalPatterns = [
-    'VirtualizedLists should never be nested',
-    'Require cycle:',
-    'deprecated',
-    'peer dependencies',
-    'componentWillReceiveProps',
-    'componentWillMount',
-    'TabLayout:',
-    'ThemeProvider',
-    'UnitProvider',
-    'AppContent',
-    'CoverPage',
-    'RootLayout',
-    'Logs will appear',
-    'Component mounted',
-    'Rendering',
-    'Theme',
-    'Loading',
-    'Initializing',
-    'Error logging',
-    'Polyfills',
-    'AppDiagnostics',
-    'Navigation',
-    'Font',
-    'Splash',
-    'Setting up',
-    'setup complete',
-    'mounted at',
-    'Resolved entry point',
-    'Using app as the root',
-    '[ErrorLogger]',
-    '[AppContent]',
-    '[RootLayout]',
-    '[CoverPage]',
-    '[Polyfills]',
+// Function to extract meaningful source location from stack trace
+const extractSourceLocation = (stack: string): string => {
+  if (!stack) return '';
+
+  // Look for various patterns in the stack trace
+  const patterns = [
+    // Pattern for app files: app/filename.tsx:line:column
+    /at .+\/(app\/[^:)]+):(\d+):(\d+)/,
+    // Pattern for components: components/filename.tsx:line:column
+    /at .+\/(components\/[^:)]+):(\d+):(\d+)/,
+    // Pattern for any .tsx/.ts files
+    /at .+\/([^/]+\.tsx?):(\d+):(\d+)/,
+    // Pattern for bundle files with source maps
+    /at .+\/([^/]+\.bundle[^:]*):(\d+):(\d+)/,
+    // Pattern for any JavaScript file
+    /at .+\/([^/\s:)]+\.[jt]sx?):(\d+):(\d+)/
   ];
 
-  return nonCriticalPatterns.some(pattern => message.includes(pattern));
+  for (const pattern of patterns) {
+    const match = stack.match(pattern);
+    if (match) {
+      return ` | Source: ${match[1]}:${match[2]}:${match[3]}`;
+    }
+  }
+
+  // If no specific pattern matches, try to find any file reference
+  const fileMatch = stack.match(/at .+\/([^/\s:)]+\.[jt]sx?):(\d+)/);
+  if (fileMatch) {
+    return ` | Source: ${fileMatch[1]}:${fileMatch[2]}`;
+  }
+
+  return '';
 };
 
-// Check if error is actually critical
-const isCriticalError = (message: string): boolean => {
-  const criticalPatterns = [
-    'TypeError:',
-    'ReferenceError:',
-    'SyntaxError:',
-    'RangeError:',
-    'Cannot read property',
-    'Cannot read properties',
-    'is not a function',
-    'is not defined',
-    'Uncaught',
-    'Unhandled',
-    'Failed to',
-    'Network request failed',
-    'Invariant Violation',
-  ];
+// Function to get caller information from stack trace
+const getCallerInfo = (): string => {
+  const stack = new Error().stack || '';
+  const lines = stack.split('\n');
 
-  return criticalPatterns.some(pattern => message.includes(pattern));
+  // Skip the first few lines (Error, getCallerInfo, console override)
+  for (let i = 3; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.indexOf('app/') !== -1 || line.indexOf('components/') !== -1 || line.indexOf('.tsx') !== -1 || line.indexOf('.ts') !== -1) {
+      const match = line.match(/at .+\/([^/\s:)]+\.[jt]sx?):(\d+):(\d+)/);
+      if (match) {
+        return ` | Called from: ${match[1]}:${match[2]}:${match[3]}`;
+      }
+    }
+  }
+
+  return '';
 };
 
 export const setupErrorLogging = () => {
-  // Only log setup in development
-  if (__DEV__) {
-    console.log('[ErrorLogger] Setting up error logging...');
-  }
-
   // Capture unhandled errors in web environment
   if (typeof window !== 'undefined') {
     // Override window.onerror to catch JavaScript errors
-    const originalOnError = window.onerror;
-    
     window.onerror = (message, source, lineno, colno, error) => {
-      try {
-        const errorMessage = String(message);
-        
-        // Skip non-critical errors
-        if (isNonCriticalError(errorMessage)) {
-          return false;
-        }
+      const sourceFile = source ? source.split('/').pop() : 'unknown';
+      const errorData = {
+        message: message,
+        source: `${sourceFile}:${lineno}:${colno}`,
+        line: lineno,
+        column: colno,
+        error: error?.stack || error,
+        timestamp: new Date().toISOString()
+      };
 
-        // Only report critical errors
-        if (!isCriticalError(errorMessage)) {
-          return false;
-        }
-
-        const sourceFile = source ? source.split('/').pop() : 'unknown';
-        const errorData = {
-          message: errorMessage,
-          source: `${sourceFile}:${lineno}:${colno}`,
-          line: lineno,
-          column: colno,
-          stack: error?.stack || 'No stack trace',
+      console.error('🚨 RUNTIME ERROR:', errorData);
+      sendErrorToParent('error', 'JavaScript Runtime Error', errorData);
+      return false; // Don't prevent default error handling
+    };
+    // check if platform is web
+    if (Platform.OS === 'web') {
+      // Capture unhandled promise rejections
+      window.addEventListener('unhandledrejection', (event) => {
+          const errorData = {
+          reason: event.reason,
           timestamp: new Date().toISOString()
         };
 
-        console.error('[ErrorLogger] Critical Runtime Error:', errorData);
-        sendErrorToParent('error', 'JavaScript Runtime Error', errorData);
-      } catch (loggingError) {
-        // Silently fail
-      }
-
-      // Call original handler if it exists
-      if (originalOnError && typeof originalOnError === 'function') {
-        return originalOnError(message, source, lineno, colno, error);
-      }
-
-      return false; // Don't prevent default error handling
-    };
-
-    // Capture unhandled promise rejections
-    if (Platform.OS === 'web') {
-      window.addEventListener('unhandledrejection', (event) => {
-        try {
-          const reason = String(event.reason);
-          
-          // Skip non-critical errors
-          if (isNonCriticalError(reason)) {
-            return;
-          }
-
-          // Only report critical errors
-          if (!isCriticalError(reason)) {
-            return;
-          }
-
-          const errorData = {
-            reason: event.reason,
-            promise: String(event.promise),
-            timestamp: new Date().toISOString()
-          };
-
-          console.error('[ErrorLogger] Unhandled Promise Rejection:', errorData);
-          sendErrorToParent('error', 'Unhandled Promise Rejection', errorData);
-        } catch (loggingError) {
-          // Silently fail
-        }
+        console.error('🚨 UNHANDLED PROMISE REJECTION:', errorData);
+        sendErrorToParent('error', 'Unhandled Promise Rejection', errorData);
       });
     }
   }
@@ -194,45 +132,76 @@ export const setupErrorLogging = () => {
   // Store original console methods
   const originalConsoleError = console.error;
   const originalConsoleWarn = console.warn;
+  const originalConsoleLog = console.log;
 
-  // Override console.error to capture only critical errors
-  console.error = (...args: any[]) => {
-    try {
-      const message = args.join(' ');
-      
-      // Skip non-critical errors
-      if (isNonCriticalError(message)) {
-        originalConsoleError(...args);
-        return;
+  // UNCOMMENT BELOW CODE TO GET MORE SENSITIVE ERROR LOGGING (usually many errors triggered per 1 uncaught runtime error)
+
+  // Override console.error to capture more detailed information
+  // console.error = (...args: any[]) => {
+  //   const stack = new Error().stack || '';
+  //   const sourceInfo = extractSourceLocation(stack);
+  //   const callerInfo = getCallerInfo();
+
+  //   // Create enhanced message with source information
+  //   const enhancedMessage = args.join(' ') + sourceInfo + callerInfo;
+
+  //   // Add timestamp and make it stand out in Metro logs
+  //   originalConsoleError('🔥🔥🔥 ERROR:', new Date().toISOString(), enhancedMessage);
+
+  //   // Also send to parent
+  //   sendErrorToParent('error', 'Console Error', enhancedMessage);
+  // };
+
+  // Override console.warn to capture warnings with source location
+  // console.warn = (...args: any[]) => {
+  //   const stack = new Error().stack || '';
+  //   const sourceInfo = extractSourceLocation(stack);
+  //   const callerInfo = getCallerInfo();
+
+  //   // Create enhanced message with source information
+  //   const enhancedMessage = args.join(' ') + sourceInfo + callerInfo;
+
+  //   originalConsoleWarn('⚠️ WARNING:', new Date().toISOString(), enhancedMessage);
+
+  //   // Also send to parent
+  //   sendErrorToParent('warn', 'Console Warning', enhancedMessage);
+  // };
+
+  // // Also override console.log to catch any logs that might contain error information
+  // console.log = (...args: any[]) => {
+  //   const message = args.join(' ');
+
+  //   // Check if this log message contains warning/error keywords
+  //   if (message.indexOf('deprecated') !== -1 || message.indexOf('warning') !== -1 || message.indexOf('error') !== -1) {
+  //     const stack = new Error().stack || '';
+  //     const sourceInfo = extractSourceLocation(stack);
+  //     const callerInfo = getCallerInfo();
+
+  //     const enhancedMessage = message + sourceInfo + callerInfo;
+
+  //     originalConsoleLog('📝 LOG (potential issue):', new Date().toISOString(), enhancedMessage);
+  //     sendErrorToParent('info', 'Console Log (potential issue)', enhancedMessage);
+  //   } else {
+  //     // Normal log, just pass through
+  //     originalConsoleLog(...args);
+  //   }
+  // };
+
+  // Try to intercept React Native warnings at a lower level
+  if (typeof window !== 'undefined' && (window as any).__DEV__) {
+    // Override React's warning system if available
+    const originalWarn = (window as any).console?.warn || console.warn;
+
+    // Monkey patch any React warning functions
+    if ((window as any).React && (window as any).React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED) {
+      const internals = (window as any).React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+      if (internals.ReactDebugCurrentFrame) {
+        const originalGetStackAddendum = internals.ReactDebugCurrentFrame.getStackAddendum;
+        internals.ReactDebugCurrentFrame.getStackAddendum = function() {
+          const stack = originalGetStackAddendum ? originalGetStackAddendum.call(this) : '';
+          return stack + ' | Enhanced by error logger';
+        };
       }
-
-      // Only send critical errors to parent
-      if (isCriticalError(message)) {
-        const stack = new Error().stack || '';
-        sendErrorToParent('error', 'Console Error', message);
-      }
-      
-      // Always log to console
-      originalConsoleError(...args);
-    } catch (loggingError) {
-      // Fallback to original console.error
-      originalConsoleError(...args);
     }
-  };
-
-  // Override console.warn - but don't send to parent
-  console.warn = (...args: any[]) => {
-    try {
-      // Just log warnings, don't send to parent
-      originalConsoleWarn(...args);
-    } catch (loggingError) {
-      // Fallback to original console.warn
-      originalConsoleWarn(...args);
-    }
-  };
-
-  // Only log completion in development
-  if (__DEV__) {
-    console.log('[ErrorLogger] Error logging setup complete');
   }
 };

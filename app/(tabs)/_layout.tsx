@@ -5,15 +5,12 @@ import { getColors, spacing } from '../../styles/commonStyles';
 import { useTheme } from '../../state/ThemeContext';
 import ChequeredFlag from '../../components/ChequeredFlag';
 import IndyCarIcon from '../../components/IndyCarIcon';
-import { useEffect } from 'react';
 
 export default function TabLayout() {
   const { isDark } = useTheme();
   const colors = getColors(isDark);
 
-  useEffect(() => {
-    // Component mounted - no need to log
-  }, [isDark, colors.primary]);
+  console.log('TabLayout: Rendering with theme:', isDark ? 'dark' : 'light');
 
   return (
     <Tabs
@@ -43,45 +40,45 @@ export default function TabLayout() {
         name="f1"
         options={{
           title: 'F1',
-          tabBarIcon: ({ color, size }) => {
-            return <ChequeredFlag size={size} />;
-          },
+          tabBarIcon: ({ color, size }) => (
+            <ChequeredFlag size={size} />
+          ),
         }}
       />
       <Tabs.Screen
         name="motogp"
         options={{
           title: 'MotoGP',
-          tabBarIcon: ({ color, size }) => {
-            return <Ionicons name="bicycle" size={size} color={color} />;
-          },
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="bicycle" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="indycar"
         options={{
           title: 'IndyCar',
-          tabBarIcon: ({ color, size }) => {
-            return <IndyCarIcon size={size} color={color} />;
-          },
+          tabBarIcon: ({ color, size }) => (
+            <IndyCarIcon size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="calendar"
         options={{
           title: 'Calendar',
-          tabBarIcon: ({ color, size }) => {
-            return <Ionicons name="calendar" size={size} color={color} />;
-          },
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="disclaimer"
         options={{
           title: 'Legal',
-          tabBarIcon: ({ color, size }) => {
-            return <Ionicons name="information-circle" size={size} color={color} />;
-          },
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="information-circle" size={size} color={color} />
+          ),
         }}
       />
     </Tabs>
