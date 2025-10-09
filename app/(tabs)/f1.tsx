@@ -8,6 +8,7 @@ import CircuitCard from '../../components/CircuitCard';
 import FeaturedTrackCard from '../../components/FeaturedTrackCard';
 import ChequeredFlag from '../../components/ChequeredFlag';
 import AppHeader from '../../components/AppHeader';
+import ErrorBoundary from '../../components/ErrorBoundary';
 import { f1Circuits } from '../../data/circuits';
 
 export default function F1Screen() {
@@ -107,96 +108,106 @@ export default function F1Screen() {
   });
 
   const filteredCircuits = useMemo(() => {
-    if (!searchQuery.trim()) return f1Circuits;
-    
-    const query = searchQuery.toLowerCase().trim();
-    return f1Circuits.filter(circuit => 
-      circuit.name.toLowerCase().includes(query) ||
-      circuit.country.toLowerCase().includes(query)
-    );
+    try {
+      if (!searchQuery.trim()) return f1Circuits;
+      
+      const query = searchQuery.toLowerCase().trim();
+      return f1Circuits.filter(circuit => 
+        circuit.name.toLowerCase().includes(query) ||
+        circuit.country.toLowerCase().includes(query)
+      );
+    } catch (error) {
+      console.error('F1Screen: Error filtering circuits:', error);
+      return f1Circuits;
+    }
   }, [searchQuery]);
 
   console.log('F1Screen: Rendering with', filteredCircuits.length, 'circuits, theme:', isDark ? 'dark' : 'light');
 
   return (
-    <View style={styles.container}>
-      <AppHeader
-        title="Formula 1"
-        subtitle={`2026 Championship Calendar • ${f1Circuits.length} Circuits`}
-        icon={<ChequeredFlag size={32} />}
-      />
+    <ErrorBoundary>
+      <View style={styles.container}>
+        <AppHeader
+          title="Formula 1"
+          subtitle={`2026 Championship Calendar • ${f1Circuits.length} Circuits`}
+          icon={<ChequeredFlag size={32} />}
+        />
 
-      <View style={styles.searchContainer}>
-        <Ionicons 
-          name="search" 
-          size={20} 
-          color={colors.textMuted} 
-          style={styles.searchIcon}
-        />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search circuits or countries..."
-          placeholderTextColor={colors.textMuted}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        {searchQuery.length > 0 && (
+        <View style={styles.searchContainer}>
           <Ionicons 
-            name="close-circle" 
+            name="search" 
             size={20} 
-            color={colors.textMuted}
-            onPress={() => setSearchQuery('')}
+            color={colors.textMuted} 
+            style={styles.searchIcon}
           />
-        )}
-      </View>
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.scrollContent}>
-          <FeaturedTrackCard category="f1" />
-
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{f1Circuits.length}</Text>
-              <Text style={styles.statLabel}>Circuits</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>24</Text>
-              <Text style={styles.statLabel}>Races</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>11</Text>
-              <Text style={styles.statLabel}>Teams</Text>
-            </View>
-          </View>
-
-          <Text style={styles.sectionTitle}>
-            All Circuits ({filteredCircuits.length})
-          </Text>
-
-          {filteredCircuits.length > 0 ? (
-            <View style={styles.circuitsGrid}>
-              {filteredCircuits.map((circuit) => (
-                <CircuitCard
-                  key={circuit.slug}
-                  circuit={circuit}
-                  category="f1"
-                />
-              ))}
-            </View>
-          ) : (
-            <View style={styles.emptyState}>
-              <Ionicons 
-                name="search" 
-                size={48} 
-                color={colors.textMuted} 
-              />
-              <Text style={styles.emptyText}>
-                No circuits found matching "{searchQuery}"
-              </Text>
-            </View>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search circuits or countries..."
+            placeholderTextColor={colors.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <Ionicons 
+              name="close-circle" 
+              size={20} 
+              color={colors.textMuted}
+              onPress={() => setSearchQuery('')}
+            />
           )}
         </View>
-      </ScrollView>
-    </View>
+
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.scrollContent}>
+            <ErrorBoundary>
+              <FeaturedTrackCard category="f1" />
+            </ErrorBoundary>
+
+            <View style={styles.statsContainer}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{f1Circuits.length}</Text>
+                <Text style={styles.statLabel}>Circuits</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>24</Text>
+                <Text style={styles.statLabel}>Races</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>11</Text>
+                <Text style={styles.statLabel}>Teams</Text>
+              </View>
+            </View>
+
+            <Text style={styles.sectionTitle}>
+              All Circuits ({filteredCircuits.length})
+            </Text>
+
+            {filteredCircuits.length > 0 ? (
+              <View style={styles.circuitsGrid}>
+                {filteredCircuits.map((circuit) => (
+                  <ErrorBoundary key={circuit.slug}>
+                    <CircuitCard
+                      circuit={circuit}
+                      category="f1"
+                    />
+                  </ErrorBoundary>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <Ionicons 
+                  name="search" 
+                  size={48} 
+                  color={colors.textMuted} 
+                />
+                <Text style={styles.emptyText}>
+                  No circuits found matching &quot;{searchQuery}&quot;
+                </Text>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      </View>
+    </ErrorBoundary>
   );
 }

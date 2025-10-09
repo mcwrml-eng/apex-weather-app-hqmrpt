@@ -11,6 +11,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, Roboto_400Regular, Roboto_500Medium, Roboto_700Bold } from '@expo-google-fonts/roboto';
 import { UnitProvider } from '../state/UnitContext';
 import { ThemeProvider, useTheme } from '../state/ThemeContext';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 const STORAGE_KEY = 'emulated_device';
 
@@ -26,17 +27,25 @@ function AppContent() {
 
   useEffect(() => {
     console.log('AppContent: Setting up error logging');
-    setupErrorLogging();
+    try {
+      setupErrorLogging();
+    } catch (error) {
+      console.error('AppContent: Error setting up error logging:', error);
+    }
 
     if (Platform.OS === 'web') {
-      if (emulate) {
-        localStorage.setItem(STORAGE_KEY, emulate);
-        setStoredEmulate(emulate);
-      } else {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          setStoredEmulate(stored);
+      try {
+        if (emulate) {
+          localStorage.setItem(STORAGE_KEY, emulate);
+          setStoredEmulate(emulate);
+        } else {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (stored) {
+            setStoredEmulate(stored);
+          }
         }
+      } catch (error) {
+        console.error('AppContent: Error with localStorage:', error);
       }
     }
   }, [emulate]);
@@ -83,11 +92,17 @@ function AppContent() {
 }
 
 export default function RootLayout() {
+  console.log('RootLayout: Initializing app');
+  
   return (
-    <ThemeProvider>
-      <UnitProvider>
-        <AppContent />
-      </UnitProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <UnitProvider>
+          <ErrorBoundary>
+            <AppContent />
+          </ErrorBoundary>
+        </UnitProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
