@@ -13,7 +13,6 @@ import WeatherSymbol from '../../components/WeatherSymbol';
 import EnhancedWeatherForecast from '../../components/EnhancedWeatherForecast';
 import WeatherTextForecast from '../../components/WeatherTextForecast';
 import WeatherAlerts from '../../components/WeatherAlerts';
-import TrackRainfallRadar from '../../components/TrackRainfallRadar';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
@@ -663,21 +662,6 @@ function DetailScreen() {
               </>
             )}
 
-            {/* SIMPLIFIED RAINFALL RADAR */}
-            <SafeComponent componentName="TrackRainfallRadar">
-              <TrackRainfallRadar
-                latitude={circuit.latitude}
-                longitude={circuit.longitude}
-                circuitName={circuit.name}
-                country={circuit.country}
-                category={category}
-                compact={false}
-                showControls={true}
-                autoStartAnimation={false}
-                radarOpacity={0.8}
-              />
-            </SafeComponent>
-
             {/* Wind Analysis */}
             {!loading && windData.length > 0 && (
               <>
@@ -721,8 +705,8 @@ function DetailScreen() {
               />
               <View style={{ height: 18 }} />
               <Text style={styles.muted}>
-                Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, written text summaries, sunrise/sunset times, and simplified rainfall radar for each track location.
-                Data updates every 10 minutes for accuracy. Rainfall radar shows track location with category-specific styling.
+                Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, written text summaries, and sunrise/sunset times for each track location.
+                Data updates every 10 minutes for accuracy.
               </Text>
             </BottomSheetView>
           </BottomSheet>
