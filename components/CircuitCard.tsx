@@ -151,8 +151,8 @@ export default function CircuitCard({ circuit, category }: Props) {
   };
 
   const handlePress = () => {
-    console.log('CircuitCard: Navigating to circuit:', circuit.slug);
-    router.push(`/circuit/${circuit.slug}`);
+    console.log('CircuitCard: Navigating to circuit:', circuit.slug, 'category:', category);
+    router.push(`/circuit/${circuit.slug}?category=${category}`);
   };
 
   return (

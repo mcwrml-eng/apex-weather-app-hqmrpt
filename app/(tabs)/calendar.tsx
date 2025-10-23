@@ -236,8 +236,8 @@ export default function CalendarScreen() {
   };
 
   const handleEventPress = (event: RaceEvent) => {
-    console.log('Calendar: Navigating to circuit:', event.circuit.slug);
-    router.push(`/circuit/${event.circuit.slug}`);
+    console.log('Calendar: Navigating to circuit:', event.circuit.slug, 'category:', event.category);
+    router.push(`/circuit/${event.circuit.slug}?category=${event.category}`);
   };
 
   const groupedEvents = groupEventsByMonth(filteredEvents);
