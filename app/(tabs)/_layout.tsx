@@ -6,12 +6,15 @@ import { useTheme } from '../../state/ThemeContext';
 import ChequeredFlag from '../../components/ChequeredFlag';
 import IndyCarIcon from '../../components/IndyCarIcon';
 import ErrorBoundary from '../../components/ErrorBoundary';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
   const { isDark } = useTheme();
   const colors = getColors(isDark);
+  const insets = useSafeAreaInsets();
 
   console.log('TabLayout: Rendering with theme:', isDark ? 'dark' : 'light');
+  console.log('TabLayout: Safe area insets:', insets);
 
   return (
     <ErrorBoundary>
@@ -24,9 +27,9 @@ export default function TabLayout() {
             backgroundColor: colors.card,
             borderTopColor: colors.divider,
             borderTopWidth: 1,
-            paddingBottom: 8,
+            paddingBottom: Math.max(insets.bottom, 8),
             paddingTop: 8,
-            height: 60,
+            height: 60 + Math.max(insets.bottom, 8),
           },
           tabBarLabelStyle: {
             fontSize: 11,
