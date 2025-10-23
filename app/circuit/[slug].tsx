@@ -2,7 +2,7 @@
 import React, { useMemo, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { colors, buttonStyles } from '../../styles/commonStyles';
+import { getColors, getButtonStyles, spacing, borderRadius, getShadows } from '../../styles/commonStyles';
 import { getCircuitBySlug } from '../../data/circuits';
 import { useWeather } from '../../hooks/useWeather';
 import ChartDoughnut from '../../components/ChartDoughnut';
@@ -19,14 +19,21 @@ import Button from '../../components/Button';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import SafeComponent from '../../components/SafeComponent';
 import { useUnit } from '../../state/UnitContext';
+import { useTheme } from '../../state/ThemeContext';
 
 function DetailScreen() {
-  // Get params first
+  // Get theme first
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const buttonStyles = getButtonStyles(isDark);
+  const shadows = getShadows(isDark);
+
+  // Get params
   const params = useLocalSearchParams<{ slug?: string; category?: 'f1' | 'motogp' | 'indycar' }>();
   const slug = params.slug as string;
   const category = (params.category as 'f1' | 'motogp' | 'indycar') || 'f1';
 
-  console.log('DetailScreen: Loading circuit', slug, 'category', category);
+  console.log('DetailScreen: Loading circuit', slug, 'category', category, 'isDark:', isDark);
 
   // Get circuit data
   let circuit;
@@ -247,10 +254,485 @@ function DetailScreen() {
     return descriptions[code] || 'Unknown conditions';
   };
 
+  // Create dynamic styles based on theme
+  const styles = useMemo(() => StyleSheet.create({
+    wrapper: { flex: 1, backgroundColor: colors.background },
+    header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
+    backBtn: {
+      flexDirection: 'row',
+      alignSelf: 'flex-start',
+      backgroundColor: colors.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 12,
+      alignItems: 'center',
+      gap: 6,
+      boxShadow: shadows.md,
+    },
+    backText: { color: '#fff', fontWeight: '700', fontFamily: 'Roboto_700Bold' },
+    title: { fontSize: 26, fontWeight: '700', marginTop: 10, color: colors.text, fontFamily: 'Roboto_700Bold' },
+    subtitle: { color: colors.textMuted, marginTop: 4, fontFamily: 'Roboto_400Regular' },
+    actions: { position: 'absolute', right: 16, top: 8, flexDirection: 'row', gap: 4 },
+    actionBtn: { padding: 8, borderRadius: 10 },
+    content: { paddingHorizontal: 16, paddingTop: 8 },
+    updateInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.backgroundAlt,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 8,
+      marginBottom: 12,
+    },
+    updateText: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+    },
+    sunTimesCard: {
+      backgroundColor: colors.card,
+      borderRadius: 14,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      boxShadow: shadows.md,
+      marginBottom: 16,
+    },
+    sunTimesHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 16,
+    },
+    sunTimesTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+      marginLeft: 8,
+      flex: 1,
+    },
+    timeStatusBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    timeStatusText: {
+      fontSize: 12,
+      fontWeight: '600',
+      fontFamily: 'Roboto_500Medium',
+    },
+    sunTimesGrid: {
+      flexDirection: 'row',
+      gap: 12,
+      marginBottom: 20,
+    },
+    sunTimeItem: {
+      flex: 1,
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: 12,
+      padding: 14,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    sunTimeIconContainer: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 8,
+    },
+    sunTimeLabel: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 4,
+    },
+    sunTimeValue: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+    },
+    weeklySunTimes: {
+      marginTop: 4,
+    },
+    weeklySunTimesTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+      marginBottom: 12,
+    },
+    weeklySunTimesScroll: {
+      paddingHorizontal: 4,
+      gap: 8,
+    },
+    weeklySunTimeCard: {
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: 10,
+      padding: 10,
+      minWidth: 80,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    weeklySunTimeCardToday: {
+      backgroundColor: colors.primary + '15',
+      borderColor: colors.primary + '30',
+    },
+    weeklySunTimeDay: {
+      fontSize: 11,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_500Medium',
+      textAlign: 'center',
+      marginBottom: 8,
+    },
+    weeklySunTimeDayToday: {
+      color: colors.primary,
+      fontWeight: '700',
+    },
+    weeklySunTimeValues: {
+      gap: 4,
+    },
+    weeklySunTimeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    weeklySunTimeText: {
+      fontSize: 10,
+      color: colors.text,
+      fontFamily: 'Roboto_400Regular',
+    },
+    next12HoursCard: {
+      backgroundColor: colors.card,
+      borderRadius: 14,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      boxShadow: shadows.md,
+      marginBottom: 16,
+    },
+    next12HoursHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 16,
+    },
+    next12HoursTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+    },
+    next12HoursScroll: {
+      paddingHorizontal: 4,
+      gap: 12,
+    },
+    next12HourCard: {
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: 12,
+      padding: 12,
+      alignItems: 'center',
+      minWidth: 80,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    next12HourTime: {
+      fontSize: 11,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 8,
+    },
+    next12HourTemp: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+      marginTop: 8,
+      marginBottom: 4,
+    },
+    next12HourRain: {
+      fontSize: 11,
+      color: colors.precipitation,
+      fontFamily: 'Roboto_500Medium',
+      marginBottom: 4,
+    },
+    next12HourWind: {
+      fontSize: 10,
+      color: colors.wind,
+      fontFamily: 'Roboto_400Regular',
+    },
+    card: {
+      flex: 1,
+      backgroundColor: colors.card,
+      borderRadius: 14,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      boxShadow: shadows.md,
+      marginBottom: 12,
+    },
+    chartCard: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.card,
+      borderRadius: 14,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      marginBottom: 12,
+      boxShadow: shadows.md,
+    },
+    forecast72Card: {
+      backgroundColor: colors.card,
+      borderRadius: 14,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      boxShadow: shadows.md,
+      marginBottom: 16,
+      marginTop: 8,
+    },
+    forecast72Header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    forecast72TitleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    forecast72Title: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+    },
+    forecast72Subtitle: {
+      fontSize: 14,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 16,
+    },
+    viewDetailedBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: colors.backgroundAlt,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 8,
+    },
+    viewDetailedText: {
+      fontSize: 13,
+      color: colors.primary,
+      fontFamily: 'Roboto_500Medium',
+    },
+    chartPreviewContainer: {
+      marginBottom: 16,
+    },
+    chartPreviewLabel: {
+      fontSize: 14,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_500Medium',
+      marginBottom: 8,
+    },
+    forecast72Highlights: {
+      marginBottom: 16,
+    },
+    highlightsTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+      marginBottom: 12,
+    },
+    highlightsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+    },
+    highlightItem: {
+      flex: 1,
+      minWidth: '45%',
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: 10,
+      padding: 12,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    highlightLabel: {
+      fontSize: 11,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: 4,
+      marginBottom: 2,
+    },
+    highlightValue: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+    },
+    metricsGrid: {
+      flexDirection: 'row',
+      gap: 12,
+      marginBottom: 12,
+    },
+    metricCard: {
+      flex: 1,
+      backgroundColor: colors.card,
+      borderRadius: 14,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      alignItems: 'center',
+      boxShadow: shadows.md,
+    },
+    metricLabel: {
+      fontSize: 14,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_500Medium',
+      marginBottom: 8,
+    },
+    currentWeatherContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
+      marginTop: 12,
+    },
+    currentWeatherText: {
+      flex: 1,
+    },
+    feelsLike: {
+      fontSize: 14,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: 2,
+    },
+    weatherDescription: {
+      fontSize: 13,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: 4,
+      fontStyle: 'italic',
+    },
+    detailsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+      marginBottom: 12,
+    },
+    detailCard: {
+      flex: 1,
+      minWidth: '45%',
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      alignItems: 'center',
+      boxShadow: shadows.sm,
+    },
+    detailLabel: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: 6,
+      marginBottom: 4,
+    },
+    detailValue: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+    },
+    detailSub: {
+      fontSize: 10,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: 2,
+    },
+    cardLabel: { color: colors.textMuted, fontFamily: 'Roboto_500Medium' },
+    cardValue: { fontSize: 28, color: colors.text, fontWeight: '700', marginTop: 6, fontFamily: 'Roboto_700Bold' },
+    dayPill: {
+      backgroundColor: colors.backgroundAlt,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      minWidth: 110,
+      alignItems: 'center',
+    },
+    dayText: { 
+      color: colors.text, 
+      fontFamily: 'Roboto_500Medium',
+      fontSize: 13,
+      marginBottom: 6,
+    },
+    daySymbolContainer: {
+      height: 28,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 6,
+    },
+    dayTemp: { 
+      color: colors.textMuted, 
+      fontFamily: 'Roboto_400Regular',
+      fontSize: 12,
+      marginBottom: 2,
+    },
+    dayRain: {
+      color: colors.precipitation,
+      fontFamily: 'Roboto_500Medium',
+      fontSize: 11,
+      fontWeight: '600',
+      marginBottom: 2,
+    },
+    dayRainProb: {
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      fontSize: 10,
+      marginBottom: 4,
+    },
+    daySunTimes: {
+      marginTop: 2,
+    },
+    daySunTime: {
+      fontSize: 9,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      textAlign: 'center',
+    },
+    muted: { color: colors.textMuted, fontFamily: 'Roboto_400Regular' },
+    error: { color: colors.error, fontWeight: '600', fontFamily: 'Roboto_500Medium' },
+    bottomSheetBackground: {
+      backgroundColor: colors.background,
+    },
+    bottomSheetHandle: {
+      backgroundColor: colors.divider,
+    },
+    sheet: { 
+      padding: 16, 
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    sheetTitle: { fontSize: 18, fontWeight: '700', color: colors.text, fontFamily: 'Roboto_700Bold' },
+  }), [colors, shadows]);
+
   // Handle errors after all hooks are called
   if (circuitError || !circuit) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: colors.background }}>
         <Text style={{ fontSize: 18, color: colors.error, marginBottom: 10 }}>Error Loading Circuit</Text>
         <Text style={{ fontSize: 14, color: colors.textMuted, textAlign: 'center' }}>
           {circuitError instanceof Error ? circuitError.message : 'Circuit not found'}
@@ -837,477 +1319,3 @@ function DetailScreen() {
 }
 
 export default DetailScreen;
-
-const styles = StyleSheet.create({
-  wrapper: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
-  backBtn: {
-    flexDirection: 'row',
-    alignSelf: 'flex-start',
-    backgroundColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    alignItems: 'center',
-    gap: 6,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-  },
-  backText: { color: '#fff', fontWeight: '700', fontFamily: 'Roboto_700Bold' },
-  title: { fontSize: 26, fontWeight: '700', marginTop: 10, color: colors.text, fontFamily: 'Roboto_700Bold' },
-  subtitle: { color: colors.textMuted, marginTop: 4, fontFamily: 'Roboto_400Regular' },
-  actions: { position: 'absolute', right: 16, top: 8, flexDirection: 'row', gap: 4 },
-  actionBtn: { padding: 8, borderRadius: 10 },
-  content: { paddingHorizontal: 16, paddingTop: 8 },
-  updateInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.backgroundAlt,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  updateText: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-  },
-  sunTimesCard: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
-    marginBottom: 16,
-  },
-  sunTimesHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  sunTimesTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    fontFamily: 'Roboto_700Bold',
-    marginLeft: 8,
-    flex: 1,
-  },
-  timeStatusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  timeStatusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: 'Roboto_500Medium',
-  },
-  sunTimesGrid: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
-  },
-  sunTimeItem: {
-    flex: 1,
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 12,
-    padding: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  sunTimeIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  sunTimeLabel: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginBottom: 4,
-  },
-  sunTimeValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    fontFamily: 'Roboto_700Bold',
-  },
-  weeklySunTimes: {
-    marginTop: 4,
-  },
-  weeklySunTimesTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    marginBottom: 12,
-  },
-  weeklySunTimesScroll: {
-    paddingHorizontal: 4,
-    gap: 8,
-  },
-  weeklySunTimeCard: {
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 10,
-    padding: 10,
-    minWidth: 80,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  weeklySunTimeCardToday: {
-    backgroundColor: colors.primary + '15',
-    borderColor: colors.primary + '30',
-  },
-  weeklySunTimeDay: {
-    fontSize: 11,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_500Medium',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  weeklySunTimeDayToday: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  weeklySunTimeValues: {
-    gap: 4,
-  },
-  weeklySunTimeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  weeklySunTimeText: {
-    fontSize: 10,
-    color: colors.text,
-    fontFamily: 'Roboto_400Regular',
-  },
-  next12HoursCard: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
-    marginBottom: 16,
-  },
-  next12HoursHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
-  },
-  next12HoursTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    fontFamily: 'Roboto_700Bold',
-  },
-  next12HoursScroll: {
-    paddingHorizontal: 4,
-    gap: 12,
-  },
-  next12HourCard: {
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-    minWidth: 80,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  next12HourTime: {
-    fontSize: 11,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginBottom: 8,
-  },
-  next12HourTemp: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    fontFamily: 'Roboto_700Bold',
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  next12HourRain: {
-    fontSize: 11,
-    color: colors.precipitation,
-    fontFamily: 'Roboto_500Medium',
-    marginBottom: 4,
-  },
-  next12HourWind: {
-    fontSize: 10,
-    color: colors.wind,
-    fontFamily: 'Roboto_400Regular',
-  },
-  card: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
-    marginBottom: 12,
-  },
-  chartCard: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    marginBottom: 12,
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
-  },
-  forecast72Card: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
-    marginBottom: 16,
-    marginTop: 8,
-  },
-  forecast72Header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  forecast72TitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  forecast72Title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    fontFamily: 'Roboto_700Bold',
-  },
-  forecast72Subtitle: {
-    fontSize: 14,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginBottom: 16,
-  },
-  viewDetailedBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.backgroundAlt,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  viewDetailedText: {
-    fontSize: 13,
-    color: colors.primary,
-    fontFamily: 'Roboto_500Medium',
-  },
-  chartPreviewContainer: {
-    marginBottom: 16,
-  },
-  chartPreviewLabel: {
-    fontSize: 14,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_500Medium',
-    marginBottom: 8,
-  },
-  forecast72Highlights: {
-    marginBottom: 16,
-  },
-  highlightsTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    marginBottom: 12,
-  },
-  highlightsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  highlightItem: {
-    flex: 1,
-    minWidth: '45%',
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 10,
-    padding: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  highlightLabel: {
-    fontSize: 11,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginTop: 4,
-    marginBottom: 2,
-  },
-  highlightValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-  },
-  metricsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-  },
-  metricCard: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    alignItems: 'center',
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
-  },
-  metricLabel: {
-    fontSize: 14,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_500Medium',
-    marginBottom: 8,
-  },
-  currentWeatherContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    marginTop: 12,
-  },
-  currentWeatherText: {
-    flex: 1,
-  },
-  feelsLike: {
-    fontSize: 14,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginTop: 2,
-  },
-  weatherDescription: {
-    fontSize: 13,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginTop: 4,
-    fontStyle: 'italic',
-  },
-  detailsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 12,
-  },
-  detailCard: {
-    flex: 1,
-    minWidth: '45%',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    alignItems: 'center',
-    boxShadow: '0 4px 16px rgba(16,24,40,0.04)',
-  },
-  detailLabel: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginTop: 6,
-    marginBottom: 4,
-  },
-  detailValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    fontFamily: 'Roboto_700Bold',
-  },
-  detailSub: {
-    fontSize: 10,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginTop: 2,
-  },
-  cardLabel: { color: colors.textMuted, fontFamily: 'Roboto_500Medium' },
-  cardValue: { fontSize: 28, color: colors.text, fontWeight: '700', marginTop: 6, fontFamily: 'Roboto_700Bold' },
-  dayPill: {
-    backgroundColor: colors.backgroundAlt,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    minWidth: 110,
-    alignItems: 'center',
-  },
-  dayText: { 
-    color: colors.text, 
-    fontFamily: 'Roboto_500Medium',
-    fontSize: 13,
-    marginBottom: 6,
-  },
-  daySymbolContainer: {
-    height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  dayTemp: { 
-    color: colors.textMuted, 
-    fontFamily: 'Roboto_400Regular',
-    fontSize: 12,
-    marginBottom: 2,
-  },
-  dayRain: {
-    color: colors.precipitation,
-    fontFamily: 'Roboto_500Medium',
-    fontSize: 11,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  dayRainProb: {
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    fontSize: 10,
-    marginBottom: 4,
-  },
-  daySunTimes: {
-    marginTop: 2,
-  },
-  daySunTime: {
-    fontSize: 9,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    textAlign: 'center',
-  },
-  muted: { color: colors.textMuted, fontFamily: 'Roboto_400Regular' },
-  error: { color: '#C62828', fontWeight: '600', fontFamily: 'Roboto_500Medium' },
-  bottomSheetBackground: {
-    backgroundColor: colors.background,
-  },
-  bottomSheetHandle: {
-    backgroundColor: colors.divider,
-  },
-  sheet: { 
-    padding: 16, 
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  sheetTitle: { fontSize: 18, fontWeight: '700', color: colors.text, fontFamily: 'Roboto_700Bold' },
-});
