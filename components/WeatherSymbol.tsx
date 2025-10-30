@@ -58,12 +58,55 @@ function isNightTime(latitude?: number, longitude?: number, time?: string, sunri
   
   // If we have actual sunrise/sunset times from the API, use them for accurate detection
   if (sunrise && sunset) {
-    const currentDate = currentTime.toISOString().split('T')[0]; // Get YYYY-MM-DD
-    const sunriseTime = new Date(`${currentDate}T${sunrise}`);
-    const sunsetTime = new Date(`${currentDate}T${sunset}`);
-    
-    console.log('WeatherSymbol: Using API sunrise/sunset times:', sunrise, sunset, 'current:', currentTime.toISOString());
-    return currentTime < sunriseTime || currentTime > sunsetTime;
+    try {
+      // Extract just the time portion from sunrise/sunset strings
+      // They can be in formats like "06:30", "06:30:00", or "2025-01-15T06:30:00"
+      const extractTime = (timeStr: string): { hours: number; minutes: number } | null => {
+        let cleanTime = timeStr.trim();
+        
+        // If it contains 'T', extract the time part after T
+        if (cleanTime.includes('T')) {
+          cleanTime = cleanTime.split('T')[1];
+        }
+        
+        // Remove timezone info and milliseconds
+        cleanTime = cleanTime.split('+')[0].split('-')[0].split('Z')[0].split('.')[0];
+        
+        // Parse HH:MM or HH:MM:SS
+        const parts = cleanTime.split(':');
+        if (parts.length >= 2) {
+          const hours = parseInt(parts[0], 10);
+          const minutes = parseInt(parts[1], 10);
+          
+          if (!isNaN(hours) && !isNaN(minutes) && hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
+            return { hours, minutes };
+          }
+        }
+        
+        return null;
+      };
+      
+      const sunriseTime = extractTime(sunrise);
+      const sunsetTime = extractTime(sunset);
+      
+      if (sunriseTime && sunsetTime) {
+        // Convert current time to minutes since midnight in the same timezone
+        const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
+        const sunriseMinutes = sunriseTime.hours * 60 + sunriseTime.minutes;
+        const sunsetMinutes = sunsetTime.hours * 60 + sunsetTime.minutes;
+        
+        console.log('WeatherSymbol: Time comparison - current:', currentMinutes, 'sunrise:', sunriseMinutes, 'sunset:', sunsetMinutes);
+        
+        // It's night if current time is before sunrise or after sunset
+        const isNight = currentMinutes < sunriseMinutes || currentMinutes >= sunsetMinutes;
+        
+        console.log('WeatherSymbol: Using API sunrise/sunset times - isNight:', isNight, 'for time:', currentTime.toISOString());
+        return isNight;
+      }
+    } catch (err) {
+      console.error('WeatherSymbol: Error parsing sunrise/sunset times:', err);
+      // Fall through to fallback calculation
+    }
   }
   
   // Fallback to enhanced calculation if no API times available
@@ -428,7 +471,7 @@ export default function WeatherSymbol({
   // Get animation style based on weather type
   const animatedStyle = useWeatherAnimation(symbol.animationType);
   
-  console.log('WeatherSymbol: Rendering', symbol.name, 'for code', weatherCode, 'isNight:', nightTime, 'color:', iconColor, 'theme:', isDark ? 'dark' : 'light');
+  console.log('WeatherSymbol: Rendering', symbol.name, 'for code', weatherCode, 'isNight:', nightTime, 'color:', iconColor, 'theme:', isDark ? 'dark' : 'light', 'time:', time);
   
   return (
     <View style={styles.container}>
