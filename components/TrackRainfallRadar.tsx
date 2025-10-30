@@ -1,7 +1,6 @@
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { WebView } from 'react-native-webview';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
 import { useTheme } from '../state/ThemeContext';
 import { getColors, borderRadius, getShadows } from '../styles/commonStyles';
 import Icon from './Icon';
@@ -18,6 +17,22 @@ interface TrackRainfallRadarProps {
   radarOpacity?: number;
 }
 
+interface PrecipitationData {
+  time: string;
+  precipitation: number;
+  precipitationProbability: number;
+  weatherCode: number;
+}
+
+interface RadarData {
+  current: {
+    precipitation: number;
+    weatherCode: number;
+  };
+  hourly: PrecipitationData[];
+  summary: string;
+}
+
 const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   latitude,
   longitude,
@@ -25,382 +40,144 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   country,
   category,
   compact = false,
-  showControls = true,
-  autoStartAnimation = false,
-  radarOpacity = 0.6,
 }) => {
   const { isDark } = useTheme();
   const colors = getColors(isDark);
   const shadows = getShadows(isDark);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [isAnimating, setIsAnimating] = useState(autoStartAnimation);
-  const [statusMessage, setStatusMessage] = useState('Initializing...');
-  const [retryKey, setRetryKey] = useState(0);
-  const webViewRef = useRef<any>(null);
-  const loadingTimeoutRef = useRef<any>(null);
-  const mountedRef = useRef(true);
+  const [radarData, setRadarData] = useState<RadarData | null>(null);
 
   useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
+    fetchRainfallData();
+  }, [latitude, longitude]);
+
+  const fetchRainfallData = async () => {
+    setLoading(true);
+    setError(false);
+    setErrorMessage('');
+
+    try {
+      console.log(`Fetching rainfall data for ${circuitName} at ${latitude}, ${longitude}`);
+      
+      // Fetch precipitation data from Open-Meteo API
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=precipitation,weather_code&hourly=precipitation,precipitation_probability,weather_code&timezone=auto&forecast_days=3`;
+      
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`API returned status ${response.status}`);
       }
-    };
-  }, []);
+      
+      const data = await response.json();
+      console.log('Rainfall data received:', data);
+      
+      // Process the data
+      const hourlyData: PrecipitationData[] = [];
+      const maxHours = 48; // Show next 48 hours
+      
+      for (let i = 0; i < Math.min(maxHours, data.hourly.time.length); i++) {
+        hourlyData.push({
+          time: data.hourly.time[i],
+          precipitation: data.hourly.precipitation[i] || 0,
+          precipitationProbability: data.hourly.precipitation_probability[i] || 0,
+          weatherCode: data.hourly.weather_code[i] || 0,
+        });
+      }
+      
+      // Calculate summary
+      const totalPrecipitation = hourlyData.slice(0, 24).reduce((sum, h) => sum + h.precipitation, 0);
+      const maxProbability = Math.max(...hourlyData.slice(0, 24).map(h => h.precipitationProbability));
+      const hasRain = totalPrecipitation > 0 || maxProbability > 30;
+      
+      let summary = '';
+      if (!hasRain) {
+        summary = 'No significant rainfall expected in the next 24 hours';
+      } else if (totalPrecipitation < 1) {
+        summary = 'Light rainfall possible in the next 24 hours';
+      } else if (totalPrecipitation < 5) {
+        summary = 'Moderate rainfall expected in the next 24 hours';
+      } else {
+        summary = 'Heavy rainfall expected in the next 24 hours';
+      }
+      
+      setRadarData({
+        current: {
+          precipitation: data.current.precipitation || 0,
+          weatherCode: data.current.weather_code || 0,
+        },
+        hourly: hourlyData,
+        summary,
+      });
+      
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching rainfall data:', err);
+      setError(true);
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to load rainfall data');
+      setLoading(false);
+    }
+  };
 
-  // Generate the HTML content for the radar
-  const radarHTML = useMemo(() => {
-    const zoom = compact ? 7 : 8;
-    
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-          <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
-                integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
-                crossorigin="" />
-          <style>
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            }
-            html, body {
-              width: 100%;
-              height: 100%;
-              overflow: hidden;
-              background: ${colors.background};
-            }
-            #map {
-              position: absolute;
-              top: 0;
-              left: 0;
-              right: 0;
-              bottom: 0;
-              width: 100%;
-              height: 100%;
-            }
-            .legend {
-              position: absolute;
-              bottom: 10px;
-              right: 10px;
-              background: ${isDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.95)'};
-              padding: 8px 12px;
-              border-radius: 8px;
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              font-size: 11px;
-              color: ${colors.text};
-              box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-              z-index: 1000;
-            }
-            .legend-title {
-              font-weight: 600;
-              margin-bottom: 6px;
-              font-size: 12px;
-            }
-            .legend-item {
-              display: flex;
-              align-items: center;
-              margin: 3px 0;
-            }
-            .legend-color {
-              width: 20px;
-              height: 12px;
-              margin-right: 6px;
-              border-radius: 2px;
-            }
-          </style>
-        </head>
-        <body>
-          <div id="map"></div>
-          <div class="legend">
-            <div class="legend-title">Rainfall</div>
-            <div class="legend-item">
-              <div class="legend-color" style="background: rgba(0, 255, 0, 0.3);"></div>
-              <span>Light</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color" style="background: rgba(255, 255, 0, 0.5);"></div>
-              <span>Moderate</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color" style="background: rgba(255, 165, 0, 0.6);"></div>
-              <span>Heavy</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color" style="background: rgba(255, 0, 0, 0.7);"></div>
-              <span>Intense</span>
-            </div>
-          </div>
-          
-          <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
-                  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
-                  crossorigin=""></script>
-          
-          <script>
-            (function() {
-              'use strict';
-              
-              console.log('=== Radar Script Starting (v2) ===');
-              
-              // Helper function to send messages to React Native
-              function sendMessage(type, data) {
-                try {
-                  const message = JSON.stringify({ type: type, data: data });
-                  console.log('[Message]', type, ':', data);
-                  if (window.ReactNativeWebView) {
-                    window.ReactNativeWebView.postMessage(message);
-                  }
-                } catch (err) {
-                  console.error('[Message Error]', err);
-                }
-              }
+  const getRainfallIntensity = (precipitation: number): string => {
+    if (precipitation === 0) return 'None';
+    if (precipitation < 0.5) return 'Trace';
+    if (precipitation < 2.5) return 'Light';
+    if (precipitation < 7.5) return 'Moderate';
+    if (precipitation < 15) return 'Heavy';
+    return 'Intense';
+  };
 
-              // Global error handler
-              window.onerror = function(msg, url, lineNo, columnNo, error) {
-                console.error('[Global Error]', msg, 'at', url, lineNo + ':' + columnNo);
-                sendMessage('error', 'JavaScript error: ' + msg);
-                return false;
-              };
+  const getRainfallColor = (precipitation: number): string => {
+    if (precipitation === 0) return colors.divider;
+    if (precipitation < 0.5) return '#90EE90';
+    if (precipitation < 2.5) return '#4CAF50';
+    if (precipitation < 7.5) return '#FFC107';
+    if (precipitation < 15) return '#FF9800';
+    return '#F44336';
+  };
 
-              // Track state
-              let map = null;
-              let radarLayers = [];
-              let animationPosition = 0;
-              let animationTimer = null;
-              let isInitialized = false;
+  const getWeatherIcon = (weatherCode: number): string => {
+    if (weatherCode >= 95) return 'thunderstorm';
+    if (weatherCode >= 80) return 'rainy';
+    if (weatherCode >= 71) return 'snow';
+    if (weatherCode >= 61) return 'rainy';
+    if (weatherCode >= 51) return 'rainy';
+    if (weatherCode >= 45) return 'cloudy';
+    if (weatherCode >= 3) return 'cloudy';
+    if (weatherCode >= 1) return 'partly-sunny';
+    return 'sunny';
+  };
 
-              function initRadar() {
-                if (isInitialized) {
-                  console.log('[Init] Already initialized');
-                  return;
-                }
-                isInitialized = true;
-                
-                console.log('[Init] Starting...');
-                sendMessage('status', 'Checking libraries...');
-                
-                // Check if Leaflet is loaded
-                if (typeof L === 'undefined') {
-                  console.error('[Init] Leaflet not loaded!');
-                  sendMessage('error', 'Map library failed to load. Please check your internet connection.');
-                  return;
-                }
-                
-                console.log('[Init] Leaflet version:', L.version);
-                sendMessage('status', 'Creating map...');
-                
-                try {
-                  // Initialize the map
-                  map = L.map('map', {
-                    center: [${latitude}, ${longitude}],
-                    zoom: ${zoom},
-                    zoomControl: ${showControls},
-                    attributionControl: false,
-                    preferCanvas: true,
-                    fadeAnimation: false,
-                    zoomAnimation: false
-                  });
+  const formatTime = (timeString: string): string => {
+    try {
+      const date = new Date(timeString);
+      return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    } catch {
+      return timeString;
+    }
+  };
 
-                  console.log('[Init] Map created');
-                  sendMessage('status', 'Loading map tiles...');
-
-                  // Add OpenStreetMap tile layer
-                  const baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19,
-                    updateWhenIdle: false,
-                    updateWhenZooming: false,
-                    keepBuffer: 2
-                  });
-                  
-                  let baseReady = false;
-                  
-                  baseLayer.on('load', function() {
-                    if (!baseReady) {
-                      baseReady = true;
-                      console.log('[Base] Tiles loaded');
-                      sendMessage('status', 'Map ready, fetching radar...');
-                      loadRadarData();
-                    }
-                  });
-                  
-                  baseLayer.on('tileerror', function(error) {
-                    console.warn('[Base] Tile error:', error.tile.src);
-                  });
-                  
-                  baseLayer.addTo(map);
-
-                  // Fallback: proceed after 3 seconds even if tiles don't fully load
-                  setTimeout(function() {
-                    if (!baseReady) {
-                      console.log('[Base] Timeout - proceeding anyway');
-                      baseReady = true;
-                      sendMessage('status', 'Map initialized, fetching radar...');
-                      loadRadarData();
-                    }
-                  }, 3000);
-
-                  // Add circuit marker
-                  const circuitMarker = L.circleMarker([${latitude}, ${longitude}], {
-                    radius: 8,
-                    fillColor: '${colors.primary}',
-                    color: '#fff',
-                    weight: 2,
-                    opacity: 1,
-                    fillOpacity: 0.9
-                  }).addTo(map);
-
-                  circuitMarker.bindPopup('<b>${circuitName}</b><br>${country}');
-                  console.log('[Init] Circuit marker added');
-
-                } catch (err) {
-                  console.error('[Init] Map error:', err);
-                  sendMessage('error', 'Map initialization failed: ' + err.message);
-                }
-              }
-
-              function loadRadarData() {
-                console.log('[Radar] Fetching data from RainViewer API...');
-                sendMessage('status', 'Connecting to radar service...');
-                
-                const apiUrl = 'https://api.rainviewer.com/public/weather-maps.json';
-                const fetchTimeout = setTimeout(function() {
-                  console.error('[Radar] API timeout');
-                  sendMessage('error', 'Radar service timeout. Please try again.');
-                }, 20000);
-
-                fetch(apiUrl)
-                  .then(function(response) {
-                    clearTimeout(fetchTimeout);
-                    console.log('[Radar] API response:', response.status);
-                    
-                    if (!response.ok) {
-                      throw new Error('API returned status ' + response.status);
-                    }
-                    
-                    return response.json();
-                  })
-                  .then(function(data) {
-                    console.log('[Radar] Data received');
-                    
-                    if (!data || !data.radar || !data.radar.past) {
-                      throw new Error('Invalid API response');
-                    }
-                    
-                    const timestamps = data.radar.past.concat(data.radar.nowcast || []);
-                    console.log('[Radar] Frames available:', timestamps.length);
-                    
-                    if (timestamps.length === 0) {
-                      sendMessage('loaded', 'No radar data available');
-                      return;
-                    }
-                    
-                    sendMessage('status', 'Loading radar frames...');
-                    
-                    // Create radar layers
-                    timestamps.forEach(function(ts) {
-                      const layer = L.tileLayer(
-                        'https://tilecache.rainviewer.com/v2/radar/' + ts.time + '/256/{z}/{x}/{y}/2/1_1.png',
-                        {
-                          tileSize: 256,
-                          opacity: ${radarOpacity},
-                          zIndex: 10,
-                          updateWhenIdle: false,
-                          updateWhenZooming: false
-                        }
-                      );
-                      radarLayers.push(layer);
-                    });
-
-                    console.log('[Radar] Layers created:', radarLayers.length);
-
-                    // Show the most recent frame
-                    if (radarLayers.length > 0) {
-                      const lastLayer = radarLayers[radarLayers.length - 1];
-                      animationPosition = radarLayers.length - 1;
-                      
-                      let radarReady = false;
-                      let tileCount = 0;
-                      
-                      lastLayer.on('tileload', function() {
-                        tileCount++;
-                        if (!radarReady && tileCount >= 1) {
-                          radarReady = true;
-                          console.log('[Radar] Tiles loaded');
-                          sendMessage('loaded', 'Radar active with ' + timestamps.length + ' frames');
-                        }
-                      });
-                      
-                      lastLayer.on('load', function() {
-                        if (!radarReady) {
-                          radarReady = true;
-                          console.log('[Radar] Load event');
-                          sendMessage('loaded', 'Radar loaded');
-                        }
-                      });
-                      
-                      lastLayer.addTo(map);
-                      
-                      // Fallback: Mark as loaded after 4 seconds
-                      // Empty tiles (no rain) don't fire load events
-                      setTimeout(function() {
-                        if (!radarReady) {
-                          radarReady = true;
-                          console.log('[Radar] Timeout - likely no precipitation');
-                          sendMessage('loaded', 'Radar loaded - no active precipitation');
-                        }
-                      }, 4000);
-                    }
-
-                    // Start animation if enabled
-                    ${isAnimating ? `
-                    if (radarLayers.length > 1) {
-                      animationTimer = setInterval(function() {
-                        radarLayers[animationPosition].remove();
-                        animationPosition = (animationPosition + 1) % radarLayers.length;
-                        radarLayers[animationPosition].addTo(map);
-                      }, 500);
-                      console.log('[Animation] Started');
-                    }
-                    ` : ''}
-                  })
-                  .catch(function(err) {
-                    clearTimeout(fetchTimeout);
-                    console.error('[Radar] Error:', err);
-                    sendMessage('error', 'Failed to load radar: ' + err.message);
-                  });
-              }
-
-              // Initialize when DOM is ready
-              if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', function() {
-                  console.log('[DOM] Ready');
-                  setTimeout(initRadar, 200);
-                });
-              } else {
-                console.log('[DOM] Already ready');
-                setTimeout(initRadar, 200);
-              }
-              
-              // Backup initialization
-              setTimeout(function() {
-                if (!isInitialized) {
-                  console.log('[Init] Backup trigger');
-                  initRadar();
-                }
-              }, 1500);
-            })();
-          </script>
-        </body>
-      </html>
-    `;
-  }, [latitude, longitude, circuitName, country, isDark, colors, compact, showControls, isAnimating, radarOpacity, retryKey]);
+  const formatDate = (timeString: string): string => {
+    try {
+      const date = new Date(timeString);
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      if (date.toDateString() === today.toDateString()) {
+        return 'Today';
+      } else if (date.toDateString() === tomorrow.toDateString()) {
+        return 'Tomorrow';
+      } else {
+        return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+      }
+    } catch {
+      return timeString;
+    }
+  };
 
   const styles = useMemo(() => StyleSheet.create({
     container: {
@@ -436,52 +213,18 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       fontFamily: 'Roboto_400Regular',
       marginBottom: 12,
     },
-    controls: {
-      flexDirection: 'row',
-      gap: 8,
-    },
-    controlBtn: {
-      padding: 6,
-      borderRadius: 8,
-      backgroundColor: colors.backgroundAlt,
-    },
-    webviewContainer: {
-      height: compact ? 200 : 300,
-      borderRadius: borderRadius.md,
-      overflow: 'hidden',
-      backgroundColor: colors.backgroundAlt,
-      position: 'relative',
-    },
-    webview: {
-      flex: 1,
-      backgroundColor: 'transparent',
-    },
     loadingContainer: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
+      height: compact ? 200 : 300,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: colors.backgroundAlt + 'EE',
-      zIndex: 1000,
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: borderRadius.md,
     },
     loadingText: {
       marginTop: 12,
       fontSize: 14,
       color: colors.text,
       fontFamily: 'Roboto_500Medium',
-      textAlign: 'center',
-      paddingHorizontal: 20,
-    },
-    statusText: {
-      marginTop: 6,
-      fontSize: 12,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      textAlign: 'center',
-      fontStyle: 'italic',
     },
     errorContainer: {
       height: compact ? 200 : 300,
@@ -504,7 +247,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       fontFamily: 'Roboto_400Regular',
       textAlign: 'center',
       marginTop: 6,
-      paddingHorizontal: 10,
     },
     retryButton: {
       marginTop: 16,
@@ -522,6 +264,129 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       fontWeight: '600',
       fontFamily: 'Roboto_600SemiBold',
     },
+    currentRainfall: {
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: borderRadius.md,
+      padding: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    currentRainfallHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    currentRainfallTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.text,
+      fontFamily: 'Roboto_600SemiBold',
+    },
+    currentRainfallValue: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+      textAlign: 'center',
+      marginBottom: 4,
+    },
+    currentRainfallIntensity: {
+      fontSize: 14,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_500Medium',
+      textAlign: 'center',
+    },
+    summary: {
+      fontSize: 13,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: 8,
+      fontStyle: 'italic',
+      textAlign: 'center',
+    },
+    chartContainer: {
+      marginBottom: 16,
+    },
+    chartTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.text,
+      fontFamily: 'Roboto_600SemiBold',
+      marginBottom: 12,
+    },
+    chartScroll: {
+      paddingVertical: 8,
+    },
+    hourCard: {
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: borderRadius.md,
+      padding: 12,
+      marginRight: 12,
+      minWidth: 80,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    hourTime: {
+      fontSize: 11,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 8,
+    },
+    hourDate: {
+      fontSize: 10,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 8,
+    },
+    hourBar: {
+      width: 40,
+      height: 80,
+      backgroundColor: colors.divider,
+      borderRadius: 4,
+      justifyContent: 'flex-end',
+      overflow: 'hidden',
+      marginBottom: 8,
+    },
+    hourBarFill: {
+      width: '100%',
+      borderRadius: 4,
+    },
+    hourValue: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.text,
+      fontFamily: 'Roboto_600SemiBold',
+      marginBottom: 4,
+    },
+    hourProb: {
+      fontSize: 10,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+    },
+    legend: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+      marginTop: 8,
+    },
+    legendItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    legendColor: {
+      width: 16,
+      height: 16,
+      borderRadius: 4,
+    },
+    legendText: {
+      fontSize: 11,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+    },
     infoText: {
       fontSize: 11,
       color: colors.textMuted,
@@ -531,89 +396,22 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     },
   }), [colors, shadows, compact]);
 
-  const handleMessage = (event: any) => {
-    if (!mountedRef.current) return;
-    
-    try {
-      const message = JSON.parse(event.nativeEvent.data);
-      console.log('📨 WebView message:', message.type, message.data);
-      
-      if (message.type === 'loaded') {
-        console.log('✅ Radar loaded successfully');
-        setLoading(false);
-        setError(false);
-        setStatusMessage('Radar loaded');
-        if (loadingTimeoutRef.current) {
-          clearTimeout(loadingTimeoutRef.current);
-        }
-      } else if (message.type === 'error') {
-        console.error('❌ Radar error:', message.data);
-        setLoading(false);
-        setError(true);
-        setErrorMessage(message.data);
-        if (loadingTimeoutRef.current) {
-          clearTimeout(loadingTimeoutRef.current);
-        }
-      } else if (message.type === 'status') {
-        console.log('📊 Status update:', message.data);
-        setStatusMessage(message.data);
-      }
-    } catch (err) {
-      console.error('Failed to parse WebView message:', err);
-    }
-  };
-
-  const handleLoadStart = () => {
-    if (!mountedRef.current) return;
-    
-    console.log('🔄 WebView load started');
-    setLoading(true);
-    setError(false);
-    setStatusMessage('Loading WebView...');
-    
-    // Set a timeout to prevent infinite loading
-    if (loadingTimeoutRef.current) {
-      clearTimeout(loadingTimeoutRef.current);
-    }
-    loadingTimeoutRef.current = setTimeout(() => {
-      if (!mountedRef.current) return;
-      console.log('⏱️ Loading timeout reached (30s)');
-      setLoading(false);
-      setError(true);
-      setErrorMessage('Loading timeout - the radar service may be unavailable or your connection is slow.');
-    }, 30000); // 30 second timeout
-  };
-
-  const handleLoadEnd = () => {
-    console.log('🏁 WebView load ended');
-    setStatusMessage('WebView loaded, initializing...');
-  };
-
-  const handleError = (syntheticEvent: any) => {
-    if (!mountedRef.current) return;
-    
-    const { nativeEvent } = syntheticEvent;
-    console.error('❌ WebView error:', nativeEvent);
-    setLoading(false);
-    setError(true);
-    setErrorMessage('WebView failed to load. Please check your internet connection.');
-    if (loadingTimeoutRef.current) {
-      clearTimeout(loadingTimeoutRef.current);
-    }
-  };
-
-  const toggleAnimation = () => {
-    setIsAnimating(!isAnimating);
-  };
-
-  const handleRetry = () => {
-    console.log('🔄 Retrying radar load...');
-    setError(false);
-    setLoading(true);
-    setErrorMessage('');
-    setStatusMessage('Retrying...');
-    setRetryKey(prev => prev + 1);
-  };
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <View style={styles.titleContainer}>
+            <Icon name="rainy" size={20} color={colors.precipitation} />
+            <Text style={styles.title}>Rainfall Radar</Text>
+          </View>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Loading rainfall data...</Text>
+        </View>
+      </View>
+    );
+  }
 
   if (error) {
     return (
@@ -626,15 +424,13 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         </View>
         <View style={styles.errorContainer}>
           <Icon name="cloud-offline" size={48} color={colors.error} />
-          <Text style={styles.errorText}>
-            Unable to load rainfall radar
-          </Text>
+          <Text style={styles.errorText}>Unable to load rainfall data</Text>
           {errorMessage ? (
             <Text style={styles.errorDetails}>{errorMessage}</Text>
           ) : null}
           <TouchableOpacity 
             style={styles.retryButton}
-            onPress={handleRetry}
+            onPress={fetchRainfallData}
             activeOpacity={0.8}
           >
             <Icon name="refresh" size={16} color="#fff" />
@@ -645,6 +441,20 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     );
   }
 
+  if (!radarData) {
+    return null;
+  }
+
+  // Group hourly data by day
+  const groupedByDay: { [key: string]: PrecipitationData[] } = {};
+  radarData.hourly.forEach(hour => {
+    const date = formatDate(hour.time);
+    if (!groupedByDay[date]) {
+      groupedByDay[date] = [];
+    }
+    groupedByDay[date].push(hour);
+  });
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -652,74 +462,104 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
           <Icon name="rainy" size={20} color={colors.precipitation} />
           <Text style={styles.title}>Rainfall Radar</Text>
         </View>
-        {showControls && !loading && (
-          <View style={styles.controls}>
-            <TouchableOpacity 
-              style={styles.controlBtn}
-              onPress={toggleAnimation}
-              activeOpacity={0.7}
-            >
-              <Icon 
-                name={isAnimating ? "pause" : "play"} 
-                size={16} 
-                color={colors.text} 
-              />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.controlBtn}
-              onPress={handleRetry}
-              activeOpacity={0.7}
-            >
-              <Icon 
-                name="refresh" 
-                size={16} 
-                color={colors.text} 
-              />
-            </TouchableOpacity>
-          </View>
-        )}
+        <TouchableOpacity 
+          onPress={fetchRainfallData}
+          activeOpacity={0.7}
+        >
+          <Icon name="refresh" size={20} color={colors.text} />
+        </TouchableOpacity>
       </View>
       
       <Text style={styles.subtitle}>
-        Live precipitation data • Updated every 10 minutes
+        Live precipitation data for {circuitName}
       </Text>
 
-      <View style={styles.webviewContainer}>
-        <WebView
-          key={retryKey}
-          ref={webViewRef}
-          source={{ html: radarHTML }}
-          style={styles.webview}
-          onLoadStart={handleLoadStart}
-          onLoadEnd={handleLoadEnd}
-          onError={handleError}
-          onMessage={handleMessage}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-          startInLoadingState={false}
-          scrollEnabled={false}
-          bounces={false}
-          originWhitelist={['*']}
-          allowsInlineMediaPlayback={true}
-          mediaPlaybackRequiresUserAction={false}
-          mixedContentMode="always"
-          allowFileAccess={true}
-          allowUniversalAccessFromFileURLs={true}
-          cacheEnabled={false}
-          incognito={true}
-          thirdPartyCookiesEnabled={false}
-        />
-        {loading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Loading radar data...</Text>
-            <Text style={styles.statusText}>{statusMessage}</Text>
-          </View>
-        )}
+      {/* Current Rainfall */}
+      <View style={styles.currentRainfall}>
+        <View style={styles.currentRainfallHeader}>
+          <Text style={styles.currentRainfallTitle}>Current Conditions</Text>
+          <Icon 
+            name={getWeatherIcon(radarData.current.weatherCode)} 
+            size={24} 
+            color={colors.text} 
+          />
+        </View>
+        <Text style={styles.currentRainfallValue}>
+          {radarData.current.precipitation.toFixed(1)} mm
+        </Text>
+        <Text style={styles.currentRainfallIntensity}>
+          {getRainfallIntensity(radarData.current.precipitation)}
+        </Text>
+        <Text style={styles.summary}>{radarData.summary}</Text>
+      </View>
+
+      {/* Hourly Forecast by Day */}
+      {Object.entries(groupedByDay).map(([day, hours]) => (
+        <View key={day} style={styles.chartContainer}>
+          <Text style={styles.chartTitle}>{day}</Text>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chartScroll}
+          >
+            {hours.map((hour, index) => {
+              const maxPrecipitation = 15; // mm
+              const barHeight = Math.min((hour.precipitation / maxPrecipitation) * 80, 80);
+              const barColor = getRainfallColor(hour.precipitation);
+              
+              return (
+                <View key={index} style={styles.hourCard}>
+                  <Text style={styles.hourTime}>{formatTime(hour.time)}</Text>
+                  <View style={styles.hourBar}>
+                    <View 
+                      style={[
+                        styles.hourBarFill, 
+                        { 
+                          height: barHeight,
+                          backgroundColor: barColor,
+                        }
+                      ]} 
+                    />
+                  </View>
+                  <Text style={styles.hourValue}>
+                    {hour.precipitation.toFixed(1)}mm
+                  </Text>
+                  <Text style={styles.hourProb}>
+                    {hour.precipitationProbability}%
+                  </Text>
+                </View>
+              );
+            })}
+          </ScrollView>
+        </View>
+      ))}
+
+      {/* Legend */}
+      <View style={styles.legend}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendColor, { backgroundColor: '#90EE90' }]} />
+          <Text style={styles.legendText}>Trace</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendColor, { backgroundColor: '#4CAF50' }]} />
+          <Text style={styles.legendText}>Light</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendColor, { backgroundColor: '#FFC107' }]} />
+          <Text style={styles.legendText}>Moderate</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendColor, { backgroundColor: '#FF9800' }]} />
+          <Text style={styles.legendText}>Heavy</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendColor, { backgroundColor: '#F44336' }]} />
+          <Text style={styles.legendText}>Intense</Text>
+        </View>
       </View>
 
       <Text style={styles.infoText}>
-        Radar data provided by RainViewer • Colors indicate rainfall intensity
+        Data from Open-Meteo • Updated every 10 minutes
       </Text>
     </View>
   );
