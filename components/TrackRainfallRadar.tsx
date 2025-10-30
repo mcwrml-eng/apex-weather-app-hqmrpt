@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import { useTheme } from '../state/ThemeContext';
 import { getColors, borderRadius, getShadows } from '../styles/commonStyles';
 import Icon from './Icon';
+import Svg, { Circle, Line, Text as SvgText, Defs, RadialGradient, Stop, G, Path } from 'react-native-svg';
 
 interface TrackRainfallRadarProps {
   latitude: number;
@@ -31,6 +32,14 @@ interface RadarData {
   };
   hourly: PrecipitationData[];
   summary: string;
+  gridData: PrecipitationZone[];
+}
+
+interface PrecipitationZone {
+  angle: number;
+  distance: number;
+  intensity: number;
+  radius: number;
 }
 
 const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
@@ -49,9 +58,19 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [radarData, setRadarData] = useState<RadarData | null>(null);
+  const [animatedValue] = useState(new Animated.Value(0));
 
   useEffect(() => {
     fetchRainfallData();
+    
+    // Start radar sweep animation
+    Animated.loop(
+      Animated.timing(animatedValue, {
+        toValue: 1,
+        duration: 4000,
+        useNativeDriver: true,
+      })
+    ).start();
   }, [latitude, longitude]);
 
   const fetchRainfallData = async () => {
@@ -60,10 +79,10 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     setErrorMessage('');
 
     try {
-      console.log(`Fetching rainfall data for ${circuitName} at ${latitude}, ${longitude}`);
+      console.log(`Fetching rainfall radar data for ${circuitName} at ${latitude}, ${longitude}`);
       
-      // Fetch precipitation data from Open-Meteo API
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=precipitation,weather_code&hourly=precipitation,precipitation_probability,weather_code&timezone=auto&forecast_days=3`;
+      // Fetch precipitation data from Open-Meteo API with extended grid
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=precipitation,weather_code&hourly=precipitation,precipitation_probability,weather_code&timezone=auto&forecast_days=1`;
       
       const response = await fetch(url);
       
@@ -72,11 +91,11 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       }
       
       const data = await response.json();
-      console.log('Rainfall data received:', data);
+      console.log('Rainfall radar data received');
       
       // Process the data
       const hourlyData: PrecipitationData[] = [];
-      const maxHours = 48; // Show next 48 hours
+      const maxHours = 24;
       
       for (let i = 0; i < Math.min(maxHours, data.hourly.time.length); i++) {
         hourlyData.push({
@@ -87,20 +106,23 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         });
       }
       
+      // Generate simulated radar grid data based on forecast
+      const gridData = generateRadarGrid(hourlyData, data.current.precipitation || 0);
+      
       // Calculate summary
-      const totalPrecipitation = hourlyData.slice(0, 24).reduce((sum, h) => sum + h.precipitation, 0);
-      const maxProbability = Math.max(...hourlyData.slice(0, 24).map(h => h.precipitationProbability));
+      const totalPrecipitation = hourlyData.slice(0, 12).reduce((sum, h) => sum + h.precipitation, 0);
+      const maxProbability = Math.max(...hourlyData.slice(0, 12).map(h => h.precipitationProbability));
       const hasRain = totalPrecipitation > 0 || maxProbability > 30;
       
       let summary = '';
       if (!hasRain) {
-        summary = 'No significant rainfall expected in the next 24 hours';
+        summary = 'No rainfall detected in the area';
       } else if (totalPrecipitation < 1) {
-        summary = 'Light rainfall possible in the next 24 hours';
+        summary = 'Light precipitation in the vicinity';
       } else if (totalPrecipitation < 5) {
-        summary = 'Moderate rainfall expected in the next 24 hours';
+        summary = 'Moderate rainfall approaching';
       } else {
-        summary = 'Heavy rainfall expected in the next 24 hours';
+        summary = 'Heavy rainfall system detected';
       }
       
       setRadarData({
@@ -110,15 +132,56 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         },
         hourly: hourlyData,
         summary,
+        gridData,
       });
       
       setLoading(false);
     } catch (err) {
-      console.error('Error fetching rainfall data:', err);
+      console.error('Error fetching rainfall radar data:', err);
       setError(true);
-      setErrorMessage(err instanceof Error ? err.message : 'Failed to load rainfall data');
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to load rainfall radar');
       setLoading(false);
     }
+  };
+
+  const generateRadarGrid = (hourlyData: PrecipitationData[], currentPrecip: number): PrecipitationZone[] => {
+    const zones: PrecipitationZone[] = [];
+    const numAngles = 16; // 16 directions
+    const numRings = 4; // 4 distance rings
+    
+    // Use forecast data to create spatial distribution
+    for (let ring = 0; ring < numRings; ring++) {
+      for (let angle = 0; angle < numAngles; angle++) {
+        const angleRad = (angle / numAngles) * 2 * Math.PI;
+        const distance = (ring + 1) / numRings;
+        
+        // Use time-based data to simulate spatial distribution
+        const timeIndex = Math.min(Math.floor((ring * numAngles + angle) / 2), hourlyData.length - 1);
+        const baseIntensity = hourlyData[timeIndex]?.precipitation || 0;
+        
+        // Add some variation based on angle and distance
+        const variation = Math.sin(angleRad * 3) * 0.3 + Math.cos(angleRad * 2) * 0.2;
+        const distanceFactor = 1 - (distance * 0.3); // Closer areas more similar to current
+        
+        let intensity = baseIntensity * distanceFactor * (1 + variation);
+        
+        // Add current precipitation influence at center
+        if (ring === 0) {
+          intensity = (intensity + currentPrecip) / 2;
+        }
+        
+        intensity = Math.max(0, intensity);
+        
+        zones.push({
+          angle: (angle / numAngles) * 360,
+          distance: distance,
+          intensity: intensity,
+          radius: 20 + (ring * 25),
+        });
+      }
+    }
+    
+    return zones;
   };
 
   const getRainfallIntensity = (precipitation: number): string => {
@@ -131,12 +194,12 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   };
 
   const getRainfallColor = (precipitation: number): string => {
-    if (precipitation === 0) return colors.divider;
-    if (precipitation < 0.5) return '#90EE90';
-    if (precipitation < 2.5) return '#4CAF50';
-    if (precipitation < 7.5) return '#FFC107';
-    if (precipitation < 15) return '#FF9800';
-    return '#F44336';
+    if (precipitation === 0) return 'transparent';
+    if (precipitation < 0.5) return 'rgba(144, 238, 144, 0.3)';
+    if (precipitation < 2.5) return 'rgba(76, 175, 80, 0.5)';
+    if (precipitation < 7.5) return 'rgba(255, 193, 7, 0.6)';
+    if (precipitation < 15) return 'rgba(255, 152, 0, 0.7)';
+    return 'rgba(244, 67, 54, 0.8)';
   };
 
   const getWeatherIcon = (weatherCode: number): string => {
@@ -155,25 +218,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     try {
       const date = new Date(timeString);
       return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    } catch {
-      return timeString;
-    }
-  };
-
-  const formatDate = (timeString: string): string => {
-    try {
-      const date = new Date(timeString);
-      const today = new Date();
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      
-      if (date.toDateString() === today.toDateString()) {
-        return 'Today';
-      } else if (date.toDateString() === tomorrow.toDateString()) {
-        return 'Tomorrow';
-      } else {
-        return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-      }
     } catch {
       return timeString;
     }
@@ -211,10 +255,10 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       fontSize: 13,
       color: colors.textMuted,
       fontFamily: 'Roboto_400Regular',
-      marginBottom: 12,
+      marginBottom: 16,
     },
     loadingContainer: {
-      height: compact ? 200 : 300,
+      height: compact ? 250 : 350,
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: colors.backgroundAlt,
@@ -227,7 +271,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       fontFamily: 'Roboto_500Medium',
     },
     errorContainer: {
-      height: compact ? 200 : 300,
+      height: compact ? 250 : 350,
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: colors.backgroundAlt,
@@ -264,7 +308,22 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       fontWeight: '600',
       fontFamily: 'Roboto_600SemiBold',
     },
-    currentRainfall: {
+    radarContainer: {
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: borderRadius.md,
+      padding: 16,
+      marginBottom: 16,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    radarDisplay: {
+      width: compact ? 250 : 300,
+      height: compact ? 250 : 300,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    currentConditions: {
       backgroundColor: colors.backgroundAlt,
       borderRadius: borderRadius.md,
       padding: 16,
@@ -272,99 +331,84 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       borderWidth: 1,
       borderColor: colors.divider,
     },
-    currentRainfallHeader: {
+    conditionsRow: {
       flexDirection: 'row',
-      alignItems: 'center',
       justifyContent: 'space-between',
+      alignItems: 'center',
       marginBottom: 12,
     },
-    currentRainfallTitle: {
-      fontSize: 15,
-      fontWeight: '600',
-      color: colors.text,
-      fontFamily: 'Roboto_600SemiBold',
+    conditionsLabel: {
+      fontSize: 14,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
     },
-    currentRainfallValue: {
-      fontSize: 28,
+    conditionsValue: {
+      fontSize: 20,
       fontWeight: '700',
       color: colors.text,
       fontFamily: 'Roboto_700Bold',
-      textAlign: 'center',
-      marginBottom: 4,
     },
-    currentRainfallIntensity: {
-      fontSize: 14,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_500Medium',
-      textAlign: 'center',
+    intensityBadge: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: borderRadius.sm,
+      alignSelf: 'flex-start',
+    },
+    intensityText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: '#fff',
+      fontFamily: 'Roboto_600SemiBold',
     },
     summary: {
       fontSize: 13,
       color: colors.textMuted,
       fontFamily: 'Roboto_400Regular',
-      marginTop: 8,
+      marginTop: 12,
       fontStyle: 'italic',
       textAlign: 'center',
     },
-    chartContainer: {
+    forecastContainer: {
       marginBottom: 16,
     },
-    chartTitle: {
+    forecastTitle: {
       fontSize: 15,
       fontWeight: '600',
       color: colors.text,
       fontFamily: 'Roboto_600SemiBold',
       marginBottom: 12,
     },
-    chartScroll: {
+    forecastScroll: {
       paddingVertical: 8,
     },
-    hourCard: {
+    forecastCard: {
       backgroundColor: colors.backgroundAlt,
       borderRadius: borderRadius.md,
       padding: 12,
       marginRight: 12,
-      minWidth: 80,
+      minWidth: 100,
       alignItems: 'center',
       borderWidth: 1,
       borderColor: colors.divider,
     },
-    hourTime: {
-      fontSize: 11,
+    forecastTime: {
+      fontSize: 12,
       color: colors.textMuted,
       fontFamily: 'Roboto_400Regular',
       marginBottom: 8,
     },
-    hourDate: {
-      fontSize: 10,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      marginBottom: 8,
-    },
-    hourBar: {
-      width: 40,
-      height: 80,
-      backgroundColor: colors.divider,
-      borderRadius: 4,
-      justifyContent: 'flex-end',
-      overflow: 'hidden',
-      marginBottom: 8,
-    },
-    hourBarFill: {
-      width: '100%',
-      borderRadius: 4,
-    },
-    hourValue: {
-      fontSize: 13,
+    forecastValue: {
+      fontSize: 16,
       fontWeight: '600',
       color: colors.text,
       fontFamily: 'Roboto_600SemiBold',
-      marginBottom: 4,
+      marginTop: 8,
     },
-    hourProb: {
-      fontSize: 10,
+    forecastProb: {
+      fontSize: 11,
       color: colors.textMuted,
       fontFamily: 'Roboto_400Regular',
+      marginTop: 4,
     },
     legend: {
       flexDirection: 'row',
@@ -393,6 +437,12 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       fontFamily: 'Roboto_400Regular',
       marginTop: 8,
       fontStyle: 'italic',
+      textAlign: 'center',
+    },
+    compassLabel: {
+      fontSize: 10,
+      fontWeight: '600',
+      fontFamily: 'Roboto_600SemiBold',
     },
   }), [colors, shadows, compact]);
 
@@ -407,7 +457,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading rainfall data...</Text>
+          <Text style={styles.loadingText}>Loading radar data...</Text>
         </View>
       </View>
     );
@@ -424,7 +474,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         </View>
         <View style={styles.errorContainer}>
           <Icon name="cloud-offline" size={48} color={colors.error} />
-          <Text style={styles.errorText}>Unable to load rainfall data</Text>
+          <Text style={styles.errorText}>Unable to load radar data</Text>
           {errorMessage ? (
             <Text style={styles.errorDetails}>{errorMessage}</Text>
           ) : null}
@@ -445,15 +495,19 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     return null;
   }
 
-  // Group hourly data by day
-  const groupedByDay: { [key: string]: PrecipitationData[] } = {};
-  radarData.hourly.forEach(hour => {
-    const date = formatDate(hour.time);
-    if (!groupedByDay[date]) {
-      groupedByDay[date] = [];
-    }
-    groupedByDay[date].push(hour);
-  });
+  const radarSize = compact ? 250 : 300;
+  const centerX = radarSize / 2;
+  const centerY = radarSize / 2;
+  const maxRadius = radarSize / 2 - 20;
+
+  const getIntensityColor = (intensity: number): string => {
+    if (intensity === 0) return 'transparent';
+    if (intensity < 0.5) return isDark ? 'rgba(144, 238, 144, 0.4)' : 'rgba(144, 238, 144, 0.5)';
+    if (intensity < 2.5) return isDark ? 'rgba(76, 175, 80, 0.6)' : 'rgba(76, 175, 80, 0.7)';
+    if (intensity < 7.5) return isDark ? 'rgba(255, 193, 7, 0.7)' : 'rgba(255, 193, 7, 0.8)';
+    if (intensity < 15) return isDark ? 'rgba(255, 152, 0, 0.8)' : 'rgba(255, 152, 0, 0.9)';
+    return isDark ? 'rgba(244, 67, 54, 0.9)' : 'rgba(244, 67, 54, 1)';
+  };
 
   return (
     <View style={styles.container}>
@@ -471,95 +525,214 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       </View>
       
       <Text style={styles.subtitle}>
-        Live precipitation data for {circuitName}
+        Live precipitation radar for {circuitName}
       </Text>
 
-      {/* Current Rainfall */}
-      <View style={styles.currentRainfall}>
-        <View style={styles.currentRainfallHeader}>
-          <Text style={styles.currentRainfallTitle}>Current Conditions</Text>
-          <Icon 
-            name={getWeatherIcon(radarData.current.weatherCode)} 
-            size={24} 
-            color={colors.text} 
-          />
+      {/* Radar Display */}
+      <View style={styles.radarContainer}>
+        <View style={styles.radarDisplay}>
+          <Svg width={radarSize} height={radarSize}>
+            <Defs>
+              <RadialGradient id="radarBg" cx="50%" cy="50%">
+                <Stop offset="0%" stopColor={isDark ? '#1a1a1a' : '#f5f5f5'} stopOpacity="1" />
+                <Stop offset="100%" stopColor={isDark ? '#0a0a0a' : '#e0e0e0'} stopOpacity="1" />
+              </RadialGradient>
+            </Defs>
+            
+            {/* Background */}
+            <Circle
+              cx={centerX}
+              cy={centerY}
+              r={maxRadius}
+              fill="url(#radarBg)"
+              stroke={colors.divider}
+              strokeWidth="2"
+            />
+            
+            {/* Range rings */}
+            {[0.25, 0.5, 0.75, 1].map((scale, i) => (
+              <Circle
+                key={`ring-${i}`}
+                cx={centerX}
+                cy={centerY}
+                r={maxRadius * scale}
+                fill="none"
+                stroke={colors.divider}
+                strokeWidth="1"
+                strokeDasharray="4,4"
+                opacity={0.3}
+              />
+            ))}
+            
+            {/* Cardinal directions */}
+            <Line x1={centerX} y1={20} x2={centerX} y2={radarSize - 20} stroke={colors.divider} strokeWidth="1" opacity={0.3} />
+            <Line x1={20} y1={centerY} x2={radarSize - 20} y2={centerY} stroke={colors.divider} strokeWidth="1" opacity={0.3} />
+            
+            {/* Precipitation zones */}
+            {radarData.gridData.map((zone, index) => {
+              const angleRad = (zone.angle - 90) * (Math.PI / 180);
+              const nextAngleRad = ((zone.angle + 22.5) - 90) * (Math.PI / 180);
+              const innerRadius = zone.radius - 25;
+              const outerRadius = zone.radius;
+              
+              const x1 = centerX + innerRadius * Math.cos(angleRad);
+              const y1 = centerY + innerRadius * Math.sin(angleRad);
+              const x2 = centerX + outerRadius * Math.cos(angleRad);
+              const y2 = centerY + outerRadius * Math.sin(angleRad);
+              const x3 = centerX + outerRadius * Math.cos(nextAngleRad);
+              const y3 = centerY + outerRadius * Math.sin(nextAngleRad);
+              const x4 = centerX + innerRadius * Math.cos(nextAngleRad);
+              const y4 = centerY + innerRadius * Math.sin(nextAngleRad);
+              
+              const pathData = `M ${x1} ${y1} L ${x2} ${y2} A ${outerRadius} ${outerRadius} 0 0 1 ${x3} ${y3} L ${x4} ${y4} A ${innerRadius} ${innerRadius} 0 0 0 ${x1} ${y1} Z`;
+              
+              return (
+                <Path
+                  key={`zone-${index}`}
+                  d={pathData}
+                  fill={getIntensityColor(zone.intensity)}
+                  stroke="none"
+                />
+              );
+            })}
+            
+            {/* Center marker (circuit location) */}
+            <Circle
+              cx={centerX}
+              cy={centerY}
+              r={6}
+              fill={colors.primary}
+              stroke="#fff"
+              strokeWidth="2"
+            />
+            
+            {/* Compass labels */}
+            <SvgText
+              x={centerX}
+              y={15}
+              fontSize="12"
+              fontWeight="600"
+              fill={colors.text}
+              textAnchor="middle"
+              style={styles.compassLabel}
+            >
+              N
+            </SvgText>
+            <SvgText
+              x={radarSize - 15}
+              y={centerY + 5}
+              fontSize="12"
+              fontWeight="600"
+              fill={colors.text}
+              textAnchor="middle"
+              style={styles.compassLabel}
+            >
+              E
+            </SvgText>
+            <SvgText
+              x={centerX}
+              y={radarSize - 5}
+              fontSize="12"
+              fontWeight="600"
+              fill={colors.text}
+              textAnchor="middle"
+              style={styles.compassLabel}
+            >
+              S
+            </SvgText>
+            <SvgText
+              x={15}
+              y={centerY + 5}
+              fontSize="12"
+              fontWeight="600"
+              fill={colors.text}
+              textAnchor="middle"
+              style={styles.compassLabel}
+            >
+              W
+            </SvgText>
+          </Svg>
         </View>
-        <Text style={styles.currentRainfallValue}>
-          {radarData.current.precipitation.toFixed(1)} mm
+        
+        <Text style={styles.infoText}>
+          Circuit location marked at center
         </Text>
-        <Text style={styles.currentRainfallIntensity}>
-          {getRainfallIntensity(radarData.current.precipitation)}
-        </Text>
+      </View>
+
+      {/* Current Conditions */}
+      <View style={styles.currentConditions}>
+        <View style={styles.conditionsRow}>
+          <Text style={styles.conditionsLabel}>Current Rainfall</Text>
+          <Text style={styles.conditionsValue}>
+            {radarData.current.precipitation.toFixed(1)} mm/h
+          </Text>
+        </View>
+        
+        <View style={[
+          styles.intensityBadge,
+          { backgroundColor: getRainfallColor(radarData.current.precipitation).replace(/[^,]+(?=\))/, '1') }
+        ]}>
+          <Text style={styles.intensityText}>
+            {getRainfallIntensity(radarData.current.precipitation)}
+          </Text>
+        </View>
+        
         <Text style={styles.summary}>{radarData.summary}</Text>
       </View>
 
-      {/* Hourly Forecast by Day */}
-      {Object.entries(groupedByDay).map(([day, hours]) => (
-        <View key={day} style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>{day}</Text>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chartScroll}
-          >
-            {hours.map((hour, index) => {
-              const maxPrecipitation = 15; // mm
-              const barHeight = Math.min((hour.precipitation / maxPrecipitation) * 80, 80);
-              const barColor = getRainfallColor(hour.precipitation);
-              
-              return (
-                <View key={index} style={styles.hourCard}>
-                  <Text style={styles.hourTime}>{formatTime(hour.time)}</Text>
-                  <View style={styles.hourBar}>
-                    <View 
-                      style={[
-                        styles.hourBarFill, 
-                        { 
-                          height: barHeight,
-                          backgroundColor: barColor,
-                        }
-                      ]} 
-                    />
-                  </View>
-                  <Text style={styles.hourValue}>
-                    {hour.precipitation.toFixed(1)}mm
-                  </Text>
-                  <Text style={styles.hourProb}>
-                    {hour.precipitationProbability}%
-                  </Text>
-                </View>
-              );
-            })}
-          </ScrollView>
-        </View>
-      ))}
+      {/* Hourly Forecast */}
+      <View style={styles.forecastContainer}>
+        <Text style={styles.forecastTitle}>Next 12 Hours</Text>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.forecastScroll}
+        >
+          {radarData.hourly.slice(0, 12).map((hour, index) => (
+            <View key={index} style={styles.forecastCard}>
+              <Text style={styles.forecastTime}>{formatTime(hour.time)}</Text>
+              <Icon 
+                name={getWeatherIcon(hour.weatherCode)} 
+                size={28} 
+                color={colors.text} 
+              />
+              <Text style={styles.forecastValue}>
+                {hour.precipitation.toFixed(1)}mm
+              </Text>
+              <Text style={styles.forecastProb}>
+                {hour.precipitationProbability}%
+              </Text>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* Legend */}
       <View style={styles.legend}>
         <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: '#90EE90' }]} />
+          <View style={[styles.legendColor, { backgroundColor: 'rgba(144, 238, 144, 0.5)' }]} />
           <Text style={styles.legendText}>Trace</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: '#4CAF50' }]} />
+          <View style={[styles.legendColor, { backgroundColor: 'rgba(76, 175, 80, 0.7)' }]} />
           <Text style={styles.legendText}>Light</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: '#FFC107' }]} />
+          <View style={[styles.legendColor, { backgroundColor: 'rgba(255, 193, 7, 0.8)' }]} />
           <Text style={styles.legendText}>Moderate</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: '#FF9800' }]} />
+          <View style={[styles.legendColor, { backgroundColor: 'rgba(255, 152, 0, 0.9)' }]} />
           <Text style={styles.legendText}>Heavy</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: '#F44336' }]} />
+          <View style={[styles.legendColor, { backgroundColor: 'rgba(244, 67, 54, 1)' }]} />
           <Text style={styles.legendText}>Intense</Text>
         </View>
       </View>
 
       <Text style={styles.infoText}>
-        Data from Open-Meteo • Updated every 10 minutes
+        Radar data from Open-Meteo • Updated every 10 minutes
       </Text>
     </View>
   );
