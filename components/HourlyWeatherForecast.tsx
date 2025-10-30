@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { colors } from '../styles/commonStyles';
+import { getColors } from '../styles/commonStyles';
 import WeatherSymbol from './WeatherSymbol';
 import { getPrecipitationUnit } from '../hooks/useWeather';
+import { useTheme } from '../state/ThemeContext';
 
 interface HourlyData {
   time: string;
@@ -89,16 +90,21 @@ function formatPrecipitation(value: number, unit: 'metric' | 'imperial'): string
 }
 
 export default function HourlyWeatherForecast({ hourlyData, unit, latitude, longitude, sunrise, sunset }: Props) {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  
   console.log('HourlyWeatherForecast: Rendering with', hourlyData.length, 'hours of enhanced data with time scales, unit:', unit);
   console.log('HourlyWeatherForecast: Using sunrise/sunset times:', sunrise, sunset);
 
   if (!hourlyData || hourlyData.length === 0) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.noDataText}>No hourly forecast data available</Text>
+      <View style={getStyles(colors).container}>
+        <Text style={getStyles(colors).noDataText}>No hourly forecast data available</Text>
       </View>
     );
   }
+
+  const styles = getStyles(colors);
 
   return (
     <View style={styles.container}>
@@ -200,140 +206,142 @@ export default function HourlyWeatherForecast({ hourlyData, unit, latitude, long
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginBottom: 12,
-  },
-  scrollContent: {
-    paddingHorizontal: 4,
-    gap: 12,
-  },
-  hourCard: {
-    alignItems: 'center',
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 12,
-    padding: 12,
-    minWidth: 90,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  timeContainer: {
-    alignItems: 'center',
-    marginBottom: 8,
-    minHeight: 28,
-  },
-  hourTime: {
-    fontSize: 12,
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    fontWeight: '600',
-  },
-  dateContext: {
-    fontSize: 9,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginTop: 1,
-  },
-  symbolContainer: {
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  temperature: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    fontFamily: 'Roboto_700Bold',
-    marginBottom: 4,
-  },
-  precipitationContainer: {
-    alignItems: 'center',
-    marginBottom: 4,
-    minHeight: 28,
-    justifyContent: 'center',
-  },
-  precipitation: {
-    fontSize: 11,
-    fontFamily: 'Roboto_500Medium',
-    fontWeight: '600',
-  },
-  precipitationProb: {
-    fontSize: 9,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginTop: 1,
-  },
-  windSpeed: {
-    fontSize: 10,
-    color: colors.wind,
-    fontFamily: 'Roboto_400Regular',
-    marginBottom: 2,
-  },
-  humidity: {
-    fontSize: 10,
-    color: colors.humidity,
-    fontFamily: 'Roboto_400Regular',
-    marginBottom: 2,
-  },
-  uvIndex: {
-    fontSize: 9,
-    color: colors.warning,
-    fontFamily: 'Roboto_400Regular',
-  },
-  timeScaleLegend: {
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 12,
-  },
-  legendTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    marginBottom: 4,
-  },
-  legendRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  legendText: {
-    fontSize: 11,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-  },
-  legendSubtext: {
-    fontSize: 10,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    fontStyle: 'italic',
-  },
-  noDataText: {
-    fontSize: 14,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    textAlign: 'center',
-    padding: 20,
-  },
-});
+function getStyles(colors: any) {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: colors.card,
+      borderRadius: 14,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+      marginBottom: 12,
+    },
+    title: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+      marginBottom: 4,
+    },
+    subtitle: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 12,
+    },
+    scrollContent: {
+      paddingHorizontal: 4,
+      gap: 12,
+    },
+    hourCard: {
+      alignItems: 'center',
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: 12,
+      padding: 12,
+      minWidth: 90,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    timeContainer: {
+      alignItems: 'center',
+      marginBottom: 8,
+      minHeight: 28,
+    },
+    hourTime: {
+      fontSize: 12,
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+      fontWeight: '600',
+    },
+    dateContext: {
+      fontSize: 9,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: 1,
+    },
+    symbolContainer: {
+      height: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    temperature: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+      marginBottom: 4,
+    },
+    precipitationContainer: {
+      alignItems: 'center',
+      marginBottom: 4,
+      minHeight: 28,
+      justifyContent: 'center',
+    },
+    precipitation: {
+      fontSize: 11,
+      fontFamily: 'Roboto_500Medium',
+      fontWeight: '600',
+    },
+    precipitationProb: {
+      fontSize: 9,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: 1,
+    },
+    windSpeed: {
+      fontSize: 10,
+      color: colors.wind,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 2,
+    },
+    humidity: {
+      fontSize: 10,
+      color: colors.humidity,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 2,
+    },
+    uvIndex: {
+      fontSize: 9,
+      color: colors.warning,
+      fontFamily: 'Roboto_400Regular',
+    },
+    timeScaleLegend: {
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: 8,
+      padding: 12,
+      marginTop: 12,
+    },
+    legendTitle: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+      marginBottom: 4,
+    },
+    legendRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    legendText: {
+      fontSize: 11,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+    },
+    legendSubtext: {
+      fontSize: 10,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      fontStyle: 'italic',
+    },
+    noDataText: {
+      fontSize: 14,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      textAlign: 'center',
+      padding: 20,
+    },
+  });
+}

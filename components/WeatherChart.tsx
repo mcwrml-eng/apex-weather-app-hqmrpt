@@ -2,9 +2,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { LineChart, AreaChart, YAxis, XAxis } from 'react-native-svg-charts';
-import { colors } from '../styles/commonStyles';
+import { getColors } from '../styles/commonStyles';
 import { getPrecipitationUnit } from '../hooks/useWeather';
 import * as shape from 'd3-shape';
+import { useTheme } from '../state/ThemeContext';
 
 interface WeatherDataPoint {
   time: string;
@@ -22,12 +23,15 @@ interface Props {
 }
 
 export default function WeatherChart({ data, type, unit, height = 140 }: Props) {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  
   console.log('WeatherChart: Rendering accurate', type, 'chart with', data.length, 'data points, unit:', unit);
 
   if (!data || data.length === 0) {
     return (
-      <View style={[styles.container, { height }]}>
-        <Text style={styles.noData}>No data available</Text>
+      <View style={[getStyles(colors).container, { height }]}>
+        <Text style={getStyles(colors).noData}>No data available</Text>
       </View>
     );
   }
@@ -40,8 +44,8 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
 
   if (validData.length === 0) {
     return (
-      <View style={[styles.container, { height }]}>
-        <Text style={styles.noData}>No valid data available</Text>
+      <View style={[getStyles(colors).container, { height }]}>
+        <Text style={getStyles(colors).noData}>No valid data available</Text>
       </View>
     );
   }
@@ -271,6 +275,8 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
   const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
   const trend = slope > 0.1 ? 'Rising' : slope < -0.1 ? 'Falling' : 'Stable';
 
+  const styles = getStyles(colors);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -316,7 +322,7 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
                 style={{ flex: 1 }}
                 data={chartData}
                 contentInset={{ top: 15, bottom: 15, left: 5, right: 5 }}
-                curve={shape.curveMonotoneX} // Better curve for precipitation data
+                curve={shape.curveMonotoneX}
                 svg={{
                   fill: chartColor,
                   fillOpacity: 0.4,
@@ -331,7 +337,7 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
                 style={{ flex: 1 }}
                 data={chartData}
                 contentInset={{ top: 15, bottom: 15, left: 5, right: 5 }}
-                curve={shape.curveMonotoneX} // Smoother curves for better accuracy representation
+                curve={shape.curveMonotoneX}
                 svg={{
                   stroke: chartColor,
                   strokeWidth: 2.5,
@@ -404,133 +410,135 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    marginBottom: 12,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    flex: 1,
-  },
-  stats: {
-    alignItems: 'flex-end',
-    flex: 1,
-  },
-  statText: {
-    fontSize: 11,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginBottom: 2,
-  },
-  trendText: {
-    fontSize: 11,
-    color: colors.primary,
-    fontFamily: 'Roboto_500Medium',
-    fontWeight: '500',
-  },
-  chartContainer: {
-    marginVertical: 10,
-  },
-  chartWithAxis: {
-    flexDirection: 'row',
-    flex: 1,
-  },
-  yAxisContainer: {
-    width: 55,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  yAxis: {
-    flex: 1,
-    width: 45,
-  },
-  yAxisUnit: {
-    fontSize: 10,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginTop: 4,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  chart: {
-    flex: 1,
-    marginLeft: 8,
-  },
-  xAxisContainer: {
-    marginTop: 8,
-    paddingLeft: 55, // Account for Y-axis width
-  },
-  xAxisScrollContent: {
-    paddingHorizontal: 4,
-  },
-  xAxisLabelsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 24,
-    gap: 2,
-  },
-  xAxisLabelWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 2,
-  },
-  xAxisLabel: {
-    fontSize: 10,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    textAlign: 'center',
-  },
-  xAxisTitle: {
-    fontSize: 11,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_500Medium',
-    textAlign: 'center',
-    marginTop: 8,
-    fontWeight: '500',
-  },
-  statsPanel: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 12,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statLabel: {
-    fontSize: 10,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginBottom: 2,
-  },
-  statValue: {
-    fontSize: 12,
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    fontWeight: '500',
-  },
-  noData: {
-    textAlign: 'center',
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginTop: 20,
-    fontSize: 14,
-  },
-});
+function getStyles(colors: any) {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      marginBottom: 12,
+      boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 10,
+    },
+    title: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+      flex: 1,
+    },
+    stats: {
+      alignItems: 'flex-end',
+      flex: 1,
+    },
+    statText: {
+      fontSize: 11,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 2,
+    },
+    trendText: {
+      fontSize: 11,
+      color: colors.primary,
+      fontFamily: 'Roboto_500Medium',
+      fontWeight: '500',
+    },
+    chartContainer: {
+      marginVertical: 10,
+    },
+    chartWithAxis: {
+      flexDirection: 'row',
+      flex: 1,
+    },
+    yAxisContainer: {
+      width: 55,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    yAxis: {
+      flex: 1,
+      width: 45,
+    },
+    yAxisUnit: {
+      fontSize: 10,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: 4,
+      textAlign: 'center',
+      fontWeight: '500',
+    },
+    chart: {
+      flex: 1,
+      marginLeft: 8,
+    },
+    xAxisContainer: {
+      marginTop: 8,
+      paddingLeft: 55,
+    },
+    xAxisScrollContent: {
+      paddingHorizontal: 4,
+    },
+    xAxisLabelsContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      minHeight: 24,
+      gap: 2,
+    },
+    xAxisLabelWrapper: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 2,
+    },
+    xAxisLabel: {
+      fontSize: 10,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      textAlign: 'center',
+    },
+    xAxisTitle: {
+      fontSize: 11,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_500Medium',
+      textAlign: 'center',
+      marginTop: 8,
+      fontWeight: '500',
+    },
+    statsPanel: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: 8,
+      padding: 10,
+      marginTop: 12,
+    },
+    statItem: {
+      alignItems: 'center',
+    },
+    statLabel: {
+      fontSize: 10,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 2,
+    },
+    statValue: {
+      fontSize: 12,
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+      fontWeight: '500',
+    },
+    noData: {
+      textAlign: 'center',
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: 20,
+      fontSize: 14,
+    },
+  });
+}

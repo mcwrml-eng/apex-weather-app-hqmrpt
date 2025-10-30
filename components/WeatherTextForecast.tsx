@@ -1,8 +1,9 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { colors } from '../styles/commonStyles';
+import { getColors } from '../styles/commonStyles';
 import Icon from './Icon';
+import { useTheme } from '../state/ThemeContext';
 
 interface Current {
   temperature: number;
@@ -202,7 +203,7 @@ function generateTextForecast(
   
   // UV conditions (daytime only)
   if (current.uv_index > 0) {
-    forecast += `${uvDesc.charAt(0).toUpperCase() + uvDesc.slice(1)} are present. `;
+    forecast += `${uvDesc.charAt(0).toUpperCase() + uvDesc.slice(0)} are present. `;
   }
   
   // 6-hour outlook
@@ -244,11 +245,16 @@ function generateTextForecast(
 }
 
 export default function WeatherTextForecast({ current, hourlyData, unit, circuitName, latitude, longitude }: Props) {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  
   console.log('WeatherTextForecast: Generating text forecast for', circuitName, 'with', hourlyData.length, 'hours of data');
 
   const forecast = generateTextForecast(current, hourlyData, unit, circuitName);
   const currentTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   const currentDate = new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+
+  const styles = getStyles(colors);
 
   return (
     <View style={styles.container}>
@@ -301,108 +307,110 @@ export default function WeatherTextForecast({ current, hourlyData, unit, circuit
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    boxShadow: '0 8px 32px rgba(16,24,40,0.08)',
-    marginBottom: 16,
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
-    backgroundColor: colors.primary + '08',
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    fontFamily: 'Roboto_700Bold',
-  },
-  timestampContainer: {
-    alignItems: 'flex-end',
-  },
-  timestamp: {
-    fontSize: 13,
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    fontWeight: '600',
-  },
-  time: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginTop: 2,
-  },
-  scrollContainer: {
-    maxHeight: 320,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  forecastContainer: {
-    padding: 20,
-  },
-  locationLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginBottom: 16,
-    backgroundColor: colors.backgroundAlt,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    alignSelf: 'center',
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  locationText: {
-    fontSize: 14,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_500Medium',
-  },
-  forecastText: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: colors.text,
-    fontFamily: 'Roboto_400Regular',
-    textAlign: 'justify',
-  },
-  footer: {
-    marginTop: 20,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.divider,
-    gap: 10,
-    backgroundColor: colors.backgroundAlt + '50',
-    marginHorizontal: -20,
-    paddingHorizontal: 20,
-    paddingBottom: 4,
-  },
-  footerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  footerText: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    flex: 1,
-  },
-});
+function getStyles(colors: any) {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      boxShadow: '0 8px 32px rgba(16,24,40,0.08)',
+      marginBottom: 16,
+      overflow: 'hidden',
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      padding: 20,
+      paddingBottom: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+      backgroundColor: colors.primary + '08',
+    },
+    titleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      flex: 1,
+    },
+    title: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+    },
+    timestampContainer: {
+      alignItems: 'flex-end',
+    },
+    timestamp: {
+      fontSize: 13,
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+      fontWeight: '600',
+    },
+    time: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: 2,
+    },
+    scrollContainer: {
+      maxHeight: 320,
+    },
+    scrollContent: {
+      flexGrow: 1,
+    },
+    forecastContainer: {
+      padding: 20,
+    },
+    locationLabel: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      marginBottom: 16,
+      backgroundColor: colors.backgroundAlt,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 10,
+      alignSelf: 'center',
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    locationText: {
+      fontSize: 14,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_500Medium',
+    },
+    forecastText: {
+      fontSize: 16,
+      lineHeight: 24,
+      color: colors.text,
+      fontFamily: 'Roboto_400Regular',
+      textAlign: 'justify',
+    },
+    footer: {
+      marginTop: 20,
+      paddingTop: 16,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+      gap: 10,
+      backgroundColor: colors.backgroundAlt + '50',
+      marginHorizontal: -20,
+      paddingHorizontal: 20,
+      paddingBottom: 4,
+    },
+    footerItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    footerText: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      flex: 1,
+    },
+  });
+}

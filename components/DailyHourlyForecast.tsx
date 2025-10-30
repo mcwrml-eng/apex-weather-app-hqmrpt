@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { colors } from '../styles/commonStyles';
+import { getColors } from '../styles/commonStyles';
 import WeatherSymbol from './WeatherSymbol';
 import { getPrecipitationUnit } from '../hooks/useWeather';
+import { useTheme } from '../state/ThemeContext';
 
 interface HourlyData {
   time: string;
@@ -93,18 +94,23 @@ function groupHourlyDataByDay(hourlyData: HourlyData[]): DayForecast[] {
 }
 
 export default function DailyHourlyForecast({ hourlyData, unit, latitude, longitude }: Props) {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  
   console.log('DailyHourlyForecast: Rendering with', hourlyData.length, 'hours of data, unit:', unit);
 
   if (!hourlyData || hourlyData.length === 0) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.noDataText}>No hourly forecast data available</Text>
+      <View style={getStyles(colors).container}>
+        <Text style={getStyles(colors).noDataText}>No hourly forecast data available</Text>
       </View>
     );
   }
 
   const dailyForecasts = groupHourlyDataByDay(hourlyData);
   console.log('DailyHourlyForecast: Grouped into', dailyForecasts.length, 'days');
+
+  const styles = getStyles(colors);
 
   return (
     <View style={styles.container}>
@@ -172,97 +178,99 @@ export default function DailyHourlyForecast({ hourlyData, unit, latitude, longit
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    fontFamily: 'Roboto_700Bold',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginBottom: 16,
-  },
-  scrollContainer: {
-    maxHeight: 400,
-  },
-  dayContainer: {
-    marginBottom: 20,
-  },
-  dayTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    marginBottom: 12,
-    paddingHorizontal: 4,
-  },
-  hourlyScrollContent: {
-    paddingHorizontal: 4,
-    gap: 8,
-  },
-  hourCard: {
-    alignItems: 'center',
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 10,
-    padding: 10,
-    minWidth: 75,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  hourTime: {
-    fontSize: 11,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginBottom: 6,
-  },
-  symbolContainer: {
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  temperature: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.text,
-    fontFamily: 'Roboto_700Bold',
-    marginBottom: 3,
-  },
-  precipitation: {
-    fontSize: 10,
-    fontFamily: 'Roboto_500Medium',
-    marginBottom: 2,
-    fontWeight: '600',
-  },
-  windSpeed: {
-    fontSize: 9,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginBottom: 1,
-  },
-  humidity: {
-    fontSize: 9,
-    color: colors.humidity,
-    fontFamily: 'Roboto_400Regular',
-  },
-  noDataText: {
-    fontSize: 14,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    textAlign: 'center',
-    padding: 20,
-  },
-});
+function getStyles(colors: any) {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: colors.card,
+      borderRadius: 14,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+      marginBottom: 12,
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+      marginBottom: 4,
+    },
+    subtitle: {
+      fontSize: 14,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 16,
+    },
+    scrollContainer: {
+      maxHeight: 400,
+    },
+    dayContainer: {
+      marginBottom: 20,
+    },
+    dayTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+      marginBottom: 12,
+      paddingHorizontal: 4,
+    },
+    hourlyScrollContent: {
+      paddingHorizontal: 4,
+      gap: 8,
+    },
+    hourCard: {
+      alignItems: 'center',
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: 10,
+      padding: 10,
+      minWidth: 75,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    hourTime: {
+      fontSize: 11,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 6,
+    },
+    symbolContainer: {
+      height: 32,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 6,
+    },
+    temperature: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+      marginBottom: 3,
+    },
+    precipitation: {
+      fontSize: 10,
+      fontFamily: 'Roboto_500Medium',
+      marginBottom: 2,
+      fontWeight: '600',
+    },
+    windSpeed: {
+      fontSize: 9,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 1,
+    },
+    humidity: {
+      fontSize: 9,
+      color: colors.humidity,
+      fontFamily: 'Roboto_400Regular',
+    },
+    noDataText: {
+      fontSize: 14,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      textAlign: 'center',
+      padding: 20,
+    },
+  });
+}

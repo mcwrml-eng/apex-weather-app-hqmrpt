@@ -2,7 +2,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, Circle, Line, Polygon } from 'react-native-svg';
-import { colors } from '../styles/commonStyles';
+import { getColors } from '../styles/commonStyles';
+import { useTheme } from '../state/ThemeContext';
 
 interface Props {
   circuitSlug: string;
@@ -131,7 +132,7 @@ const startFinishPositions: Record<string, { x1: number; y1: number; x2: number;
 };
 
 // Wind direction arrow component
-function WindArrow({ x, y, direction, speed, size = 20 }: { x: number; y: number; direction: number; speed: number; size?: number }) {
+function WindArrow({ x, y, direction, speed, size = 20, colors }: { x: number; y: number; direction: number; speed: number; size?: number; colors: any }) {
   const arrowLength = Math.min(size, speed * 2); // Scale arrow by wind speed
   
   // Convert wind direction to show where wind is blowing TO
@@ -172,6 +173,9 @@ function WindArrow({ x, y, direction, speed, size = 20 }: { x: number; y: number
 }
 
 export default function TrackMap({ circuitSlug, windDirection = 0, windSpeed = 0, size = 120 }: Props) {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  
   const trackPath = trackLayouts[circuitSlug] || trackLayouts.default;
   const startFinish = startFinishPositions[circuitSlug] || startFinishPositions.default;
   
@@ -229,10 +233,13 @@ export default function TrackMap({ circuitSlug, windDirection = 0, windSpeed = 0
           direction={windDirection}
           speed={windSpeed}
           size={12}
+          colors={colors}
         />
       );
     });
   }
+
+  const styles = getStyles(colors);
 
   return (
     <View style={[styles.container, { width: size, height: size }]}>
@@ -292,37 +299,39 @@ export default function TrackMap({ circuitSlug, windDirection = 0, windSpeed = 0
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    padding: 8,
-  },
-  windInfo: {
-    position: 'absolute',
-    bottom: 4,
-    right: 4,
-    backgroundColor: colors.card,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  windText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-  },
-  windDirection: {
-    fontSize: 8,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    textAlign: 'center',
-  },
-});
+function getStyles(colors: any) {
+  return StyleSheet.create({
+    container: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      padding: 8,
+    },
+    windInfo: {
+      position: 'absolute',
+      bottom: 4,
+      right: 4,
+      backgroundColor: colors.card,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    windText: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+    },
+    windDirection: {
+      fontSize: 8,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      textAlign: 'center',
+    },
+  });
+}
