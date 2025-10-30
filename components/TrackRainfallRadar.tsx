@@ -39,15 +39,13 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   // Generate the HTML content for the radar
   const radarHTML = useMemo(() => {
     const zoom = compact ? 7 : 8;
-    const mapStyle = isDark ? 'dark-v10' : 'light-v10';
     
     return `
       <!DOCTYPE html>
       <html>
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-          <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
-          <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+          <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
           <style>
             * {
               margin: 0;
@@ -75,6 +73,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
               font-size: 11px;
               color: ${colors.text};
               box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+              z-index: 1000;
             }
             .legend-title {
               font-weight: 600;
@@ -100,9 +99,29 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
               border-radius: 50%;
               box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             }
+            .loading-overlay {
+              position: absolute;
+              top: 0;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              background: ${colors.background};
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              z-index: 2000;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              color: ${colors.text};
+            }
+            .loading-overlay.hidden {
+              display: none;
+            }
           </style>
         </head>
         <body>
+          <div id="loading" class="loading-overlay">
+            <div>Loading radar data...</div>
+          </div>
           <div id="map"></div>
           <div class="legend">
             <div class="legend-title">Rainfall Intensity</div>
@@ -123,83 +142,129 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
               <span>Intense</span>
             </div>
           </div>
+          
+          <!-- Load Leaflet BEFORE using it -->
+          <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+          
           <script>
-            // Using OpenStreetMap as base (no API key required)
-            const map = L.map('map', {
-              center: [${latitude}, ${longitude}],
-              zoom: ${zoom},
-              zoomControl: ${showControls},
-              attributionControl: false
-            });
-
-            // Add OpenStreetMap tile layer
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              maxZoom: 19,
-            }).addTo(map);
-
-            // Add circuit marker
-            const circuitMarker = L.circleMarker([${latitude}, ${longitude}], {
-              radius: 8,
-              fillColor: '${colors.primary}',
-              color: '#fff',
-              weight: 2,
-              opacity: 1,
-              fillOpacity: 0.9
-            }).addTo(map);
-
-            circuitMarker.bindPopup('<b>${circuitName}</b><br>${country}');
-
-            // Add rainfall overlay from RainViewer API
-            let radarLayers = [];
-            let animationPosition = 0;
-            let animationTimer = null;
-
-            function addRadarLayer(timestamp) {
-              const layer = L.tileLayer(
-                'https://tilecache.rainviewer.com/v2/radar/' + timestamp + '/256/{z}/{x}/{y}/2/1_1.png',
-                {
-                  tileSize: 256,
-                  opacity: ${radarOpacity},
-                  zIndex: 10
-                }
-              );
-              radarLayers.push(layer);
-              return layer;
-            }
-
-            // Fetch available radar timestamps
-            fetch('https://api.rainviewer.com/public/weather-maps.json')
-              .then(response => response.json())
-              .then(data => {
-                const timestamps = data.radar.past.concat(data.radar.nowcast);
-                
-                // Load radar layers
-                timestamps.forEach(ts => {
-                  addRadarLayer(ts.time);
+            console.log('Initializing rainfall radar...');
+            
+            // Wait for Leaflet to be fully loaded
+            if (typeof L === 'undefined') {
+              console.error('Leaflet not loaded!');
+              document.getElementById('loading').innerHTML = '<div>Error: Map library failed to load</div>';
+            } else {
+              console.log('Leaflet loaded successfully');
+              
+              try {
+                // Initialize the map
+                const map = L.map('map', {
+                  center: [${latitude}, ${longitude}],
+                  zoom: ${zoom},
+                  zoomControl: ${showControls},
+                  attributionControl: false
                 });
 
-                // Show the most recent frame
-                if (radarLayers.length > 0) {
-                  radarLayers[radarLayers.length - 1].addTo(map);
-                  animationPosition = radarLayers.length - 1;
+                console.log('Map initialized');
+
+                // Add OpenStreetMap tile layer
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                  maxZoom: 19,
+                }).addTo(map);
+
+                console.log('Base map layer added');
+
+                // Add circuit marker
+                const circuitMarker = L.circleMarker([${latitude}, ${longitude}], {
+                  radius: 8,
+                  fillColor: '${colors.primary}',
+                  color: '#fff',
+                  weight: 2,
+                  opacity: 1,
+                  fillOpacity: 0.9
+                }).addTo(map);
+
+                circuitMarker.bindPopup('<b>${circuitName}</b><br>${country}');
+
+                console.log('Circuit marker added');
+
+                // Add rainfall overlay from RainViewer API
+                let radarLayers = [];
+                let animationPosition = 0;
+                let animationTimer = null;
+
+                function addRadarLayer(timestamp) {
+                  const layer = L.tileLayer(
+                    'https://tilecache.rainviewer.com/v2/radar/' + timestamp + '/256/{z}/{x}/{y}/2/1_1.png',
+                    {
+                      tileSize: 256,
+                      opacity: ${radarOpacity},
+                      zIndex: 10
+                    }
+                  );
+                  radarLayers.push(layer);
+                  return layer;
                 }
 
-                // Animation function
-                ${isAnimating ? `
-                function animate() {
-                  radarLayers[animationPosition].remove();
-                  animationPosition = (animationPosition + 1) % radarLayers.length;
-                  radarLayers[animationPosition].addTo(map);
-                }
-                animationTimer = setInterval(animate, 500);
-                ` : ''}
-              })
-              .catch(err => {
-                console.error('Failed to load radar data:', err);
-              });
+                // Fetch available radar timestamps
+                console.log('Fetching radar data from RainViewer API...');
+                fetch('https://api.rainviewer.com/public/weather-maps.json')
+                  .then(response => {
+                    console.log('API response received');
+                    return response.json();
+                  })
+                  .then(data => {
+                    console.log('Radar data parsed:', data);
+                    
+                    if (!data.radar || !data.radar.past) {
+                      throw new Error('Invalid radar data structure');
+                    }
+                    
+                    const timestamps = data.radar.past.concat(data.radar.nowcast || []);
+                    console.log('Total radar frames:', timestamps.length);
+                    
+                    if (timestamps.length === 0) {
+                      throw new Error('No radar data available');
+                    }
+                    
+                    // Load radar layers
+                    timestamps.forEach((ts, index) => {
+                      addRadarLayer(ts.time);
+                      console.log('Added radar layer', index + 1, 'of', timestamps.length);
+                    });
+
+                    // Show the most recent frame
+                    if (radarLayers.length > 0) {
+                      radarLayers[radarLayers.length - 1].addTo(map);
+                      animationPosition = radarLayers.length - 1;
+                      console.log('Displaying most recent radar frame');
+                    }
+
+                    // Hide loading overlay
+                    document.getElementById('loading').classList.add('hidden');
+                    console.log('Radar loaded successfully');
+
+                    // Animation function
+                    ${isAnimating ? `
+                    function animate() {
+                      radarLayers[animationPosition].remove();
+                      animationPosition = (animationPosition + 1) % radarLayers.length;
+                      radarLayers[animationPosition].addTo(map);
+                    }
+                    animationTimer = setInterval(animate, 500);
+                    console.log('Animation started');
+                    ` : 'console.log("Animation disabled");'}
+                  })
+                  .catch(err => {
+                    console.error('Failed to load radar data:', err);
+                    document.getElementById('loading').innerHTML = '<div>Error loading radar data<br><small>' + err.message + '</small></div>';
+                  });
+              } catch (err) {
+                console.error('Map initialization error:', err);
+                document.getElementById('loading').innerHTML = '<div>Error initializing map<br><small>' + err.message + '</small></div>';
+              }
+            }
           </script>
-          <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-          <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
         </body>
       </html>
     `;
@@ -299,10 +364,13 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   }), [colors, shadows, compact]);
 
   const handleLoadEnd = () => {
+    console.log('WebView load ended');
     setLoading(false);
   };
 
-  const handleError = () => {
+  const handleError = (syntheticEvent: any) => {
+    const { nativeEvent } = syntheticEvent;
+    console.error('WebView error:', nativeEvent);
     setLoading(false);
     setError(true);
   };
@@ -372,6 +440,9 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
           startInLoadingState={false}
           scrollEnabled={false}
           bounces={false}
+          originWhitelist={['*']}
+          allowsInlineMediaPlayback={true}
+          mediaPlaybackRequiresUserAction={false}
         />
         {loading && (
           <View style={styles.loadingContainer}>
