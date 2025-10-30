@@ -79,7 +79,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     setErrorMessage('');
 
     try {
-      console.log(`Fetching rainfall radar data for ${circuitName} at ${latitude}, ${longitude}`);
+      console.log(`Fetching projected rain forecast data for ${circuitName} at ${latitude}, ${longitude}`);
       
       // Fetch precipitation data from Open-Meteo API with extended grid
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=precipitation,weather_code&hourly=precipitation,precipitation_probability,weather_code&timezone=auto&forecast_days=1`;
@@ -91,7 +91,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       }
       
       const data = await response.json();
-      console.log('Rainfall radar data received');
+      console.log('Projected rain forecast data received');
       
       // Process the data
       const hourlyData: PrecipitationData[] = [];
@@ -137,9 +137,9 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       
       setLoading(false);
     } catch (err) {
-      console.error('Error fetching rainfall radar data:', err);
+      console.error('Error fetching projected rain forecast data:', err);
       setError(true);
-      setErrorMessage(err instanceof Error ? err.message : 'Failed to load rainfall radar');
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to load projected rain forecast');
       setLoading(false);
     }
   };
@@ -452,12 +452,12 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         <View style={styles.header}>
           <View style={styles.titleContainer}>
             <Icon name="rainy" size={20} color={colors.precipitation} />
-            <Text style={styles.title}>Rainfall Radar</Text>
+            <Text style={styles.title}>Projected Rain Forecast</Text>
           </View>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading radar data...</Text>
+          <Text style={styles.loadingText}>Loading forecast data...</Text>
         </View>
       </View>
     );
@@ -469,12 +469,12 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         <View style={styles.header}>
           <View style={styles.titleContainer}>
             <Icon name="rainy" size={20} color={colors.precipitation} />
-            <Text style={styles.title}>Rainfall Radar</Text>
+            <Text style={styles.title}>Projected Rain Forecast</Text>
           </View>
         </View>
         <View style={styles.errorContainer}>
           <Icon name="cloud-offline" size={48} color={colors.error} />
-          <Text style={styles.errorText}>Unable to load radar data</Text>
+          <Text style={styles.errorText}>Unable to load forecast data</Text>
           {errorMessage ? (
             <Text style={styles.errorDetails}>{errorMessage}</Text>
           ) : null}
@@ -514,7 +514,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Icon name="rainy" size={20} color={colors.precipitation} />
-          <Text style={styles.title}>Rainfall Radar</Text>
+          <Text style={styles.title}>Projected Rain Forecast</Text>
         </View>
         <TouchableOpacity 
           onPress={fetchRainfallData}
@@ -525,7 +525,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       </View>
       
       <Text style={styles.subtitle}>
-        Live precipitation radar for {circuitName}
+        Live precipitation forecast for {circuitName}
       </Text>
 
       {/* Radar Display */}
@@ -732,7 +732,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       </View>
 
       <Text style={styles.infoText}>
-        Radar data from Open-Meteo • Updated every 10 minutes
+        Forecast data from Open-Meteo • Updated every 10 minutes
       </Text>
     </View>
   );
