@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { colors } from '../styles/commonStyles';
+import { getColors } from '../styles/commonStyles';
 import WeatherSymbol from './WeatherSymbol';
 import { getPrecipitationUnit } from '../hooks/useWeather';
+import { useTheme } from '../state/ThemeContext';
 
 interface HourlyData {
   time: string;
@@ -125,7 +126,7 @@ function getWindDirection(degrees: number): string {
   return directions[index];
 }
 
-function getUVIndexLevel(uvIndex: number): { level: string; color: string } {
+function getUVIndexLevel(uvIndex: number, colors: any): { level: string; color: string } {
   if (uvIndex <= 2) return { level: 'Low', color: colors.success };
   if (uvIndex <= 5) return { level: 'Moderate', color: colors.warning };
   if (uvIndex <= 7) return { level: 'High', color: colors.accent };
@@ -148,6 +149,10 @@ function formatPrecipitation(value: number, unit: 'metric' | 'imperial'): string
 }
 
 export default function EnhancedWeatherForecast({ hourlyData, unit, latitude, longitude, showExtended = false, sunrise, sunset }: Props) {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const styles = getStyles(colors);
+  
   console.log('EnhancedWeatherForecast: Rendering with', hourlyData.length, 'hours of enhanced data with visible day intervals, unit:', unit);
   console.log('EnhancedWeatherForecast: Using sunrise/sunset times:', sunrise, sunset);
 
@@ -191,7 +196,7 @@ export default function EnhancedWeatherForecast({ hourlyData, unit, latitude, lo
                 const temperature = Math.round(hour.temperature);
                 const tempUnit = unit === 'metric' ? '°C' : '°F';
                 const windDir = getWindDirection(hour.windDirection);
-                const uvLevel = getUVIndexLevel(hour.uvIndex);
+                const uvLevel = getUVIndexLevel(hour.uvIndex, colors);
                 const visibilityKm = Math.round(hour.visibility / 1000);
                 
                 // Show more hours for extended view, fewer for 24-hour view
@@ -340,7 +345,7 @@ export default function EnhancedWeatherForecast({ hourlyData, unit, latitude, lo
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     backgroundColor: colors.card,
     borderRadius: 14,

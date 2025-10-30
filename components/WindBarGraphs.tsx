@@ -3,8 +3,9 @@ import React, { memo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { BarChart, YAxis, XAxis } from 'react-native-svg-charts';
 import Svg, { Polygon, Line, Circle } from 'react-native-svg';
-import { colors } from '../styles/commonStyles';
+import { getColors } from '../styles/commonStyles';
 import { validateWindSpeed, validateWindDirection } from '../hooks/useWeather';
+import { useTheme } from '../state/ThemeContext';
 
 interface HourlyData {
   time: string;
@@ -43,7 +44,7 @@ function getWindDirectionLabel(degrees: number): string {
 }
 
 // Enhanced Wind direction arrow component with better accuracy
-function WindDirectionArrow({ direction, size = 20 }: { direction: number; size?: number }) {
+function WindDirectionArrow({ direction, size = 20, colors }: { direction: number; size?: number; colors: any }) {
   // Validate and normalize direction
   const normalizedDirection = validateWindDirection(direction);
   
@@ -93,7 +94,7 @@ function WindDirectionArrow({ direction, size = 20 }: { direction: number; size?
 }
 
 // Custom Scatter Plot Component for Wind Direction
-function WindDirectionScatterPlot({ data, width, height }: { data: any[], width: number, height: number }) {
+function WindDirectionScatterPlot({ data, width, height, colors }: { data: any[], width: number, height: number, colors: any }) {
   console.log('WindDirectionScatterPlot: Rendering scatter plot with', data.length, 'points');
   
   const margin = { top: 20, right: 20, bottom: 20, left: 20 };
@@ -171,6 +172,10 @@ function WindDirectionScatterPlot({ data, width, height }: { data: any[], width:
 }
 
 function WindBarGraphs({ hourlyData, unit }: Props) {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const styles = getStyles(colors);
+  
   console.log('WindBarGraphs: Rendering accurate wind data for', hourlyData.length, 'hours, unit:', unit);
 
   if (!hourlyData || hourlyData.length === 0) {
@@ -478,6 +483,7 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
                 data={windDirectionData}
                 width={300}
                 height={200}
+                colors={colors}
               />
             </View>
           </View>
@@ -530,7 +536,7 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
                     styles.arrowItem,
                     { flex: 1 }
                   ]}>
-                    {shouldShow && <WindDirectionArrow direction={hour.windDirection} size={24} />}
+                    {shouldShow && <WindDirectionArrow direction={hour.windDirection} size={24} colors={colors} />}
                   </View>
                 );
               })}
@@ -641,7 +647,7 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
 
 export default memo(WindBarGraphs);
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     backgroundColor: colors.card,
     borderRadius: 14,
@@ -883,5 +889,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto_400Regular',
     textAlign: 'center',
     padding: 20,
+  },
+});
+
+const styles = StyleSheet.create({
+  arrowWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

@@ -2,8 +2,9 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import Svg, { Circle, Line, Text as SvgText, Polygon, Path } from 'react-native-svg';
-import { colors } from '../styles/commonStyles';
+import { getColors } from '../styles/commonStyles';
 import { validateWindSpeed, validateWindDirection } from '../hooks/useWeather';
+import { useTheme } from '../state/ThemeContext';
 
 interface HourlyData {
   time: string;
@@ -33,6 +34,10 @@ function getWindDirectionLabel(degrees: number): string {
 }
 
 function WindRadarGraph({ hourlyData, unit }: Props) {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const styles = getStyles(colors);
+  
   console.log('WindRadarGraph: Rendering radar chart for', hourlyData.length, 'hours, unit:', unit);
 
   if (!hourlyData || hourlyData.length === 0) {
@@ -420,7 +425,7 @@ function WindRadarGraph({ hourlyData, unit }: Props) {
 
 export default memo(WindRadarGraph);
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     backgroundColor: colors.card,
     borderRadius: 14,
