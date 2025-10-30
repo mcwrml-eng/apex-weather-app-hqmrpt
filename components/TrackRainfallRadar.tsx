@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useTheme } from '../state/ThemeContext';
@@ -36,8 +36,20 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isAnimating, setIsAnimating] = useState(autoStartAnimation);
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const webViewRef = useRef<any>(null);
   const loadingTimeoutRef = useRef<any>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Generate the HTML content for the radar
   const radarHTML = useMemo(() => {
@@ -47,35 +59,43 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       <!DOCTYPE html>
       <html>
         <head>
+          <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-          <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+          <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+                integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+                crossorigin="" />
           <style>
             * {
               margin: 0;
               padding: 0;
               box-sizing: border-box;
             }
-            body {
+            html, body {
+              width: 100%;
+              height: 100%;
               overflow: hidden;
               background: ${colors.background};
             }
             #map {
               position: absolute;
               top: 0;
+              left: 0;
+              right: 0;
               bottom: 0;
               width: 100%;
+              height: 100%;
             }
             .legend {
               position: absolute;
               bottom: 10px;
               right: 10px;
-              background: ${isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)'};
+              background: ${isDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.95)'};
               padding: 8px 12px;
               border-radius: 8px;
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
               font-size: 11px;
               color: ${colors.text};
-              box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+              box-shadow: 0 2px 8px rgba(0,0,0,0.3);
               z-index: 1000;
             }
             .legend-title {
@@ -94,20 +114,29 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
               margin-right: 6px;
               border-radius: 2px;
             }
-            .circuit-marker {
-              width: 12px;
-              height: 12px;
-              background: ${colors.primary};
-              border: 2px solid white;
-              border-radius: 50%;
-              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            .status-indicator {
+              position: absolute;
+              top: 10px;
+              left: 10px;
+              background: ${isDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.95)'};
+              padding: 6px 10px;
+              border-radius: 6px;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              font-size: 10px;
+              color: ${colors.text};
+              z-index: 1000;
+              display: none;
+            }
+            .status-indicator.show {
+              display: block;
             }
           </style>
         </head>
         <body>
           <div id="map"></div>
+          <div id="status" class="status-indicator">Initializing...</div>
           <div class="legend">
-            <div class="legend-title">Rainfall Intensity</div>
+            <div class="legend-title">Rainfall</div>
             <div class="legend-item">
               <div class="legend-color" style="background: rgba(0, 255, 0, 0.3);"></div>
               <span>Light</span>
@@ -126,25 +155,53 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
             </div>
           </div>
           
-          <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+          <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+                  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+                  crossorigin=""></script>
           
           <script>
             // Helper function to send messages to React Native
             function sendMessage(type, data) {
-              if (window.ReactNativeWebView) {
-                window.ReactNativeWebView.postMessage(JSON.stringify({ type, data }));
+              try {
+                if (window.ReactNativeWebView) {
+                  window.ReactNativeWebView.postMessage(JSON.stringify({ type, data }));
+                }
+              } catch (err) {
+                console.error('Failed to send message:', err);
               }
             }
 
-            // Wait for everything to load
-            window.addEventListener('load', function() {
-              console.log('Window loaded, initializing radar...');
-              sendMessage('log', 'Starting initialization');
+            // Helper to update status indicator
+            function updateStatus(message, show = true) {
+              const statusEl = document.getElementById('status');
+              if (statusEl) {
+                statusEl.textContent = message;
+                if (show) {
+                  statusEl.classList.add('show');
+                  setTimeout(() => statusEl.classList.remove('show'), 3000);
+                } else {
+                  statusEl.classList.remove('show');
+                }
+              }
+            }
+
+            // Initialize when DOM is ready
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', initRadar);
+            } else {
+              initRadar();
+            }
+
+            function initRadar() {
+              console.log('Initializing radar...');
+              sendMessage('log', 'DOM ready, starting initialization');
+              updateStatus('Loading map...');
               
               // Check if Leaflet is loaded
               if (typeof L === 'undefined') {
                 console.error('Leaflet not loaded!');
                 sendMessage('error', 'Map library failed to load');
+                updateStatus('Error: Map library failed', true);
                 return;
               }
               
@@ -156,18 +213,31 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
                   center: [${latitude}, ${longitude}],
                   zoom: ${zoom},
                   zoomControl: ${showControls},
-                  attributionControl: false
+                  attributionControl: false,
+                  preferCanvas: true
                 });
 
-                sendMessage('log', 'Map initialized');
+                sendMessage('log', 'Map initialized at [${latitude}, ${longitude}]');
+                updateStatus('Loading base map...');
 
-                // Add OpenStreetMap tile layer
+                // Add OpenStreetMap tile layer with error handling
                 const baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                   maxZoom: 19,
+                  errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
                 });
                 
+                let baseLayerLoaded = false;
                 baseLayer.on('load', function() {
-                  sendMessage('log', 'Base map tiles loaded');
+                  if (!baseLayerLoaded) {
+                    baseLayerLoaded = true;
+                    sendMessage('log', 'Base map tiles loaded');
+                    updateStatus('Loading radar data...');
+                  }
+                });
+                
+                baseLayer.on('tileerror', function(error) {
+                  console.warn('Base tile error:', error);
+                  sendMessage('log', 'Some base tiles failed to load (non-critical)');
                 });
                 
                 baseLayer.addTo(map);
@@ -185,10 +255,11 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
                 circuitMarker.bindPopup('<b>${circuitName}</b><br>${country}');
                 sendMessage('log', 'Circuit marker added');
 
-                // Add rainfall overlay from RainViewer API
+                // Rainfall radar variables
                 let radarLayers = [];
                 let animationPosition = 0;
                 let animationTimer = null;
+                let radarLoaded = false;
 
                 function addRadarLayer(timestamp) {
                   const layer = L.tileLayer(
@@ -196,37 +267,50 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
                     {
                       tileSize: 256,
                       opacity: ${radarOpacity},
-                      zIndex: 10
+                      zIndex: 10,
+                      errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
                     }
                   );
                   radarLayers.push(layer);
                   return layer;
                 }
 
-                // Fetch available radar timestamps
+                // Fetch available radar timestamps with timeout
                 sendMessage('log', 'Fetching radar data from RainViewer API...');
+                updateStatus('Fetching radar data...');
                 
+                const fetchTimeout = setTimeout(() => {
+                  if (!radarLoaded) {
+                    console.error('Radar API fetch timeout');
+                    sendMessage('error', 'Radar data fetch timeout - API may be slow or unavailable');
+                    updateStatus('Timeout loading radar', true);
+                  }
+                }, 10000);
+
                 fetch('https://api.rainviewer.com/public/weather-maps.json')
                   .then(response => {
+                    clearTimeout(fetchTimeout);
                     if (!response.ok) {
-                      throw new Error('API request failed: ' + response.status);
+                      throw new Error('API request failed with status: ' + response.status);
                     }
-                    sendMessage('log', 'API response received');
+                    sendMessage('log', 'API response received (status: ' + response.status + ')');
                     return response.json();
                   })
                   .then(data => {
-                    sendMessage('log', 'Radar data parsed');
+                    sendMessage('log', 'Radar data parsed successfully');
                     
                     if (!data.radar || !data.radar.past) {
-                      throw new Error('Invalid radar data structure');
+                      throw new Error('Invalid radar data structure - missing radar.past');
                     }
                     
                     const timestamps = data.radar.past.concat(data.radar.nowcast || []);
-                    sendMessage('log', 'Total radar frames: ' + timestamps.length);
+                    sendMessage('log', 'Total radar frames available: ' + timestamps.length);
                     
                     if (timestamps.length === 0) {
-                      throw new Error('No radar data available');
+                      throw new Error('No radar data available for this region');
                     }
+                    
+                    updateStatus('Loading ' + timestamps.length + ' radar frames...');
                     
                     // Load radar layers
                     timestamps.forEach((ts, index) => {
@@ -238,19 +322,42 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
                     // Show the most recent frame
                     if (radarLayers.length > 0) {
                       const lastLayer = radarLayers[radarLayers.length - 1];
+                      
+                      let tilesLoaded = 0;
+                      let tilesTotal = 0;
+                      let loadCheckTimer = null;
+                      
+                      lastLayer.on('loading', function() {
+                        sendMessage('log', 'Radar tiles loading...');
+                      });
+                      
+                      lastLayer.on('load', function() {
+                        if (!radarLoaded) {
+                          radarLoaded = true;
+                          sendMessage('log', 'Radar tiles loaded successfully');
+                          sendMessage('loaded', 'Radar loaded successfully');
+                          updateStatus('Radar loaded!', true);
+                        }
+                      });
+                      
+                      lastLayer.on('tileerror', function(error) {
+                        console.warn('Radar tile error:', error);
+                        sendMessage('log', 'Some radar tiles failed (may be normal for areas without rain)');
+                      });
+                      
                       lastLayer.addTo(map);
                       animationPosition = radarLayers.length - 1;
                       
-                      // Wait for the radar layer to load
-                      lastLayer.on('load', function() {
-                        sendMessage('log', 'Radar layer loaded');
-                        sendMessage('loaded', 'Radar loaded successfully');
-                      });
-                      
-                      // Fallback: if tiles don't trigger load event, mark as loaded after delay
+                      // Fallback: Mark as loaded after delay even if tiles don't trigger load event
+                      // This handles cases where there's no rain data (empty tiles)
                       setTimeout(function() {
-                        sendMessage('loaded', 'Radar loaded (timeout)');
-                      }, 3000);
+                        if (!radarLoaded) {
+                          radarLoaded = true;
+                          sendMessage('loaded', 'Radar loaded (no rain detected in area)');
+                          sendMessage('log', 'Radar initialized - no precipitation detected');
+                          updateStatus('No rain detected', true);
+                        }
+                      }, 5000);
                     }
 
                     // Animation function
@@ -267,14 +374,19 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
                     ` : 'sendMessage("log", "Animation disabled");'}
                   })
                   .catch(err => {
+                    clearTimeout(fetchTimeout);
                     console.error('Failed to load radar data:', err);
-                    sendMessage('error', 'Failed to load radar data: ' + err.message);
+                    const errorMsg = 'Failed to load radar: ' + (err.message || 'Unknown error');
+                    sendMessage('error', errorMsg);
+                    updateStatus('Error: ' + err.message, true);
                   });
               } catch (err) {
                 console.error('Map initialization error:', err);
-                sendMessage('error', 'Map initialization error: ' + err.message);
+                const errorMsg = 'Map error: ' + (err.message || 'Unknown error');
+                sendMessage('error', errorMsg);
+                updateStatus('Error: ' + err.message, true);
               }
-            });
+            }
           </script>
         </body>
       </html>
@@ -343,7 +455,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       bottom: 0,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: colors.backgroundAlt,
+      backgroundColor: colors.backgroundAlt + 'DD',
       zIndex: 1000,
     },
     loadingText: {
@@ -381,30 +493,51 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       marginTop: 8,
       fontStyle: 'italic',
     },
+    debugContainer: {
+      marginTop: 8,
+      padding: 8,
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: 6,
+      maxHeight: 100,
+    },
+    debugText: {
+      fontSize: 9,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      lineHeight: 12,
+    },
   }), [colors, shadows, compact]);
 
   const handleMessage = (event: any) => {
+    if (!mountedRef.current) return;
+    
     try {
       const message = JSON.parse(event.nativeEvent.data);
-      console.log('WebView message:', message);
+      console.log('WebView message:', message.type, message.data);
       
       if (message.type === 'loaded') {
-        console.log('Radar loaded successfully');
+        console.log('✅ Radar loaded successfully');
         setLoading(false);
         setError(false);
+        setDebugInfo(prev => [...prev, '✅ Radar loaded']);
         if (loadingTimeoutRef.current) {
           clearTimeout(loadingTimeoutRef.current);
         }
       } else if (message.type === 'error') {
-        console.error('Radar error:', message.data);
+        console.error('❌ Radar error:', message.data);
         setLoading(false);
         setError(true);
         setErrorMessage(message.data);
+        setDebugInfo(prev => [...prev, '❌ ' + message.data]);
         if (loadingTimeoutRef.current) {
           clearTimeout(loadingTimeoutRef.current);
         }
       } else if (message.type === 'log') {
-        console.log('Radar log:', message.data);
+        console.log('📋 Radar log:', message.data);
+        setDebugInfo(prev => {
+          const newInfo = [...prev, message.data];
+          return newInfo.slice(-10); // Keep last 10 messages
+        });
       }
     } catch (err) {
       console.error('Failed to parse WebView message:', err);
@@ -412,33 +545,41 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   };
 
   const handleLoadStart = () => {
-    console.log('WebView load started');
+    if (!mountedRef.current) return;
+    
+    console.log('🔄 WebView load started');
     setLoading(true);
     setError(false);
+    setDebugInfo(['WebView loading...']);
     
     // Set a timeout to prevent infinite loading
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
     }
     loadingTimeoutRef.current = setTimeout(() => {
-      console.log('Loading timeout reached');
+      if (!mountedRef.current) return;
+      console.log('⏱️ Loading timeout reached');
       setLoading(false);
       setError(true);
-      setErrorMessage('Loading timeout - please check your connection');
-    }, 15000); // 15 second timeout
+      setErrorMessage('Loading timeout - radar may be unavailable');
+      setDebugInfo(prev => [...prev, '⏱️ Timeout after 20s']);
+    }, 20000); // 20 second timeout
   };
 
   const handleLoadEnd = () => {
-    console.log('WebView load ended');
+    console.log('🏁 WebView load ended');
     // Don't set loading to false here - wait for the 'loaded' message from the HTML
   };
 
   const handleError = (syntheticEvent: any) => {
+    if (!mountedRef.current) return;
+    
     const { nativeEvent } = syntheticEvent;
-    console.error('WebView error:', nativeEvent);
+    console.error('❌ WebView error:', nativeEvent);
     setLoading(false);
     setError(true);
-    setErrorMessage('WebView failed to load');
+    setErrorMessage('WebView failed to load: ' + (nativeEvent.description || 'Unknown error'));
+    setDebugInfo(prev => [...prev, '❌ WebView error: ' + nativeEvent.description]);
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
     }
@@ -466,9 +607,16 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
             <Text style={styles.errorDetails}>{errorMessage}</Text>
           ) : null}
           <Text style={styles.infoText}>
-            Please check your internet connection and try again
+            The radar service may be temporarily unavailable
           </Text>
         </View>
+        {__DEV__ && debugInfo.length > 0 && (
+          <View style={styles.debugContainer}>
+            {debugInfo.slice(-5).map((info, idx) => (
+              <Text key={idx} style={styles.debugText}>{info}</Text>
+            ))}
+          </View>
+        )}
       </View>
     );
   }
@@ -521,11 +669,18 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
           mixedContentMode="always"
           allowFileAccess={true}
           allowUniversalAccessFromFileURLs={true}
+          cacheEnabled={false}
+          incognito={false}
         />
         {loading && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loadingText}>Loading radar data...</Text>
+            {__DEV__ && debugInfo.length > 0 && (
+              <Text style={[styles.loadingText, { marginTop: 4, fontSize: 10 }]}>
+                {debugInfo[debugInfo.length - 1]}
+              </Text>
+            )}
           </View>
         )}
       </View>
@@ -533,6 +688,14 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       <Text style={styles.infoText}>
         Radar data provided by RainViewer • Colors indicate rainfall intensity
       </Text>
+      
+      {__DEV__ && !loading && debugInfo.length > 0 && (
+        <View style={styles.debugContainer}>
+          {debugInfo.slice(-5).map((info, idx) => (
+            <Text key={idx} style={styles.debugText}>{info}</Text>
+          ))}
+        </View>
+      )}
     </View>
   );
 };
