@@ -13,6 +13,7 @@ import WeatherSymbol from '../../components/WeatherSymbol';
 import EnhancedWeatherForecast from '../../components/EnhancedWeatherForecast';
 import WeatherTextForecast from '../../components/WeatherTextForecast';
 import WeatherAlerts from '../../components/WeatherAlerts';
+import TrackRainfallRadar from '../../components/TrackRainfallRadar';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
@@ -796,6 +797,23 @@ function DetailScreen() {
                 Updated {lastUpdated.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
               </Text>
             </View>
+          )}
+
+          {/* Rainfall Radar */}
+          {!loading && circuit && (
+            <SafeComponent componentName="TrackRainfallRadar">
+              <TrackRainfallRadar
+                latitude={circuit.latitude}
+                longitude={circuit.longitude}
+                circuitName={circuit.name}
+                country={circuit.country}
+                category={category}
+                compact={false}
+                showControls={true}
+                autoStartAnimation={false}
+                radarOpacity={0.6}
+              />
+            </SafeComponent>
           )}
 
           {/* SUNRISE & SUNSET TIMES */}
