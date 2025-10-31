@@ -43,6 +43,7 @@ interface RadarData {
   sunset: string;
   rainDirection: number; // Direction rain is travelling (based on wind)
   rainSpeed: number; // Speed of rain movement
+  hasRain: boolean; // Flag to indicate if any rain is expected
 }
 
 interface PrecipitationZone {
@@ -143,6 +144,23 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       const avgWindSpeed = recentHours.reduce((sum, h) => sum + (h.windSpeed || 0), 0) / recentHours.length;
       const avgWindDirection = recentHours.reduce((sum, h) => sum + (h.windDirection || 0), 0) / recentHours.length;
       
+      // Calculate detailed summary and check if rain is expected
+      const dataToAnalyze = minutelyData.length > 0 ? minutelyData.slice(0, 24) : hourlyData.slice(0, 6);
+      const totalPrecipitation = dataToAnalyze.reduce((sum, h) => sum + h.precipitation, 0);
+      const maxProbability = Math.max(...dataToAnalyze.map(h => h.precipitationProbability));
+      const avgPrecipitation = totalPrecipitation / dataToAnalyze.length;
+      const currentPrecip = data.current.precipitation || 0;
+      
+      // Enhanced rain detection - more strict criteria
+      const hasRain = currentPrecip > 0.1 || totalPrecipitation > 0.5 || maxProbability > 20;
+      
+      console.log('Rain detection:', {
+        currentPrecip,
+        totalPrecipitation,
+        maxProbability,
+        hasRain
+      });
+      
       // Generate enhanced radar grid data with wind information and current precipitation
       const gridData = generateEnhancedRadarGrid(
         minutelyData.length > 0 ? minutelyData : hourlyData, 
@@ -151,17 +169,9 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         data.current.wind_direction_10m || 0
       );
       
-      // Calculate detailed summary
-      const dataToAnalyze = minutelyData.length > 0 ? minutelyData.slice(0, 24) : hourlyData.slice(0, 6);
-      const totalPrecipitation = dataToAnalyze.reduce((sum, h) => sum + h.precipitation, 0);
-      const maxProbability = Math.max(...dataToAnalyze.map(h => h.precipitationProbability));
-      const avgPrecipitation = totalPrecipitation / dataToAnalyze.length;
-      const currentPrecip = data.current.precipitation || 0;
-      const hasRain = currentPrecip > 0 || totalPrecipitation > 0 || maxProbability > 30;
-      
       let summary = '';
       if (!hasRain) {
-        summary = 'No rainfall detected in the area';
+        summary = 'No rainfall expected in the forecast period';
       } else if (currentPrecip > 0) {
         // Prioritize current conditions in summary
         if (currentPrecip < 0.3) {
@@ -202,6 +212,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         sunset: data.daily?.sunset?.[0] || '18:00',
         rainDirection: avgWindDirection,
         rainSpeed: avgWindSpeed,
+        hasRain,
       });
       
       setLoading(false);
@@ -450,6 +461,41 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       alignItems: 'center',
       justifyContent: 'center',
     },
+    noRainOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: isDark ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.4)',
+      borderRadius: borderRadius.md,
+    },
+    noRainBadge: {
+      backgroundColor: isDark ? 'rgba(76, 175, 80, 0.95)' : 'rgba(76, 175, 80, 0.9)',
+      paddingVertical: 16,
+      paddingHorizontal: 24,
+      borderRadius: borderRadius.lg,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      borderWidth: 2,
+      borderColor: '#fff',
+      boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.3)',
+    },
+    noRainText: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: '#fff',
+      fontFamily: 'Roboto_700Bold',
+    },
+    noRainSubtext: {
+      fontSize: 14,
+      color: '#fff',
+      fontFamily: 'Roboto_500Medium',
+      opacity: 0.95,
+    },
     currentConditions: {
       backgroundColor: colors.backgroundAlt,
       borderRadius: borderRadius.md,
@@ -503,6 +549,32 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       fontWeight: '600',
       color: '#fff',
       fontFamily: 'Roboto_600SemiBold',
+    },
+    noRainBanner: {
+      backgroundColor: isDark ? 'rgba(76, 175, 80, 0.2)' : 'rgba(76, 175, 80, 0.15)',
+      padding: 16,
+      borderRadius: borderRadius.md,
+      marginBottom: 16,
+      borderWidth: 2,
+      borderColor: isDark ? 'rgba(76, 175, 80, 0.4)' : 'rgba(76, 175, 80, 0.3)',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    noRainBannerContent: {
+      flex: 1,
+    },
+    noRainBannerTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: isDark ? 'rgba(76, 175, 80, 1)' : 'rgba(56, 142, 60, 1)',
+      fontFamily: 'Roboto_700Bold',
+      marginBottom: 4,
+    },
+    noRainBannerText: {
+      fontSize: 14,
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
     },
     summary: {
       fontSize: 13,
@@ -765,6 +837,23 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         High-resolution precipitation forecast for {circuitName}
       </Text>
 
+      {/* No Rain Banner - Prominent display when no rain expected */}
+      {!radarData.hasRain && (
+        <View style={styles.noRainBanner}>
+          <Icon 
+            name="sunny" 
+            size={40} 
+            color={isDark ? 'rgba(76, 175, 80, 1)' : 'rgba(56, 142, 60, 1)'} 
+          />
+          <View style={styles.noRainBannerContent}>
+            <Text style={styles.noRainBannerTitle}>No Rain Expected</Text>
+            <Text style={styles.noRainBannerText}>
+              Clear conditions forecast for the next 24 hours
+            </Text>
+          </View>
+        </View>
+      )}
+
       {/* View Toggle for Minutely/Hourly */}
       {radarData.minutely.length > 0 && (
         <View style={styles.viewToggle}>
@@ -851,8 +940,8 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
             <Line x1={centerX - maxRadius * 0.7} y1={centerY - maxRadius * 0.7} x2={centerX + maxRadius * 0.7} y2={centerY + maxRadius * 0.7} stroke={colors.divider} strokeWidth="1" opacity={0.15} />
             <Line x1={centerX - maxRadius * 0.7} y1={centerY + maxRadius * 0.7} x2={centerX + maxRadius * 0.7} y2={centerY - maxRadius * 0.7} stroke={colors.divider} strokeWidth="1" opacity={0.15} />
             
-            {/* Enhanced precipitation zones with finer detail */}
-            {radarData.gridData.map((zone, index) => {
+            {/* Enhanced precipitation zones with finer detail - only show if rain expected */}
+            {radarData.hasRain && radarData.gridData.map((zone, index) => {
               const angleRad = (zone.angle - 90) * (Math.PI / 180);
               const angleSpan = (360 / 24) * (Math.PI / 180); // 15° per segment
               const nextAngleRad = angleRad + angleSpan;
@@ -880,8 +969,8 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
               );
             })}
             
-            {/* Rain direction arrow */}
-            {radarData.rainSpeed > 2 && renderRainDirectionArrow()}
+            {/* Rain direction arrow - only show if rain expected */}
+            {radarData.hasRain && radarData.rainSpeed > 2 && renderRainDirectionArrow()}
             
             {/* Center marker (circuit location) with enhanced visibility */}
             <Circle
@@ -935,6 +1024,19 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
               W
             </SvgText>
           </Svg>
+          
+          {/* No Rain Overlay on Radar - shown when no rain expected */}
+          {!radarData.hasRain && (
+            <View style={styles.noRainOverlay}>
+              <View style={styles.noRainBadge}>
+                <Icon name="sunny" size={32} color="#fff" />
+                <View>
+                  <Text style={styles.noRainText}>No Rain</Text>
+                  <Text style={styles.noRainSubtext}>Clear Forecast</Text>
+                </View>
+              </View>
+            </View>
+          )}
         </View>
         
         <Text style={styles.infoText}>
@@ -951,20 +1053,25 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
           </Text>
         </View>
         
-        {/* Rain Direction Information */}
-        <View style={styles.rainDirectionInfo}>
-          <Icon name="arrow-forward" size={20} color={isDark ? 'rgba(150, 200, 255, 1)' : 'rgba(50, 100, 200, 1)'} />
-          <Text style={styles.rainDirectionText}>
-            Rain travelling {getWindDirectionLabel(radarData.rainDirection)} ({radarData.rainDirection.toFixed(0)}°) at {getRainMovementDescription(radarData.rainSpeed).toLowerCase()} speed ({radarData.rainSpeed.toFixed(1)} km/h)
-          </Text>
-        </View>
+        {/* Rain Direction Information - only show if rain expected */}
+        {radarData.hasRain && (
+          <View style={styles.rainDirectionInfo}>
+            <Icon name="arrow-forward" size={20} color={isDark ? 'rgba(150, 200, 255, 1)' : 'rgba(50, 100, 200, 1)'} />
+            <Text style={styles.rainDirectionText}>
+              Rain travelling {getWindDirectionLabel(radarData.rainDirection)} ({radarData.rainDirection.toFixed(0)}°) at {getRainMovementDescription(radarData.rainSpeed).toLowerCase()} speed ({radarData.rainSpeed.toFixed(1)} km/h)
+            </Text>
+          </View>
+        )}
         
         <View style={[
           styles.intensityBadge,
-          { backgroundColor: getRainfallColor(radarData.current.precipitation).replace(/[^,]+(?=\))/, '1') }
+          { backgroundColor: radarData.hasRain 
+            ? getRainfallColor(radarData.current.precipitation).replace(/[^,]+(?=\))/, '1')
+            : (isDark ? 'rgba(76, 175, 80, 0.8)' : 'rgba(76, 175, 80, 0.7)')
+          }
         ]}>
           <Text style={styles.intensityText}>
-            {getRainfallIntensity(radarData.current.precipitation)}
+            {radarData.hasRain ? getRainfallIntensity(radarData.current.precipitation) : 'No Rain'}
           </Text>
         </View>
         
