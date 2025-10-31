@@ -41,6 +41,8 @@ interface RadarData {
   gridData: PrecipitationZone[];
   sunrise: string;
   sunset: string;
+  rainDirection: number; // Direction rain is travelling (based on wind)
+  rainSpeed: number; // Speed of rain movement
 }
 
 interface PrecipitationZone {
@@ -48,8 +50,6 @@ interface PrecipitationZone {
   distance: number;
   intensity: number;
   radius: number;
-  windSpeed?: number;
-  windDirection?: number;
 }
 
 const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
@@ -137,6 +137,11 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         });
       }
       
+      // Calculate average wind direction and speed for rain movement
+      const recentHours = hourlyData.slice(0, 6);
+      const avgWindSpeed = recentHours.reduce((sum, h) => sum + (h.windSpeed || 0), 0) / recentHours.length;
+      const avgWindDirection = recentHours.reduce((sum, h) => sum + (h.windDirection || 0), 0) / recentHours.length;
+      
       // Generate enhanced radar grid data with wind information
       const gridData = generateEnhancedRadarGrid(
         minutelyData.length > 0 ? minutelyData : hourlyData, 
@@ -180,6 +185,8 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         gridData,
         sunrise: data.daily?.sunrise?.[0] || '06:00',
         sunset: data.daily?.sunset?.[0] || '18:00',
+        rainDirection: avgWindDirection,
+        rainSpeed: avgWindSpeed,
       });
       
       setLoading(false);
@@ -228,17 +235,11 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         
         intensity = Math.max(0, intensity);
         
-        // Calculate wind for this zone (interpolated from forecast)
-        const zoneWindSpeed = currentWindSpeed * (0.8 + Math.random() * 0.4);
-        const zoneWindDirection = (currentWindDirection + (Math.random() - 0.5) * 30) % 360;
-        
         zones.push({
           angle: angleDeg,
           distance: distance,
           intensity: intensity,
           radius: 15 + (ring * 20),
-          windSpeed: zoneWindSpeed,
-          windDirection: zoneWindDirection,
         });
       }
     }
@@ -293,6 +294,14 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
     const index = Math.round(degrees / 22.5) % 16;
     return directions[index];
+  };
+
+  const getRainMovementDescription = (speed: number): string => {
+    if (speed < 5) return 'Stationary';
+    if (speed < 15) return 'Slow';
+    if (speed < 30) return 'Moderate';
+    if (speed < 50) return 'Fast';
+    return 'Very Fast';
   };
 
   const styles = useMemo(() => StyleSheet.create({
@@ -420,16 +429,22 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       color: colors.text,
       fontFamily: 'Roboto_700Bold',
     },
-    windInfo: {
+    rainDirectionInfo: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
       marginTop: 8,
+      backgroundColor: isDark ? 'rgba(100, 150, 255, 0.15)' : 'rgba(100, 150, 255, 0.1)',
+      padding: 12,
+      borderRadius: borderRadius.md,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(100, 150, 255, 0.3)' : 'rgba(100, 150, 255, 0.2)',
     },
-    windText: {
+    rainDirectionText: {
       fontSize: 13,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+      flex: 1,
     },
     intensityBadge: {
       paddingHorizontal: 12,
@@ -560,7 +575,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       fontWeight: '500',
       fontFamily: 'Roboto_500Medium',
     },
-  }), [colors, shadows, compact]);
+  }), [colors, shadows, compact, isDark]);
 
   if (loading) {
     return (
@@ -630,27 +645,57 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     return isDark ? 'rgba(244, 67, 54, 0.95)' : 'rgba(244, 67, 54, 1)';
   };
 
-  // Render wind arrow for a zone
-  const renderWindArrow = (zone: PrecipitationZone, centerX: number, centerY: number, maxRadius: number) => {
-    if (!zone.windSpeed || zone.windSpeed < 2) return null;
+  // Render rain direction arrow (large, prominent)
+  const renderRainDirectionArrow = () => {
+    const arrowLength = maxRadius * 0.6;
+    const arrowWidth = 20;
+    const direction = radarData.rainDirection;
     
-    const angleRad = (zone.angle - 90) * (Math.PI / 180);
-    const zoneRadius = (zone.radius / 120) * maxRadius;
-    const x = centerX + zoneRadius * Math.cos(angleRad);
-    const y = centerY + zoneRadius * Math.sin(angleRad);
+    // Calculate arrow points
+    const angleRad = ((direction - 90) * Math.PI) / 180;
+    const endX = centerX + arrowLength * Math.cos(angleRad);
+    const endY = centerY + arrowLength * Math.sin(angleRad);
     
-    // Wind arrow size based on wind speed
-    const arrowSize = Math.min(8, 4 + zone.windSpeed / 10);
-    const windAngle = (zone.windDirection || 0) - 90;
+    // Arrow head points
+    const headLength = 25;
+    const headAngle = Math.PI / 6;
+    const leftX = endX - headLength * Math.cos(angleRad - headAngle);
+    const leftY = endY - headLength * Math.sin(angleRad - headAngle);
+    const rightX = endX - headLength * Math.cos(angleRad + headAngle);
+    const rightY = endY - headLength * Math.sin(angleRad + headAngle);
     
     return (
-      <G key={`wind-${zone.angle}-${zone.radius}`}>
-        <Polygon
-          points={`${x},${y - arrowSize} ${x - arrowSize / 2},${y + arrowSize / 2} ${x + arrowSize / 2},${y + arrowSize / 2}`}
-          fill={isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)'}
-          rotation={windAngle}
-          origin={`${x}, ${y}`}
+      <G>
+        {/* Arrow shaft */}
+        <Line
+          x1={centerX}
+          y1={centerY}
+          x2={endX}
+          y2={endY}
+          stroke={isDark ? 'rgba(100, 150, 255, 0.8)' : 'rgba(50, 100, 200, 0.8)'}
+          strokeWidth="4"
+          strokeDasharray="8,4"
         />
+        
+        {/* Arrow head */}
+        <Polygon
+          points={`${endX},${endY} ${leftX},${leftY} ${rightX},${rightY}`}
+          fill={isDark ? 'rgba(100, 150, 255, 0.9)' : 'rgba(50, 100, 200, 0.9)'}
+          stroke={isDark ? 'rgba(150, 200, 255, 1)' : 'rgba(100, 150, 255, 1)'}
+          strokeWidth="2"
+        />
+        
+        {/* Direction label */}
+        <SvgText
+          x={endX}
+          y={endY - 30}
+          fontSize="11"
+          fontWeight="700"
+          fill={isDark ? 'rgba(150, 200, 255, 1)' : 'rgba(50, 100, 200, 1)'}
+          textAnchor="middle"
+        >
+          Rain Direction
+        </SvgText>
       </G>
     );
   };
@@ -789,10 +834,8 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
               );
             })}
             
-            {/* Wind direction indicators */}
-            {radarData.gridData
-              .filter((_, i) => i % 4 === 0) // Show wind arrows for every 4th zone to avoid clutter
-              .map(zone => renderWindArrow(zone, centerX, centerY, maxRadius))}
+            {/* Rain direction arrow */}
+            {radarData.rainSpeed > 2 && renderRainDirectionArrow()}
             
             {/* Center marker (circuit location) */}
             <Circle
@@ -849,11 +892,11 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         </View>
         
         <Text style={styles.infoText}>
-          Circuit location • Distance rings: {distanceRings.join('km, ')}km • Wind indicators shown
+          Circuit location • Distance rings: {distanceRings.join('km, ')}km
         </Text>
       </View>
 
-      {/* Current Conditions with Wind */}
+      {/* Current Conditions with Rain Direction */}
       <View style={styles.currentConditions}>
         <View style={styles.conditionsRow}>
           <Text style={styles.conditionsLabel}>Current Rainfall</Text>
@@ -862,10 +905,11 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
           </Text>
         </View>
         
-        <View style={styles.windInfo}>
-          <Icon name="navigate" size={16} color={colors.textMuted} />
-          <Text style={styles.windText}>
-            Wind: {radarData.current.windSpeed.toFixed(1)} km/h {getWindDirectionLabel(radarData.current.windDirection)} ({radarData.current.windDirection}°)
+        {/* Rain Direction Information */}
+        <View style={styles.rainDirectionInfo}>
+          <Icon name="arrow-forward" size={20} color={isDark ? 'rgba(150, 200, 255, 1)' : 'rgba(50, 100, 200, 1)'} />
+          <Text style={styles.rainDirectionText}>
+            Rain travelling {getWindDirectionLabel(radarData.rainDirection)} ({radarData.rainDirection.toFixed(0)}°) at {getRainMovementDescription(radarData.rainSpeed).toLowerCase()} speed ({radarData.rainSpeed.toFixed(1)} km/h)
           </Text>
         </View>
         
@@ -914,11 +958,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
               <Text style={styles.forecastProb}>
                 {item.precipitationProbability}%
               </Text>
-              {item.windSpeed !== undefined && (
-                <Text style={[styles.forecastProb, { marginTop: 2 }]}>
-                  {item.windSpeed.toFixed(0)} km/h
-                </Text>
-              )}
             </View>
           ))}
         </ScrollView>
@@ -965,7 +1004,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       </View>
 
       <Text style={styles.infoText}>
-        High-resolution data from Open-Meteo • 15-minute intervals available • Wind-adjusted forecast
+        High-resolution data from Open-Meteo • 15-minute intervals available • Rain direction based on wind patterns
       </Text>
     </View>
   );
