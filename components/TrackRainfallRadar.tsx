@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView
 import { useTheme } from '../state/ThemeContext';
 import { getColors, borderRadius, getShadows } from '../styles/commonStyles';
 import Icon from './Icon';
+import WeatherSymbol from './WeatherSymbol';
 import Svg, { Circle, Line, Text as SvgText, Defs, RadialGradient, Stop, G, Path } from 'react-native-svg';
 
 interface TrackRainfallRadarProps {
@@ -33,6 +34,8 @@ interface RadarData {
   hourly: PrecipitationData[];
   summary: string;
   gridData: PrecipitationZone[];
+  sunrise: string;
+  sunset: string;
 }
 
 interface PrecipitationZone {
@@ -81,8 +84,8 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     try {
       console.log(`Fetching projected rain forecast data for ${circuitName} at ${latitude}, ${longitude}`);
       
-      // Fetch precipitation data from Open-Meteo API with extended grid
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=precipitation,weather_code&hourly=precipitation,precipitation_probability,weather_code&timezone=auto&forecast_days=1`;
+      // Fetch precipitation data from Open-Meteo API with extended grid and sunrise/sunset
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=precipitation,weather_code&hourly=precipitation,precipitation_probability,weather_code&daily=sunrise,sunset&timezone=auto&forecast_days=1`;
       
       const response = await fetch(url);
       
@@ -91,7 +94,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       }
       
       const data = await response.json();
-      console.log('Projected rain forecast data received');
+      console.log('Projected rain forecast data received with sunrise/sunset:', data.daily?.sunrise?.[0], data.daily?.sunset?.[0]);
       
       // Process the data
       const hourlyData: PrecipitationData[] = [];
@@ -133,6 +136,8 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         hourly: hourlyData,
         summary,
         gridData,
+        sunrise: data.daily?.sunrise?.[0] || '06:00',
+        sunset: data.daily?.sunset?.[0] || '18:00',
       });
       
       setLoading(false);
@@ -200,18 +205,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     if (precipitation < 7.5) return 'rgba(255, 193, 7, 0.6)';
     if (precipitation < 15) return 'rgba(255, 152, 0, 0.7)';
     return 'rgba(244, 67, 54, 0.8)';
-  };
-
-  const getWeatherIcon = (weatherCode: number): string => {
-    if (weatherCode >= 95) return 'thunderstorm';
-    if (weatherCode >= 80) return 'rainy';
-    if (weatherCode >= 71) return 'snow';
-    if (weatherCode >= 61) return 'rainy';
-    if (weatherCode >= 51) return 'rainy';
-    if (weatherCode >= 45) return 'cloudy';
-    if (weatherCode >= 3) return 'cloudy';
-    if (weatherCode >= 1) return 'partly-sunny';
-    return 'sunny';
   };
 
   const formatTime = (timeString: string): string => {
@@ -691,10 +684,14 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
           {radarData.hourly.slice(0, 12).map((hour, index) => (
             <View key={index} style={styles.forecastCard}>
               <Text style={styles.forecastTime}>{formatTime(hour.time)}</Text>
-              <Icon 
-                name={getWeatherIcon(hour.weatherCode)} 
-                size={28} 
-                color={colors.text} 
+              <WeatherSymbol 
+                weatherCode={hour.weatherCode}
+                size={28}
+                latitude={latitude}
+                longitude={longitude}
+                time={hour.time}
+                sunrise={radarData.sunrise}
+                sunset={radarData.sunset}
               />
               <Text style={styles.forecastValue}>
                 {hour.precipitation.toFixed(1)}mm
