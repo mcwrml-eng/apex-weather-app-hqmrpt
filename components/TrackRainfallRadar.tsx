@@ -63,6 +63,9 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   const [radarData, setRadarData] = useState<RadarData | null>(null);
   const [animatedValue] = useState(new Animated.Value(0));
 
+  // Distance scale in kilometers for each ring
+  const distanceRings = [10, 20, 30, 40]; // km from center
+
   useEffect(() => {
     fetchRainfallData();
     
@@ -437,6 +440,19 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       fontWeight: '600',
       fontFamily: 'Roboto_600SemiBold',
     },
+    distanceLabel: {
+      fontSize: 9,
+      fontWeight: '500',
+      fontFamily: 'Roboto_500Medium',
+    },
+    distanceLabelBg: {
+      backgroundColor: colors.card,
+      paddingHorizontal: 4,
+      paddingVertical: 2,
+      borderRadius: 3,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
   }), [colors, shadows, compact]);
 
   if (loading) {
@@ -542,20 +558,42 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
               strokeWidth="2"
             />
             
-            {/* Range rings */}
-            {[0.25, 0.5, 0.75, 1].map((scale, i) => (
-              <Circle
-                key={`ring-${i}`}
-                cx={centerX}
-                cy={centerY}
-                r={maxRadius * scale}
-                fill="none"
-                stroke={colors.divider}
-                strokeWidth="1"
-                strokeDasharray="4,4"
-                opacity={0.3}
-              />
-            ))}
+            {/* Range rings with distance labels */}
+            {[0.25, 0.5, 0.75, 1].map((scale, i) => {
+              const ringRadius = maxRadius * scale;
+              const distance = distanceRings[i];
+              const labelX = centerX + ringRadius + 5;
+              const labelY = centerY;
+              
+              return (
+                <G key={`ring-${i}`}>
+                  <Circle
+                    cx={centerX}
+                    cy={centerY}
+                    r={ringRadius}
+                    fill="none"
+                    stroke={colors.divider}
+                    strokeWidth="1"
+                    strokeDasharray="4,4"
+                    opacity={0.3}
+                  />
+                  {/* Distance label on the right side of each ring */}
+                  <G>
+                    <SvgText
+                      x={labelX}
+                      y={labelY + 3}
+                      fontSize="9"
+                      fontWeight="500"
+                      fill={colors.text}
+                      textAnchor="start"
+                      opacity={0.8}
+                    >
+                      {distance}km
+                    </SvgText>
+                  </G>
+                </G>
+              );
+            })}
             
             {/* Cardinal directions */}
             <Line x1={centerX} y1={20} x2={centerX} y2={radarSize - 20} stroke={colors.divider} strokeWidth="1" opacity={0.3} />
@@ -648,7 +686,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         </View>
         
         <Text style={styles.infoText}>
-          Circuit location marked at center
+          Circuit location marked at center • Distance rings: 10km, 20km, 30km, 40km
         </Text>
       </View>
 
