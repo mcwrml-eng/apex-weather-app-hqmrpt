@@ -106,6 +106,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       
       const data = await response.json();
       console.log('Detailed projected rain forecast data received');
+      console.log('Current precipitation:', data.current.precipitation);
       
       // Process minutely data (15-minute intervals)
       const minutelyData: PrecipitationData[] = [];
@@ -142,7 +143,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       const avgWindSpeed = recentHours.reduce((sum, h) => sum + (h.windSpeed || 0), 0) / recentHours.length;
       const avgWindDirection = recentHours.reduce((sum, h) => sum + (h.windDirection || 0), 0) / recentHours.length;
       
-      // Generate enhanced radar grid data with wind information
+      // Generate enhanced radar grid data with wind information and current precipitation
       const gridData = generateEnhancedRadarGrid(
         minutelyData.length > 0 ? minutelyData : hourlyData, 
         data.current.precipitation || 0,
@@ -155,11 +156,25 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       const totalPrecipitation = dataToAnalyze.reduce((sum, h) => sum + h.precipitation, 0);
       const maxProbability = Math.max(...dataToAnalyze.map(h => h.precipitationProbability));
       const avgPrecipitation = totalPrecipitation / dataToAnalyze.length;
-      const hasRain = totalPrecipitation > 0 || maxProbability > 30;
+      const currentPrecip = data.current.precipitation || 0;
+      const hasRain = currentPrecip > 0 || totalPrecipitation > 0 || maxProbability > 30;
       
       let summary = '';
       if (!hasRain) {
         summary = 'No rainfall detected in the area';
+      } else if (currentPrecip > 0) {
+        // Prioritize current conditions in summary
+        if (currentPrecip < 0.3) {
+          summary = 'Light rain currently over circuit';
+        } else if (currentPrecip < 1) {
+          summary = 'Light precipitation currently falling';
+        } else if (currentPrecip < 3) {
+          summary = 'Moderate rainfall currently over circuit';
+        } else if (currentPrecip < 7) {
+          summary = 'Heavy rainfall currently affecting circuit';
+        } else {
+          summary = 'Intense precipitation currently over circuit';
+        }
       } else if (avgPrecipitation < 0.3) {
         summary = 'Trace precipitation with scattered light showers';
       } else if (avgPrecipitation < 1) {
@@ -208,6 +223,8 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     const numAngles = 24; // 24 directions for more detail (15° each)
     const numRings = 6; // 6 distance rings for finer granularity
     
+    console.log('Generating radar grid with current precipitation:', currentPrecip);
+    
     // Use forecast data to create spatial distribution with wind influence
     for (let ring = 0; ring < numRings; ring++) {
       for (let angle = 0; angle < numAngles; angle++) {
@@ -223,14 +240,40 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         const windInfluence = calculateWindInfluence(angleDeg, currentWindDirection, currentWindSpeed);
         
         // Add some variation based on angle and distance
-        const variation = Math.sin(angleRad * 3) * 0.2 + Math.cos(angleRad * 2) * 0.15;
-        const distanceFactor = 1 - (distance * 0.25); // Closer areas more similar to current
+        const variation = Math.sin(angleRad * 3) * 0.15 + Math.cos(angleRad * 2) * 0.1;
         
-        let intensity = baseIntensity * distanceFactor * (1 + variation) * windInfluence;
-        
-        // Add current precipitation influence at center
+        // Distance factor - innermost ring heavily influenced by current conditions
+        let distanceFactor = 1;
         if (ring === 0) {
-          intensity = (intensity + currentPrecip) / 2;
+          // Innermost ring (0-5km) - 90% current precipitation
+          distanceFactor = 0.9;
+        } else if (ring === 1) {
+          // Second ring (5-10km) - 60% current, 40% forecast
+          distanceFactor = 0.6;
+        } else if (ring === 2) {
+          // Third ring (10-20km) - 30% current, 70% forecast
+          distanceFactor = 0.3;
+        } else {
+          // Outer rings - mostly forecast data
+          distanceFactor = 0.1;
+        }
+        
+        // Calculate intensity with proper blending of current and forecast
+        let intensity = 0;
+        
+        if (ring <= 2) {
+          // Inner rings: blend current precipitation with forecast
+          const currentComponent = currentPrecip * distanceFactor;
+          const forecastComponent = baseIntensity * (1 - distanceFactor);
+          intensity = (currentComponent + forecastComponent) * windInfluence * (1 + variation);
+        } else {
+          // Outer rings: primarily forecast data with slight current influence
+          intensity = baseIntensity * (1 - (distance * 0.2)) * windInfluence * (1 + variation);
+          
+          // Add minimal current precipitation influence even to outer rings
+          if (currentPrecip > 0) {
+            intensity += currentPrecip * 0.1 * (1 - distance);
+          }
         }
         
         intensity = Math.max(0, intensity);
@@ -243,6 +286,9 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         });
       }
     }
+    
+    console.log('Generated', zones.length, 'precipitation zones');
+    console.log('Sample innermost zone intensity:', zones[0]?.intensity);
     
     return zones;
   };
@@ -837,14 +883,14 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
             {/* Rain direction arrow */}
             {radarData.rainSpeed > 2 && renderRainDirectionArrow()}
             
-            {/* Center marker (circuit location) */}
+            {/* Center marker (circuit location) with enhanced visibility */}
             <Circle
               cx={centerX}
               cy={centerY}
-              r={7}
+              r={9}
               fill={colors.primary}
               stroke="#fff"
-              strokeWidth="2.5"
+              strokeWidth="3"
             />
             
             {/* Compass labels */}
