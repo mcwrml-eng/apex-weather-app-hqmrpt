@@ -1,11 +1,22 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Animated } from 'react-native';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
 import { useTheme } from '../state/ThemeContext';
 import { getColors, borderRadius, getShadows } from '../styles/commonStyles';
 import Icon from './Icon';
 import WeatherSymbol from './WeatherSymbol';
 import Svg, { Circle, Line, Text as SvgText, Defs, RadialGradient, Stop, G, Path, Polygon } from 'react-native-svg';
+import Animated, {
+  useSharedValue,
+  useAnimatedProps,
+  withTiming,
+  withRepeat,
+  withSequence,
+  Easing,
+  interpolate,
+  cancelAnimation,
+  runOnJS,
+} from 'react-native-reanimated';
 
 interface TrackRainfallRadarProps {
   latitude: number;
@@ -38,12 +49,12 @@ interface RadarData {
   hourly: PrecipitationData[];
   minutely: PrecipitationData[];
   summary: string;
-  gridData: PrecipitationZone[];
+  gridData: PrecipitationZone[][];
   sunrise: string;
   sunset: string;
-  rainDirection: number; // Direction rain is travelling (based on wind)
-  rainSpeed: number; // Speed of rain movement
-  hasRain: boolean; // Flag to indicate if any rain is expected
+  rainDirection: number;
+  rainSpeed: number;
+  hasRain: boolean;
 }
 
 interface PrecipitationZone {
@@ -53,6 +64,11 @@ interface PrecipitationZone {
   radius: number;
 }
 
+// Create animated Path component
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+const AnimatedPolygon = Animated.createAnimatedComponent(Polygon);
+const AnimatedLine = Animated.createAnimatedComponent(Line);
+
 const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   latitude,
   longitude,
@@ -60,6 +76,8 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   country,
   category,
   compact = false,
+  showControls = false,
+  autoStartAnimation = true,
 }) => {
   const { isDark } = useTheme();
   const colors = getColors(isDark);
@@ -69,24 +87,72 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [radarData, setRadarData] = useState<RadarData | null>(null);
-  const [animatedValue] = useState(new Animated.Value(0));
   const [showMinutelyView, setShowMinutelyView] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(autoStartAnimation);
+  const [currentFrame, setCurrentFrame] = useState(0);
 
-  // Distance scale in kilometers for each ring (more detailed)
-  const distanceRings = [5, 10, 20, 30, 40, 50]; // km from center
+  // Animation values
+  const animationProgress = useSharedValue(0);
+  const radarSweepRotation = useSharedValue(0);
+  const pulseAnimation = useSharedValue(1);
+
+  // Distance scale in kilometers for each ring
+  const distanceRings = [5, 10, 20, 30, 40, 50];
 
   useEffect(() => {
     fetchRainfallData();
-    
-    // Start radar sweep animation
-    Animated.loop(
-      Animated.timing(animatedValue, {
-        toValue: 1,
-        duration: 4000,
-        useNativeDriver: true,
-      })
-    ).start();
   }, [latitude, longitude]);
+
+  // Start/stop animations based on isPlaying state
+  useEffect(() => {
+    if (isPlaying && radarData?.hasRain) {
+      console.log('Starting rain forecast animation');
+      
+      // Main animation progress (cycles through time frames)
+      animationProgress.value = withRepeat(
+        withTiming(1, {
+          duration: 8000,
+          easing: Easing.linear,
+        }),
+        -1,
+        false
+      );
+
+      // Radar sweep effect
+      radarSweepRotation.value = withRepeat(
+        withTiming(360, {
+          duration: 4000,
+          easing: Easing.linear,
+        }),
+        -1,
+        false
+      );
+
+      // Pulse effect for intensity
+      pulseAnimation.value = withRepeat(
+        withSequence(
+          withTiming(1.15, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        false
+      );
+    } else {
+      console.log('Stopping rain forecast animation');
+      cancelAnimation(animationProgress);
+      cancelAnimation(radarSweepRotation);
+      cancelAnimation(pulseAnimation);
+      animationProgress.value = 0;
+      radarSweepRotation.value = 0;
+      pulseAnimation.value = 1;
+    }
+
+    return () => {
+      cancelAnimation(animationProgress);
+      cancelAnimation(radarSweepRotation);
+      cancelAnimation(pulseAnimation);
+    };
+  }, [isPlaying, radarData?.hasRain]);
 
   const fetchRainfallData = async () => {
     setLoading(true);
@@ -96,7 +162,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     try {
       console.log(`Fetching detailed projected rain forecast data for ${circuitName} at ${latitude}, ${longitude}`);
       
-      // Fetch precipitation data with minutely resolution and wind data
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=precipitation,weather_code,wind_speed_10m,wind_direction_10m&minutely_15=precipitation,precipitation_probability&hourly=precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m&daily=sunrise,sunset&timezone=auto&forecast_days=2`;
       
       const response = await fetch(url);
@@ -109,22 +174,22 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       console.log('Detailed projected rain forecast data received');
       console.log('Current precipitation:', data.current.precipitation);
       
-      // Process minutely data (15-minute intervals)
+      // Process minutely data
       const minutelyData: PrecipitationData[] = [];
       if (data.minutely_15) {
-        const maxMinutes = 96; // 24 hours in 15-minute intervals
+        const maxMinutes = 96;
         
         for (let i = 0; i < Math.min(maxMinutes, data.minutely_15.time.length); i++) {
           minutelyData.push({
             time: data.minutely_15.time[i],
             precipitation: data.minutely_15.precipitation[i] || 0,
             precipitationProbability: data.minutely_15.precipitation_probability?.[i] || 0,
-            weatherCode: 0, // Not available in minutely data
+            weatherCode: 0,
           });
         }
       }
       
-      // Process hourly data with wind information
+      // Process hourly data
       const hourlyData: PrecipitationData[] = [];
       const maxHours = 48;
       
@@ -139,19 +204,18 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         });
       }
       
-      // Calculate average wind direction and speed for rain movement
+      // Calculate wind direction and speed
       const recentHours = hourlyData.slice(0, 6);
       const avgWindSpeed = recentHours.reduce((sum, h) => sum + (h.windSpeed || 0), 0) / recentHours.length;
       const avgWindDirection = recentHours.reduce((sum, h) => sum + (h.windDirection || 0), 0) / recentHours.length;
       
-      // Calculate detailed summary and check if rain is expected
+      // Calculate summary
       const dataToAnalyze = minutelyData.length > 0 ? minutelyData.slice(0, 24) : hourlyData.slice(0, 6);
       const totalPrecipitation = dataToAnalyze.reduce((sum, h) => sum + h.precipitation, 0);
       const maxProbability = Math.max(...dataToAnalyze.map(h => h.precipitationProbability));
       const avgPrecipitation = totalPrecipitation / dataToAnalyze.length;
       const currentPrecip = data.current.precipitation || 0;
       
-      // Enhanced rain detection - more strict criteria
       const hasRain = currentPrecip > 0.1 || totalPrecipitation > 0.5 || maxProbability > 20;
       
       console.log('Rain detection:', {
@@ -161,19 +225,46 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         hasRain
       });
       
-      // Generate enhanced radar grid data with wind information and current precipitation
-      const gridData = generateEnhancedRadarGrid(
-        minutelyData.length > 0 ? minutelyData : hourlyData, 
-        data.current.precipitation || 0,
-        data.current.wind_speed_10m || 0,
-        data.current.wind_direction_10m || 0
-      );
+      // Generate multiple time frames for animation (8 frames)
+      const numFrames = 8;
+      const gridDataFrames: PrecipitationZone[][] = [];
+      
+      for (let frame = 0; frame < numFrames; frame++) {
+        const timeOffset = frame * 15; // 15 minutes per frame
+        const frameData = minutelyData.length > 0 
+          ? minutelyData.slice(timeOffset, timeOffset + 24)
+          : hourlyData.slice(Math.floor(timeOffset / 60), Math.floor(timeOffset / 60) + 6);
+        
+        if (frameData.length > 0) {
+          gridDataFrames.push(
+            generateEnhancedRadarGrid(
+              frameData,
+              currentPrecip,
+              data.current.wind_speed_10m || 0,
+              data.current.wind_direction_10m || 0,
+              frame / numFrames
+            )
+          );
+        }
+      }
+      
+      // If no frames generated, create at least one
+      if (gridDataFrames.length === 0) {
+        gridDataFrames.push(
+          generateEnhancedRadarGrid(
+            minutelyData.length > 0 ? minutelyData : hourlyData,
+            currentPrecip,
+            data.current.wind_speed_10m || 0,
+            data.current.wind_direction_10m || 0,
+            0
+          )
+        );
+      }
       
       let summary = '';
       if (!hasRain) {
         summary = 'No rainfall expected in the forecast period';
       } else if (currentPrecip > 0) {
-        // Prioritize current conditions in summary
         if (currentPrecip < 0.3) {
           summary = 'Light rain currently over circuit';
         } else if (currentPrecip < 1) {
@@ -207,7 +298,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         hourly: hourlyData,
         minutely: minutelyData,
         summary,
-        gridData,
+        gridData: gridDataFrames,
         sunrise: data.daily?.sunrise?.[0] || '06:00',
         sunset: data.daily?.sunset?.[0] || '18:00',
         rainDirection: avgWindDirection,
@@ -228,60 +319,48 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     timeData: PrecipitationData[], 
     currentPrecip: number,
     currentWindSpeed: number,
-    currentWindDirection: number
+    currentWindDirection: number,
+    timeProgress: number
   ): PrecipitationZone[] => {
     const zones: PrecipitationZone[] = [];
-    const numAngles = 24; // 24 directions for more detail (15° each)
-    const numRings = 6; // 6 distance rings for finer granularity
+    const numAngles = 24;
+    const numRings = 6;
     
-    console.log('Generating radar grid with current precipitation:', currentPrecip);
-    
-    // Use forecast data to create spatial distribution with wind influence
     for (let ring = 0; ring < numRings; ring++) {
       for (let angle = 0; angle < numAngles; angle++) {
         const angleRad = (angle / numAngles) * 2 * Math.PI;
         const angleDeg = (angle / numAngles) * 360;
         const distance = (ring + 1) / numRings;
         
-        // Use time-based data to simulate spatial distribution
         const timeIndex = Math.min(Math.floor((ring * numAngles + angle) / 3), timeData.length - 1);
         const baseIntensity = timeData[timeIndex]?.precipitation || 0;
         
-        // Add wind-based directional influence
         const windInfluence = calculateWindInfluence(angleDeg, currentWindDirection, currentWindSpeed);
         
-        // Add some variation based on angle and distance
-        const variation = Math.sin(angleRad * 3) * 0.15 + Math.cos(angleRad * 2) * 0.1;
+        // Add time-based movement
+        const movementOffset = Math.sin(angleRad + timeProgress * Math.PI * 2) * 0.1;
+        const variation = Math.sin(angleRad * 3) * 0.15 + Math.cos(angleRad * 2) * 0.1 + movementOffset;
         
-        // Distance factor - innermost ring heavily influenced by current conditions
         let distanceFactor = 1;
         if (ring === 0) {
-          // Innermost ring (0-5km) - 90% current precipitation
           distanceFactor = 0.9;
         } else if (ring === 1) {
-          // Second ring (5-10km) - 60% current, 40% forecast
           distanceFactor = 0.6;
         } else if (ring === 2) {
-          // Third ring (10-20km) - 30% current, 70% forecast
           distanceFactor = 0.3;
         } else {
-          // Outer rings - mostly forecast data
           distanceFactor = 0.1;
         }
         
-        // Calculate intensity with proper blending of current and forecast
         let intensity = 0;
         
         if (ring <= 2) {
-          // Inner rings: blend current precipitation with forecast
           const currentComponent = currentPrecip * distanceFactor;
           const forecastComponent = baseIntensity * (1 - distanceFactor);
           intensity = (currentComponent + forecastComponent) * windInfluence * (1 + variation);
         } else {
-          // Outer rings: primarily forecast data with slight current influence
           intensity = baseIntensity * (1 - (distance * 0.2)) * windInfluence * (1 + variation);
           
-          // Add minimal current precipitation influence even to outer rings
           if (currentPrecip > 0) {
             intensity += currentPrecip * 0.1 * (1 - distance);
           }
@@ -298,14 +377,10 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       }
     }
     
-    console.log('Generated', zones.length, 'precipitation zones');
-    console.log('Sample innermost zone intensity:', zones[0]?.intensity);
-    
     return zones;
   };
 
   const calculateWindInfluence = (angle: number, windDirection: number, windSpeed: number): number => {
-    // Calculate how wind direction affects precipitation distribution
     const angleDiff = Math.abs(((angle - windDirection + 180) % 360) - 180);
     const windFactor = 1 + (windSpeed / 50) * (1 - angleDiff / 180) * 0.3;
     return Math.max(0.7, Math.min(1.3, windFactor));
@@ -325,7 +400,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   };
 
   const getRainfallColor = (precipitation: number): string => {
-    // Enhanced color gradations for more detail
     if (precipitation === 0) return 'transparent';
     if (precipitation < 0.2) return 'rgba(200, 255, 200, 0.3)';
     if (precipitation < 0.5) return 'rgba(144, 238, 144, 0.4)';
@@ -359,6 +433,10 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     if (speed < 30) return 'Moderate';
     if (speed < 50) return 'Fast';
     return 'Very Fast';
+  };
+
+  const togglePlayPause = () => {
+    setIsPlaying(!isPlaying);
   };
 
   const styles = useMemo(() => StyleSheet.create({
@@ -693,6 +771,42 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       fontWeight: '500',
       fontFamily: 'Roboto_500Medium',
     },
+    controlsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 12,
+      marginTop: 12,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+    },
+    controlButton: {
+      backgroundColor: colors.primary,
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: borderRadius.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    controlButtonText: {
+      color: '#fff',
+      fontSize: 14,
+      fontWeight: '600',
+      fontFamily: 'Roboto_600SemiBold',
+    },
+    animationIndicator: {
+      fontSize: 11,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      fontStyle: 'italic',
+    },
+    headerControls: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
   }), [colors, shadows, compact, isDark]);
 
   if (loading) {
@@ -750,7 +864,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   const maxRadius = radarSize / 2 - 30;
 
   const getIntensityColor = (intensity: number): string => {
-    // Enhanced color gradations with better visibility
     if (intensity === 0) return 'transparent';
     if (intensity < 0.2) return isDark ? 'rgba(200, 255, 200, 0.35)' : 'rgba(200, 255, 200, 0.4)';
     if (intensity < 0.5) return isDark ? 'rgba(144, 238, 144, 0.45)' : 'rgba(144, 238, 144, 0.5)';
@@ -763,18 +876,72 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     return isDark ? 'rgba(244, 67, 54, 0.95)' : 'rgba(244, 67, 54, 1)';
   };
 
-  // Render rain direction arrow (large, prominent)
-  const renderRainDirectionArrow = () => {
+  // Get current frame data based on animation progress
+  const getCurrentFrameData = (): PrecipitationZone[] => {
+    if (!radarData.gridData || radarData.gridData.length === 0) {
+      return [];
+    }
+    
+    const numFrames = radarData.gridData.length;
+    const frameIndex = Math.floor((currentFrame % numFrames));
+    return radarData.gridData[frameIndex] || radarData.gridData[0];
+  };
+
+  // Animated precipitation zone component
+  const AnimatedPrecipitationZone = ({ zone, index }: { zone: PrecipitationZone; index: number }) => {
+    const angleRad = (zone.angle - 90) * (Math.PI / 180);
+    const angleSpan = (360 / 24) * (Math.PI / 180);
+    const nextAngleRad = angleRad + angleSpan;
+    const innerRadius = zone.radius - 20;
+    const outerRadius = zone.radius;
+    
+    const x1 = centerX + innerRadius * Math.cos(angleRad);
+    const y1 = centerY + innerRadius * Math.sin(angleRad);
+    const x2 = centerX + outerRadius * Math.cos(angleRad);
+    const y2 = centerY + outerRadius * Math.sin(angleRad);
+    const x3 = centerX + outerRadius * Math.cos(nextAngleRad);
+    const y3 = centerY + outerRadius * Math.sin(nextAngleRad);
+    const x4 = centerX + innerRadius * Math.cos(nextAngleRad);
+    const y4 = centerY + innerRadius * Math.sin(nextAngleRad);
+    
+    const pathData = `M ${x1} ${y1} L ${x2} ${y2} A ${outerRadius} ${outerRadius} 0 0 1 ${x3} ${y3} L ${x4} ${y4} A ${innerRadius} ${innerRadius} 0 0 0 ${x1} ${y1} Z`;
+    
+    const animatedProps = useAnimatedProps(() => {
+      const baseColor = getIntensityColor(zone.intensity);
+      
+      // Extract RGBA values
+      const match = baseColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*([\d.]+)?\)/);
+      if (!match) return { fill: baseColor };
+      
+      const [, r, g, b, a = '1'] = match;
+      const baseAlpha = parseFloat(a);
+      
+      // Animate opacity with pulse
+      const animatedAlpha = baseAlpha * pulseAnimation.value;
+      
+      return {
+        fill: `rgba(${r}, ${g}, ${b}, ${animatedAlpha})`,
+      };
+    });
+    
+    return (
+      <AnimatedPath
+        d={pathData}
+        animatedProps={animatedProps}
+        stroke="none"
+      />
+    );
+  };
+
+  // Animated rain direction arrow
+  const AnimatedRainDirectionArrow = () => {
     const arrowLength = maxRadius * 0.6;
-    const arrowWidth = 20;
     const direction = radarData.rainDirection;
     
-    // Calculate arrow points
     const angleRad = ((direction - 90) * Math.PI) / 180;
     const endX = centerX + arrowLength * Math.cos(angleRad);
     const endY = centerY + arrowLength * Math.sin(angleRad);
     
-    // Arrow head points
     const headLength = 25;
     const headAngle = Math.PI / 6;
     const leftX = endX - headLength * Math.cos(angleRad - headAngle);
@@ -782,10 +949,33 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     const rightX = endX - headLength * Math.cos(angleRad + headAngle);
     const rightY = endY - headLength * Math.sin(angleRad + headAngle);
     
+    const lineAnimatedProps = useAnimatedProps(() => {
+      const opacity = interpolate(
+        pulseAnimation.value,
+        [1, 1.15],
+        [0.7, 0.95]
+      );
+      
+      return {
+        strokeOpacity: opacity,
+      };
+    });
+    
+    const polygonAnimatedProps = useAnimatedProps(() => {
+      const opacity = interpolate(
+        pulseAnimation.value,
+        [1, 1.15],
+        [0.8, 1]
+      );
+      
+      return {
+        fillOpacity: opacity,
+      };
+    });
+    
     return (
       <G>
-        {/* Arrow shaft */}
-        <Line
+        <AnimatedLine
           x1={centerX}
           y1={centerY}
           x2={endX}
@@ -793,17 +983,17 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
           stroke={isDark ? 'rgba(100, 150, 255, 0.8)' : 'rgba(50, 100, 200, 0.8)'}
           strokeWidth="4"
           strokeDasharray="8,4"
+          animatedProps={lineAnimatedProps}
         />
         
-        {/* Arrow head */}
-        <Polygon
+        <AnimatedPolygon
           points={`${endX},${endY} ${leftX},${leftY} ${rightX},${rightY}`}
           fill={isDark ? 'rgba(100, 150, 255, 0.9)' : 'rgba(50, 100, 200, 0.9)'}
           stroke={isDark ? 'rgba(150, 200, 255, 1)' : 'rgba(100, 150, 255, 1)'}
           strokeWidth="2"
+          animatedProps={polygonAnimatedProps}
         />
         
-        {/* Direction label */}
         <SvgText
           x={endX}
           y={endY - 30}
@@ -818,6 +1008,21 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     );
   };
 
+  // Update current frame based on animation progress
+  useEffect(() => {
+    if (!radarData?.gridData || radarData.gridData.length === 0) return;
+    
+    const interval = setInterval(() => {
+      if (isPlaying) {
+        setCurrentFrame(prev => (prev + 1) % radarData.gridData.length);
+      }
+    }, 1000); // Update frame every second
+    
+    return () => clearInterval(interval);
+  }, [isPlaying, radarData?.gridData]);
+
+  const currentGridData = getCurrentFrameData();
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -825,19 +1030,33 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
           <Icon name="rainy" size={20} color={colors.precipitation} />
           <Text style={styles.title}>Projected Rain Forecast</Text>
         </View>
-        <TouchableOpacity 
-          onPress={fetchRainfallData}
-          activeOpacity={0.7}
-        >
-          <Icon name="refresh" size={20} color={colors.text} />
-        </TouchableOpacity>
+        <View style={styles.headerControls}>
+          {showControls && radarData.hasRain && (
+            <TouchableOpacity 
+              onPress={togglePlayPause}
+              activeOpacity={0.7}
+            >
+              <Icon 
+                name={isPlaying ? 'pause' : 'play'} 
+                size={20} 
+                color={colors.primary} 
+              />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity 
+            onPress={fetchRainfallData}
+            activeOpacity={0.7}
+          >
+            <Icon name="refresh" size={20} color={colors.text} />
+          </TouchableOpacity>
+        </View>
       </View>
       
       <Text style={styles.subtitle}>
         High-resolution precipitation forecast for {circuitName}
+        {radarData.hasRain && isPlaying && ' • Animating'}
       </Text>
 
-      {/* No Rain Banner - Prominent display when no rain expected */}
       {!radarData.hasRain && (
         <View style={styles.noRainBanner}>
           <Icon 
@@ -854,7 +1073,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         </View>
       )}
 
-      {/* View Toggle for Minutely/Hourly */}
       {radarData.minutely.length > 0 && (
         <View style={styles.viewToggle}>
           <TouchableOpacity
@@ -878,7 +1096,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         </View>
       )}
 
-      {/* Enhanced Radar Display */}
       <View style={styles.radarContainer}>
         <View style={styles.radarDisplay}>
           <Svg width={radarSize} height={radarSize}>
@@ -889,7 +1106,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
               </RadialGradient>
             </Defs>
             
-            {/* Background */}
             <Circle
               cx={centerX}
               cy={centerY}
@@ -899,7 +1115,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
               strokeWidth="2"
             />
             
-            {/* Enhanced range rings with distance labels */}
             {distanceRings.map((distance, i) => {
               const scale = (i + 1) / distanceRings.length;
               const ringRadius = maxRadius * scale;
@@ -918,7 +1133,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
                     strokeDasharray="3,3"
                     opacity={0.25}
                   />
-                  {/* Distance label */}
                   <SvgText
                     x={labelX}
                     y={labelY}
@@ -934,45 +1148,17 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
               );
             })}
             
-            {/* Cardinal and intercardinal directions */}
             <Line x1={centerX} y1={25} x2={centerX} y2={radarSize - 25} stroke={colors.divider} strokeWidth="1" opacity={0.2} />
             <Line x1={25} y1={centerY} x2={radarSize - 25} y2={centerY} stroke={colors.divider} strokeWidth="1" opacity={0.2} />
             <Line x1={centerX - maxRadius * 0.7} y1={centerY - maxRadius * 0.7} x2={centerX + maxRadius * 0.7} y2={centerY + maxRadius * 0.7} stroke={colors.divider} strokeWidth="1" opacity={0.15} />
             <Line x1={centerX - maxRadius * 0.7} y1={centerY + maxRadius * 0.7} x2={centerX + maxRadius * 0.7} y2={centerY - maxRadius * 0.7} stroke={colors.divider} strokeWidth="1" opacity={0.15} />
             
-            {/* Enhanced precipitation zones with finer detail - only show if rain expected */}
-            {radarData.hasRain && radarData.gridData.map((zone, index) => {
-              const angleRad = (zone.angle - 90) * (Math.PI / 180);
-              const angleSpan = (360 / 24) * (Math.PI / 180); // 15° per segment
-              const nextAngleRad = angleRad + angleSpan;
-              const innerRadius = zone.radius - 20;
-              const outerRadius = zone.radius;
-              
-              const x1 = centerX + innerRadius * Math.cos(angleRad);
-              const y1 = centerY + innerRadius * Math.sin(angleRad);
-              const x2 = centerX + outerRadius * Math.cos(angleRad);
-              const y2 = centerY + outerRadius * Math.sin(angleRad);
-              const x3 = centerX + outerRadius * Math.cos(nextAngleRad);
-              const y3 = centerY + outerRadius * Math.sin(nextAngleRad);
-              const x4 = centerX + innerRadius * Math.cos(nextAngleRad);
-              const y4 = centerY + innerRadius * Math.sin(nextAngleRad);
-              
-              const pathData = `M ${x1} ${y1} L ${x2} ${y2} A ${outerRadius} ${outerRadius} 0 0 1 ${x3} ${y3} L ${x4} ${y4} A ${innerRadius} ${innerRadius} 0 0 0 ${x1} ${y1} Z`;
-              
-              return (
-                <Path
-                  key={`zone-${index}`}
-                  d={pathData}
-                  fill={getIntensityColor(zone.intensity)}
-                  stroke="none"
-                />
-              );
-            })}
+            {radarData.hasRain && currentGridData.map((zone, index) => (
+              <AnimatedPrecipitationZone key={`zone-${index}`} zone={zone} index={index} />
+            ))}
             
-            {/* Rain direction arrow - only show if rain expected */}
-            {radarData.hasRain && radarData.rainSpeed > 2 && renderRainDirectionArrow()}
+            {radarData.hasRain && radarData.rainSpeed > 2 && <AnimatedRainDirectionArrow />}
             
-            {/* Center marker (circuit location) with enhanced visibility */}
             <Circle
               cx={centerX}
               cy={centerY}
@@ -982,50 +1168,12 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
               strokeWidth="3"
             />
             
-            {/* Compass labels */}
-            <SvgText
-              x={centerX}
-              y={18}
-              fontSize="12"
-              fontWeight="600"
-              fill={colors.text}
-              textAnchor="middle"
-            >
-              N
-            </SvgText>
-            <SvgText
-              x={radarSize - 18}
-              y={centerY + 5}
-              fontSize="12"
-              fontWeight="600"
-              fill={colors.text}
-              textAnchor="middle"
-            >
-              E
-            </SvgText>
-            <SvgText
-              x={centerX}
-              y={radarSize - 8}
-              fontSize="12"
-              fontWeight="600"
-              fill={colors.text}
-              textAnchor="middle"
-            >
-              S
-            </SvgText>
-            <SvgText
-              x={18}
-              y={centerY + 5}
-              fontSize="12"
-              fontWeight="600"
-              fill={colors.text}
-              textAnchor="middle"
-            >
-              W
-            </SvgText>
+            <SvgText x={centerX} y={18} fontSize="12" fontWeight="600" fill={colors.text} textAnchor="middle">N</SvgText>
+            <SvgText x={radarSize - 18} y={centerY + 5} fontSize="12" fontWeight="600" fill={colors.text} textAnchor="middle">E</SvgText>
+            <SvgText x={centerX} y={radarSize - 8} fontSize="12" fontWeight="600" fill={colors.text} textAnchor="middle">S</SvgText>
+            <SvgText x={18} y={centerY + 5} fontSize="12" fontWeight="600" fill={colors.text} textAnchor="middle">W</SvgText>
           </Svg>
           
-          {/* No Rain Overlay on Radar - shown when no rain expected */}
           {!radarData.hasRain && (
             <View style={styles.noRainOverlay}>
               <View style={styles.noRainBadge}>
@@ -1041,10 +1189,10 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         
         <Text style={styles.infoText}>
           Circuit location • Distance rings: {distanceRings.join('km, ')}km
+          {radarData.hasRain && isPlaying && ` • Frame ${currentFrame + 1}/${radarData.gridData.length}`}
         </Text>
       </View>
 
-      {/* Current Conditions with Rain Direction */}
       <View style={styles.currentConditions}>
         <View style={styles.conditionsRow}>
           <Text style={styles.conditionsLabel}>Current Rainfall</Text>
@@ -1053,7 +1201,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
           </Text>
         </View>
         
-        {/* Rain Direction Information - only show if rain expected */}
         {radarData.hasRain && (
           <View style={styles.rainDirectionInfo}>
             <Icon name="arrow-forward" size={20} color={isDark ? 'rgba(150, 200, 255, 1)' : 'rgba(50, 100, 200, 1)'} />
@@ -1078,7 +1225,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         <Text style={styles.summary}>{radarData.summary}</Text>
       </View>
 
-      {/* Detailed Forecast */}
       <View style={styles.forecastContainer}>
         <Text style={styles.forecastTitle}>
           {showMinutelyView && radarData.minutely.length > 0 ? 'Next 6 Hours (15-min intervals)' : 'Next 24 Hours'}
@@ -1116,7 +1262,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         </ScrollView>
       </View>
 
-      {/* Enhanced Legend */}
       <View style={styles.legend}>
         <View style={styles.legendItem}>
           <View style={[styles.legendColor, { backgroundColor: 'rgba(200, 255, 200, 0.4)' }]} />
@@ -1157,7 +1302,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       </View>
 
       <Text style={styles.infoText}>
-        High-resolution data from Open-Meteo • 15-minute intervals available • Rain direction based on wind patterns
+        High-resolution data from Open-Meteo • Animated precipitation zones • Rain direction based on wind patterns
       </Text>
     </View>
   );
