@@ -21,7 +21,7 @@ interface ImageryFrame {
   timestamp: number;
   time: string;
   loaded: boolean;
-  type: 'cloud' | 'radar';
+  type: 'radar';
 }
 
 const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
@@ -40,8 +40,6 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentZoom, setCurrentZoom] = useState(zoom);
-  const [activeLayer, setActiveLayer] = useState<'cloud' | 'radar'>('radar');
-  const [cloudFrames, setCloudFrames] = useState<ImageryFrame[]>([]);
   const [radarFrames, setRadarFrames] = useState<ImageryFrame[]>([]);
   const [isPlaying, setIsPlaying] = useState(true);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
@@ -83,71 +81,6 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
       return false;
     }
   }, []);
-
-  // Fetch cloud imagery frames using OpenWeatherMap
-  const fetchCloudFrames = useCallback(async () => {
-    console.log('========================================');
-    console.log('FETCHING CLOUD IMAGERY');
-    console.log('========================================');
-    console.log('Location:', { latitude, longitude, zoom: currentZoom });
-    
-    try {
-      const { x, y, zoom: z } = getTileCoordinates(latitude, longitude, currentZoom);
-      console.log('Tile coordinates:', { x, y, zoom: z });
-      
-      const frames: ImageryFrame[] = [];
-      
-      // OpenWeatherMap provides free cloud tiles
-      // Using clouds_new layer which shows cloud coverage
-      for (let i = 0; i < 1; i++) {
-        const cloudUrl = `https://tile.openweathermap.org/map/clouds_new/${z}/${x}/${y}.png?appid=439d4b804bc8187953eb36d2a8c26a02`;
-        
-        console.log('Cloud tile URL:', cloudUrl);
-        
-        frames.push({
-          url: cloudUrl,
-          timestamp: Date.now(),
-          time: formatTime(Date.now()),
-          loaded: false,
-          type: 'cloud',
-        });
-      }
-      
-      console.log(`Generated ${frames.length} cloud frame URLs`);
-      
-      // Preload frames
-      const preloadResults = await Promise.allSettled(
-        frames.map((frame, index) => 
-          preloadImage(frame.url).then((success) => {
-            if (success) {
-              frames[index].loaded = true;
-              console.log(`✓ Cloud frame ${index + 1}/${frames.length} loaded`);
-            } else {
-              console.log(`✗ Cloud frame ${index + 1}/${frames.length} failed`);
-            }
-            return success;
-          })
-        )
-      );
-      
-      const successCount = preloadResults.filter(
-        (result) => result.status === 'fulfilled' && result.value === true
-      ).length;
-      
-      console.log(`Cloud preload complete: ${successCount}/${frames.length} frames loaded`);
-      
-      if (successCount > 0) {
-        setCloudFrames(frames);
-        console.log('✓ Cloud frames ready');
-      } else {
-        console.warn('No cloud frames loaded successfully');
-        setCloudFrames(frames); // Still set them to show the attempt
-      }
-    } catch (error) {
-      console.error('Error fetching cloud frames:', error);
-      throw error;
-    }
-  }, [latitude, longitude, currentZoom, getTileCoordinates, formatTime, preloadImage]);
 
   // Fetch radar imagery frames from RainViewer
   const fetchRadarFrames = useCallback(async () => {
@@ -241,15 +174,7 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
       setFramesReady(false);
       
       try {
-        // Fetch both cloud and radar frames
-        await Promise.all([
-          fetchCloudFrames().catch(err => {
-            console.error('Cloud frames error:', err);
-            // Don't fail completely if cloud fails
-          }),
-          fetchRadarFrames(),
-        ]);
-        
+        await fetchRadarFrames();
         setFramesReady(true);
         setCurrentFrameIndex(0);
         setLoading(false);
@@ -261,7 +186,7 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
     };
     
     fetchFrames();
-  }, [latitude, longitude, currentZoom, fetchCloudFrames, fetchRadarFrames]);
+  }, [latitude, longitude, currentZoom, fetchRadarFrames]);
 
   // Animation loop
   useEffect(() => {
@@ -274,13 +199,11 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
       return;
     }
 
-    const currentFrames = activeLayer === 'cloud' ? cloudFrames : radarFrames;
-    
-    if (currentFrames.length === 0) {
+    if (radarFrames.length === 0) {
       return;
     }
 
-    const loadedFrames = currentFrames.filter(f => f.loaded);
+    const loadedFrames = radarFrames.filter(f => f.loaded);
     
     if (loadedFrames.length === 0) {
       return;
@@ -288,7 +211,7 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
 
     animationIntervalRef.current = setInterval(() => {
       setCurrentFrameIndex((prev) => {
-        const next = (prev + 1) % currentFrames.length;
+        const next = (prev + 1) % radarFrames.length;
         return next;
       });
     }, 500); // 500ms per frame for smooth animation
@@ -299,15 +222,14 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
         animationIntervalRef.current = null;
       }
     };
-  }, [isPlaying, framesReady, activeLayer, cloudFrames, radarFrames]);
+  }, [isPlaying, framesReady, radarFrames]);
 
   // Get current frame
   const currentFrame = useMemo(() => {
-    const currentFrames = activeLayer === 'cloud' ? cloudFrames : radarFrames;
-    if (currentFrames.length === 0) return null;
-    const frame = currentFrames[currentFrameIndex];
+    if (radarFrames.length === 0) return null;
+    const frame = radarFrames[currentFrameIndex];
     return frame && frame.loaded ? frame : null;
-  }, [activeLayer, cloudFrames, radarFrames, currentFrameIndex]);
+  }, [radarFrames, currentFrameIndex]);
 
   const handleZoomIn = () => {
     if (currentZoom < 12) {
@@ -333,13 +255,7 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
   const handleRefresh = () => {
     setCurrentFrameIndex(0);
     setFramesReady(false);
-    setCloudFrames([]);
     setRadarFrames([]);
-  };
-
-  const switchLayer = (layer: 'cloud' | 'radar') => {
-    setActiveLayer(layer);
-    setCurrentFrameIndex(0);
   };
 
   const adjustOpacity = (delta: number) => {
@@ -442,37 +358,6 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
       fontSize: 14,
       fontWeight: '600',
       fontFamily: 'Roboto_600SemiBold',
-    },
-    layerSelector: {
-      flexDirection: 'row',
-      gap: 8,
-      marginBottom: 12,
-    },
-    layerButton: {
-      flex: 1,
-      paddingVertical: 10,
-      paddingHorizontal: 16,
-      borderRadius: borderRadius.md,
-      backgroundColor: colors.backgroundAlt,
-      borderWidth: 1,
-      borderColor: colors.divider,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 6,
-    },
-    layerButtonActive: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
-    },
-    layerButtonText: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: colors.text,
-      fontFamily: 'Roboto_600SemiBold',
-    },
-    layerButtonTextActive: {
-      color: '#fff',
     },
     controls: {
       flexDirection: 'row',
@@ -628,7 +513,7 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
       height: '100%',
       zIndex: 2,
     },
-  }), [colors, shadows, compact, activeLayer]);
+  }), [colors, shadows, compact]);
 
   const imageContainerStyle = useMemo(() => ({
     ...styles.imageContainer,
@@ -647,8 +532,8 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Icon name="cloud" size={20} color={colors.primary} />
-          <Text style={styles.title}>Live Cloud & Radar</Text>
+          <Icon name="rainy" size={20} color={colors.primary} />
+          <Text style={styles.title}>Rainfall Radar</Text>
         </View>
         <TouchableOpacity 
           onPress={handleReset}
@@ -659,47 +544,14 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
       </View>
       
       <Text style={styles.subtitle}>
-        Real-time cloud imagery and rainfall radar for {circuitName}
+        Real-time rainfall radar with satellite imagery for {circuitName}
       </Text>
-
-      {/* Layer Selector */}
-      <View style={styles.layerSelector}>
-        <TouchableOpacity
-          style={[styles.layerButton, activeLayer === 'cloud' && styles.layerButtonActive]}
-          onPress={() => switchLayer('cloud')}
-          activeOpacity={0.7}
-        >
-          <Icon 
-            name="cloud" 
-            size={16} 
-            color={activeLayer === 'cloud' ? '#fff' : colors.text} 
-          />
-          <Text style={[styles.layerButtonText, activeLayer === 'cloud' && styles.layerButtonTextActive]}>
-            Cloud Cover
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.layerButton, activeLayer === 'radar' && styles.layerButtonActive]}
-          onPress={() => switchLayer('radar')}
-          activeOpacity={0.7}
-        >
-          <Icon 
-            name="rainy" 
-            size={16} 
-            color={activeLayer === 'radar' ? '#fff' : colors.text} 
-          />
-          <Text style={[styles.layerButtonText, activeLayer === 'radar' && styles.layerButtonTextActive]}>
-            Rainfall Radar
-          </Text>
-        </TouchableOpacity>
-      </View>
 
       <View style={imageContainerStyle}>
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Loading weather imagery...</Text>
+            <Text style={styles.loadingText}>Loading radar imagery...</Text>
           </View>
         ) : error ? (
           <View style={styles.errorContainer}>
@@ -728,7 +580,7 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
             {/* Weather overlay layer */}
             {currentFrame && (
               <Image
-                key={`${activeLayer}-${currentFrameIndex}`}
+                key={`radar-${currentFrameIndex}`}
                 source={{ uri: currentFrame.url }}
                 style={[styles.weatherLayer, { opacity }]}
                 contentFit="cover"
@@ -741,12 +593,12 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
             {/* Layer Badge */}
             <View style={styles.layerBadge}>
               <Icon 
-                name={activeLayer === 'cloud' ? 'cloud' : 'rainy'} 
+                name="rainy" 
                 size={14} 
                 color="#fff" 
               />
               <Text style={styles.layerBadgeText}>
-                {activeLayer === 'cloud' ? 'Cloud' : 'Radar'}
+                Radar
               </Text>
             </View>
             
@@ -791,7 +643,7 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
       </View>
 
       {/* Animation Controls */}
-      {framesReady && activeLayer === 'radar' && radarFrames.length > 1 && (
+      {framesReady && radarFrames.length > 1 && (
         <View style={styles.animationControls}>
           <TouchableOpacity
             style={[styles.controlButton, isPlaying && styles.controlButtonActive]}
@@ -848,7 +700,7 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
       )}
 
       <Text style={styles.infoText}>
-        Powered by RainViewer & OpenWeatherMap • Real-time radar and cloud data
+        Powered by RainViewer • Real-time radar with satellite imagery
       </Text>
     </View>
   );
