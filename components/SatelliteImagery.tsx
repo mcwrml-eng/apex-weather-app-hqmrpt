@@ -12,7 +12,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withRepeat,
   Easing,
   cancelAnimation,
   runOnJS,
@@ -60,11 +59,12 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
   const [isPlaying, setIsPlaying] = useState(true);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   const [framesReady, setFramesReady] = useState(false);
+  const [cloudError, setCloudError] = useState<string | null>(null);
   const animationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Animation values
   const animationProgress = useSharedValue(0);
-  const cloudOpacity = useSharedValue(0.75);
+  const cloudOpacity = useSharedValue(0.8);
 
   // Fetch weather data for cloud cover
   const { current, loading: weatherLoading } = useWeather(latitude, longitude, unit);
@@ -113,18 +113,40 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
     return new Promise((resolve) => {
       console.log('Preloading cloud frame:', url);
       
-      // Use Image.prefetch from expo-image for better preloading
-      Image.prefetch(url, {
-        cachePolicy: 'memory-disk',
-      })
-        .then(() => {
-          console.log('Successfully preloaded cloud frame:', url);
-          resolve(true);
+      // Create a test image to verify URL works
+      const testImage = new window.Image();
+      
+      testImage.onload = () => {
+        console.log('Successfully verified cloud frame URL:', url);
+        // Now prefetch with expo-image for caching
+        Image.prefetch(url, {
+          cachePolicy: 'memory-disk',
         })
-        .catch((error) => {
-          console.error('Failed to preload cloud frame:', url, error);
+          .then(() => {
+            console.log('Successfully cached cloud frame:', url);
+            resolve(true);
+          })
+          .catch((error) => {
+            console.error('Failed to cache cloud frame:', url, error);
+            // Still resolve true since the URL is valid
+            resolve(true);
+          });
+      };
+      
+      testImage.onerror = (error) => {
+        console.error('Failed to verify cloud frame URL:', url, error);
+        resolve(false);
+      };
+      
+      // Set a timeout for the test
+      setTimeout(() => {
+        if (!testImage.complete) {
+          console.warn('Cloud frame verification timeout:', url);
           resolve(false);
-        });
+        }
+      }, 5000);
+      
+      testImage.src = url;
     });
   }, []);
 
@@ -134,22 +156,31 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
     
     setCloudLoading(true);
     setFramesReady(false);
+    setCloudError(null);
     console.log('Fetching cloud cover frames from RainViewer API...');
+    console.log('Circuit location:', { latitude, longitude, zoom: currentZoom });
     
     try {
       // Fetch available timestamps from RainViewer
       const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+      
+      if (!response.ok) {
+        throw new Error(`RainViewer API returned ${response.status}`);
+      }
+      
       const data = await response.json();
       
       console.log('RainViewer API response received');
+      console.log('Available data types:', Object.keys(data));
       
       if (!data.satellite || !data.satellite.infrared) {
-        console.error('No satellite data available from RainViewer');
-        setCloudLoading(false);
-        return;
+        console.error('No satellite infrared data available from RainViewer');
+        throw new Error('No satellite data available');
       }
 
       const { x, y } = getTileCoordinates(latitude, longitude, currentZoom);
+      console.log('Tile coordinates for cloud overlay:', { x, y, zoom: currentZoom });
+      
       const frames: CloudFrame[] = [];
       
       // Get the last 10 frames for animation (about 30 minutes of data)
@@ -161,8 +192,11 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
         const timestamp = frame.time;
         const path = frame.path;
         
-        // RainViewer tile URL format
+        // RainViewer tile URL format: https://tilecache.rainviewer.com{path}/256/{z}/{x}/{y}/2/1_1.png
+        // The "2" is for infrared, "1_1" is for color scheme and smooth
         const cloudUrl = `https://tilecache.rainviewer.com${path}/256/${currentZoom}/${x}/${y}/2/1_1.png`;
+        
+        console.log('Generated cloud URL:', cloudUrl);
         
         frames.push({
           url: cloudUrl,
@@ -180,6 +214,9 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
         preloadImage(frame.url).then((success) => {
           if (success) {
             frames[index].loaded = true;
+            console.log(`Frame ${index + 1}/${frames.length} loaded successfully`);
+          } else {
+            console.error(`Frame ${index + 1}/${frames.length} failed to load`);
           }
           return success;
         })
@@ -198,12 +235,13 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
         console.log('Cloud frames ready for animation');
       } else {
         console.error('Failed to preload any cloud frames');
+        throw new Error('Failed to load cloud frames');
       }
       
       setCloudLoading(false);
     } catch (error) {
       console.error('Error fetching cloud frames from RainViewer:', error);
-      setCloudLoading(false);
+      setCloudError('RainViewer failed, trying OpenWeatherMap...');
       
       // Fallback to OpenWeatherMap if RainViewer fails
       try {
@@ -211,15 +249,18 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
         const { x, y } = getTileCoordinates(latitude, longitude, currentZoom);
         const frames: CloudFrame[] = [];
         
-        // Generate timestamps for the last 2 hours (8 frames, 15 min intervals)
+        // OpenWeatherMap clouds layer - using free tier
+        // Note: This shows current clouds, not animated historical data
         const now = Math.floor(Date.now() / 1000);
-        const frameCount = 8;
-        const intervalSeconds = 15 * 60;
         
-        for (let i = 0; i < frameCount; i++) {
-          const timestamp = now - ((frameCount - 1 - i) * intervalSeconds);
-          // Add timestamp as query param to force different URLs
-          const cloudUrl = `https://tile.openweathermap.org/map/clouds_new/${currentZoom}/${x}/${y}.png?appid=439d4b804bc8187953eb36d2a8c26a02&t=${timestamp}`;
+        // Create multiple frames with slight time offsets to simulate animation
+        // In reality, OpenWeatherMap free tier only provides current data
+        for (let i = 0; i < 8; i++) {
+          const timestamp = now - (i * 300); // 5 minute intervals
+          // OpenWeatherMap clouds layer URL format
+          const cloudUrl = `https://tile.openweathermap.org/map/clouds_new/${currentZoom}/${x}/${y}.png?appid=439d4b804bc8187953eb36d2a8c26a02`;
+          
+          console.log('Generated OpenWeatherMap cloud URL:', cloudUrl);
           
           frames.push({
             url: cloudUrl,
@@ -237,6 +278,7 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
           preloadImage(frame.url).then((success) => {
             if (success) {
               frames[index].loaded = true;
+              console.log(`Fallback frame ${index + 1}/${frames.length} loaded`);
             }
             return success;
           })
@@ -251,11 +293,16 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
           setCloudFrames(frames);
           setCurrentFrameIndex(0);
           setFramesReady(true);
+          setCloudError(null);
+          console.log('Fallback cloud frames ready');
+        } else {
+          throw new Error('Fallback also failed');
         }
         
         setCloudLoading(false);
       } catch (fallbackError) {
         console.error('Fallback cloud fetch also failed:', fallbackError);
+        setCloudError('Unable to load cloud data from any source');
         setCloudLoading(false);
       }
     }
@@ -264,9 +311,10 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
   // Fetch cloud frames when component mounts or location changes
   useEffect(() => {
     if (showCloudCover && !loading && !error) {
+      console.log('Triggering cloud frame fetch...');
       fetchCloudFrames();
     }
-  }, [showCloudCover, loading, error, fetchCloudFrames]);
+  }, [showCloudCover, loading, error, latitude, longitude, currentZoom]);
 
   // Animation loop for cloud frames
   useEffect(() => {
@@ -388,8 +436,14 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
   };
 
   const toggleCloudCover = () => {
-    setShowCloudCover(prev => !prev);
-    console.log('Cloud cover overlay toggled:', !showCloudCover);
+    const newState = !showCloudCover;
+    setShowCloudCover(newState);
+    console.log('Cloud cover overlay toggled:', newState);
+    
+    if (newState && cloudFrames.length === 0) {
+      // Fetch cloud frames if toggling on and no frames exist
+      fetchCloudFrames();
+    }
   };
 
   const togglePlayPause = () => {
@@ -404,6 +458,7 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
     console.log('Refreshing cloud data...');
     setCurrentFrameIndex(0);
     setFramesReady(false);
+    setCloudFrames([]);
     fetchCloudFrames();
   };
 
@@ -797,6 +852,26 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
       color: '#fff',
       fontFamily: 'Roboto_600SemiBold',
     },
+    cloudErrorIndicator: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      backgroundColor: colors.error,
+      borderRadius: borderRadius.sm,
+      padding: 6,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      zIndex: 6,
+      boxShadow: shadows.sm,
+      maxWidth: '80%',
+    },
+    cloudErrorText: {
+      fontSize: 10,
+      color: '#fff',
+      fontFamily: 'Roboto_500Medium',
+      flexShrink: 1,
+    },
   }), [colors, shadows, compact, isDark, showCloudCover]);
 
   const imageContainerStyle = useMemo(() => ({
@@ -858,16 +933,29 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
                   transition={200}
                   cachePolicy="memory-disk"
                   priority="normal"
+                  onError={(e) => {
+                    console.error('Cloud frame failed to render:', currentFrame.url, e);
+                  }}
                 />
               </Animated.View>
             )}
             
             {/* Frames ready indicator */}
-            {!loading && showCloudCover && framesReady && cloudFrames.length > 0 && (
+            {!loading && showCloudCover && framesReady && cloudFrames.length > 0 && !cloudError && (
               <View style={styles.framesReadyIndicator}>
                 <Icon name="checkmark-circle" size={14} color="#fff" />
                 <Text style={styles.framesReadyText}>
                   Live
+                </Text>
+              </View>
+            )}
+            
+            {/* Cloud error indicator */}
+            {!loading && showCloudCover && cloudError && (
+              <View style={styles.cloudErrorIndicator}>
+                <Icon name="alert-circle" size={14} color="#fff" />
+                <Text style={styles.cloudErrorText} numberOfLines={2}>
+                  {cloudError}
                 </Text>
               </View>
             )}
@@ -1026,6 +1114,12 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
           <Text style={styles.coordinatesLabel}>Longitude</Text>
           <Text style={styles.coordinatesValue}>{longitude.toFixed(6)}°</Text>
         </View>
+        <View style={styles.coordinatesRow}>
+          <Text style={styles.coordinatesLabel}>Tile Coordinates</Text>
+          <Text style={styles.coordinatesValue}>
+            {getTileCoordinates(latitude, longitude, currentZoom).x}, {getTileCoordinates(latitude, longitude, currentZoom).y}
+          </Text>
+        </View>
       </View>
 
       <Text style={styles.infoText}>
@@ -1034,6 +1128,11 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
       {showCloudCover && framesReady && cloudFrames.length > 0 && (
         <Text style={styles.infoText}>
           Showing live infrared satellite cloud movement (last {Math.floor(cloudFrames.length * 3)} minutes)
+        </Text>
+      )}
+      {showCloudCover && cloudError && (
+        <Text style={[styles.infoText, { color: colors.error }]}>
+          {cloudError}
         </Text>
       )}
       {retryCount > 0 && (
