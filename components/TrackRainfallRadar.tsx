@@ -193,6 +193,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       const data = await response.json();
       console.log('Detailed projected rain forecast data received');
       console.log('Current precipitation:', data.current.precipitation);
+      console.log('Timezone:', data.timezone);
       
       // Process minutely data
       const minutelyData: PrecipitationData[] = [];
@@ -373,16 +374,26 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     return 'rgba(244, 67, 54, 0.9)';
   };
 
-  // Format time in local timezone with hour and minute
+  // Format time in circuit's local timezone by parsing the ISO string directly
+  // The API returns timestamps in the circuit's local timezone when using timezone=auto
   const formatTime = (timeString: string): string => {
     try {
-      const date = new Date(timeString);
-      // Use toLocaleTimeString to display in user's local time
-      return date.toLocaleTimeString([], { 
-        hour: 'numeric', 
-        minute: '2-digit',
-        hour12: true 
-      });
+      // Parse ISO format: "2025-01-15T14:30" or "2025-01-15T14:30:00"
+      // Extract the time portion directly without timezone conversion
+      const timePart = timeString.split('T')[1];
+      if (!timePart) return timeString;
+      
+      // Extract hours and minutes
+      const [hoursStr, minutesStr] = timePart.split(':');
+      const hours = parseInt(hoursStr, 10);
+      const minutes = parseInt(minutesStr, 10);
+      
+      // Format as 12-hour time with AM/PM
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+      const displayMinutes = minutes.toString().padStart(2, '0');
+      
+      return `${displayHours}:${displayMinutes} ${period}`;
     } catch (err) {
       console.error('Error formatting time:', err);
       return timeString;
@@ -411,17 +422,28 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     }
   };
 
-  // Format time with full date and time in local timezone
+  // Format time with full date and time in circuit's local timezone
   const formatTimeWithDate = (timeString: string): string => {
     try {
-      const date = new Date(timeString);
-      return date.toLocaleString([], {
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      });
+      // Parse ISO format: "2025-01-15T14:30"
+      const [datePart, timePart] = timeString.split('T');
+      if (!datePart || !timePart) return timeString;
+      
+      const [year, month, day] = datePart.split('-');
+      const [hoursStr, minutesStr] = timePart.split(':');
+      const hours = parseInt(hoursStr, 10);
+      const minutes = parseInt(minutesStr, 10);
+      
+      // Format date
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthName = monthNames[parseInt(month, 10) - 1];
+      
+      // Format time as 12-hour
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+      const displayMinutes = minutes.toString().padStart(2, '0');
+      
+      return `${monthName} ${parseInt(day, 10)}, ${displayHours}:${displayMinutes} ${period}`;
     } catch (err) {
       console.error('Error formatting time with date:', err);
       return timeString;
@@ -1223,7 +1245,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       </View>
       
       <Text style={styles.subtitle}>
-        High-resolution precipitation forecast for {circuitName} (Local Time)
+        High-resolution precipitation forecast for {circuitName} (Circuit Local Time)
       </Text>
 
       {!radarData.hasRain && (
@@ -1245,7 +1267,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       {radarData.hasRain && showControls && (
         <View style={styles.timelineContainer}>
           <View style={styles.timelineHeader}>
-            <Text style={styles.timelineTitle}>Forecast Timeline (Local Time)</Text>
+            <Text style={styles.timelineTitle}>Forecast Timeline (Circuit Local Time)</Text>
             <Text style={styles.currentTimeDisplay}>
               {formatTime(currentFrameTime)}
             </Text>
@@ -1459,7 +1481,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
 
       <View style={styles.forecastContainer}>
         <Text style={styles.forecastTitle}>
-          {showMinutelyView && radarData.minutely.length > 0 ? 'Next 6 Hours (15-min intervals, Local Time)' : 'Next 24 Hours (Local Time)'}
+          {showMinutelyView && radarData.minutely.length > 0 ? 'Next 6 Hours (15-min intervals, Circuit Local Time)' : 'Next 24 Hours (Circuit Local Time)'}
         </Text>
         <ScrollView 
           horizontal 
@@ -1534,7 +1556,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       </View>
 
       <Text style={styles.infoText}>
-        High-resolution data from Open-Meteo • Animated precipitation zones • Rain direction based on wind patterns • All times shown in local timezone
+        High-resolution data from Open-Meteo • Animated precipitation zones • Rain direction based on wind patterns • All times shown in circuit&apos;s local timezone
       </Text>
     </View>
   );
