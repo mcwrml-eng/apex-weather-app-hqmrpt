@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import { useTheme } from '../state/ThemeContext';
 import { getColors, borderRadius, getShadows } from '../styles/commonStyles';
 import Icon from './Icon';
@@ -30,73 +31,111 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [imageError, setImageError] = useState(false);
   const [currentZoom, setCurrentZoom] = useState(zoom);
+  const [retryCount, setRetryCount] = useState(0);
+  const [useAlternative, setUseAlternative] = useState(false);
 
-  // Generate satellite imagery URL using Mapbox Static Images API
-  // You can also use other providers like Google Maps Static API, Bing Maps, etc.
-  const satelliteImageUrl = useMemo(() => {
-    // Using Mapbox satellite imagery
-    // Note: In production, you should use your own Mapbox token
-    // For now, using a public demo token (limited usage)
-    const mapboxToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
+  // Calculate tile coordinates from lat/lon for tile-based services
+  const getTileCoordinates = (lat: number, lon: number, zoom: number) => {
+    const scale = 1 << zoom;
+    const worldCoordX = ((lon + 180) / 360) * scale;
+    const worldCoordY = ((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2) * scale;
     
-    // Mapbox Static Images API format:
-    // https://api.mapbox.com/styles/v1/{username}/{style_id}/static/{lon},{lat},{zoom}/{width}x{height}@2x?access_token={token}
-    const mapboxUrl = `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${longitude},${latitude},${currentZoom}/${width}x${height}@2x?access_token=${mapboxToken}`;
-    
-    return mapboxUrl;
-  }, [latitude, longitude, currentZoom, width, height]);
+    return {
+      x: Math.floor(worldCoordX),
+      y: Math.floor(worldCoordY),
+    };
+  };
 
-  // Alternative: Using OpenStreetMap satellite tiles (Esri World Imagery)
-  const alternativeImageUrl = useMemo(() => {
-    // Calculate tile coordinates from lat/lon
-    const tileSize = 256;
-    const scale = 1 << currentZoom;
-    const worldCoordX = ((longitude + 180) / 360) * scale;
-    const worldCoordY = ((1 - Math.log(Math.tan(latitude * Math.PI / 180) + 1 / Math.cos(latitude * Math.PI / 180)) / Math.PI) / 2) * scale;
-    
-    const tileX = Math.floor(worldCoordX);
-    const tileY = Math.floor(worldCoordY);
-    
-    // Using Esri World Imagery (free, no API key required)
-    return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${currentZoom}/${tileY}/${tileX}`;
+  // Primary: Esri World Imagery (free, no API key required, reliable)
+  const primaryImageUrl = useMemo(() => {
+    const { x, y } = getTileCoordinates(latitude, longitude, currentZoom);
+    return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${currentZoom}/${y}/${x}`;
   }, [latitude, longitude, currentZoom]);
+
+  // Alternative: USGS Imagery (another free option)
+  const alternativeImageUrl = useMemo(() => {
+    const { x, y } = getTileCoordinates(latitude, longitude, currentZoom);
+    return `https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/${currentZoom}/${y}/${x}`;
+  }, [latitude, longitude, currentZoom]);
+
+  // Fallback: OpenStreetMap standard tiles (not satellite but always works)
+  const fallbackImageUrl = useMemo(() => {
+    const { x, y } = getTileCoordinates(latitude, longitude, currentZoom);
+    return `https://tile.openstreetmap.org/${currentZoom}/${x}/${y}.png`;
+  }, [latitude, longitude, currentZoom]);
+
+  const currentImageUrl = useMemo(() => {
+    if (useAlternative) {
+      return alternativeImageUrl;
+    }
+    return primaryImageUrl;
+  }, [useAlternative, primaryImageUrl, alternativeImageUrl]);
 
   useEffect(() => {
     setLoading(true);
     setError(false);
-    setImageError(false);
     console.log(`Loading satellite imagery for ${circuitName} at ${latitude}, ${longitude}, zoom ${currentZoom}`);
-  }, [latitude, longitude, currentZoom, circuitName]);
+    console.log(`Image URL: ${currentImageUrl}`);
+  }, [latitude, longitude, currentZoom, circuitName, currentImageUrl]);
 
   const handleImageLoad = () => {
     console.log('Satellite imagery loaded successfully');
     setLoading(false);
     setError(false);
+    setRetryCount(0);
   };
 
-  const handleImageError = () => {
-    console.error('Failed to load satellite imagery');
+  const handleImageError = (error: any) => {
+    console.error('Failed to load satellite imagery:', error);
     setLoading(false);
+    
+    // Try alternative source on first error
+    if (!useAlternative && retryCount === 0) {
+      console.log('Trying alternative imagery source...');
+      setUseAlternative(true);
+      setRetryCount(1);
+      setLoading(true);
+      return;
+    }
+    
     setError(true);
-    setImageError(true);
   };
 
   const handleZoomIn = () => {
     if (currentZoom < 18) {
       setCurrentZoom(prev => prev + 1);
+      setError(false);
+      setUseAlternative(false);
+      setRetryCount(0);
     }
   };
 
   const handleZoomOut = () => {
     if (currentZoom > 10) {
       setCurrentZoom(prev => prev - 1);
+      setError(false);
+      setUseAlternative(false);
+      setRetryCount(0);
     }
   };
 
   const handleReset = () => {
     setCurrentZoom(zoom);
+    setError(false);
+    setUseAlternative(false);
+    setRetryCount(0);
+    setLoading(true);
+  };
+
+  const handleRetry = () => {
+    console.log('Retrying satellite imagery load...');
+    setError(false);
+    setLoading(true);
+    setRetryCount(prev => prev + 1);
+    
+    // Toggle between sources on retry
+    setUseAlternative(prev => !prev);
   };
 
   const styles = useMemo(() => StyleSheet.create({
@@ -146,7 +185,6 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
     satelliteImage: {
       width: '100%',
       height: '100%',
-      resizeMode: 'cover',
     },
     loadingContainer: {
       position: 'absolute',
@@ -157,6 +195,7 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: colors.backgroundAlt,
+      zIndex: 10,
     },
     loadingText: {
       marginTop: 12,
@@ -169,6 +208,8 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
       alignItems: 'center',
       backgroundColor: colors.backgroundAlt,
       padding: 20,
+      width: '100%',
+      height: '100%',
     },
     errorText: {
       fontSize: 14,
@@ -176,9 +217,17 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
       fontFamily: 'Roboto_500Medium',
       textAlign: 'center',
       marginTop: 12,
+      marginBottom: 8,
+    },
+    errorSubtext: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      textAlign: 'center',
+      marginBottom: 16,
     },
     retryButton: {
-      marginTop: 16,
+      marginTop: 8,
       paddingVertical: 10,
       paddingHorizontal: 20,
       backgroundColor: colors.primary,
@@ -249,6 +298,7 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
       borderWidth: 3,
       borderColor: '#fff',
       boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.3)',
+      zIndex: 5,
     },
     locationMarkerPulse: {
       position: 'absolute',
@@ -261,6 +311,7 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
       borderRadius: 20,
       backgroundColor: colors.error,
       opacity: 0.3,
+      zIndex: 4,
     },
     coordinatesInfo: {
       backgroundColor: colors.backgroundAlt,
@@ -292,6 +343,13 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
       alignItems: 'center',
       gap: 12,
     },
+    sourceIndicator: {
+      fontSize: 10,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: 4,
+      textAlign: 'center',
+    },
   }), [colors, shadows, compact, isDark]);
 
   const imageContainerStyle = useMemo(() => ({
@@ -322,23 +380,36 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
       </Text>
 
       <View style={imageContainerStyle}>
-        {!imageError ? (
+        {!error ? (
           <>
             <Image
-              source={{ uri: satelliteImageUrl }}
+              source={{ uri: currentImageUrl }}
               style={styles.satelliteImage}
+              contentFit="cover"
+              transition={300}
               onLoad={handleImageLoad}
               onError={handleImageError}
+              cachePolicy="memory-disk"
+              priority="high"
             />
             
             {/* Location marker */}
-            <View style={styles.locationMarkerPulse} />
-            <View style={styles.locationMarker} />
+            {!loading && (
+              <>
+                <View style={styles.locationMarkerPulse} />
+                <View style={styles.locationMarker} />
+              </>
+            )}
             
             {loading && (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={colors.primary} />
                 <Text style={styles.loadingText}>Loading satellite imagery...</Text>
+                {retryCount > 0 && (
+                  <Text style={styles.sourceIndicator}>
+                    Trying alternative source...
+                  </Text>
+                )}
               </View>
             )}
           </>
@@ -346,12 +417,13 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
           <View style={styles.errorContainer}>
             <Icon name="image-outline" size={48} color={colors.error} />
             <Text style={styles.errorText}>Unable to load satellite imagery</Text>
+            <Text style={styles.errorSubtext}>
+              The imagery service may be temporarily unavailable.{'\n'}
+              Try adjusting the zoom level or retry.
+            </Text>
             <TouchableOpacity 
               style={styles.retryButton}
-              onPress={() => {
-                setImageError(false);
-                setLoading(true);
-              }}
+              onPress={handleRetry}
               activeOpacity={0.8}
             >
               <Icon name="refresh" size={16} color="#fff" />
@@ -397,8 +469,13 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
       </View>
 
       <Text style={styles.infoText}>
-        Satellite imagery from Mapbox • Zoom range: 10-18 • Circuit location marked with red pin
+        {useAlternative ? 'USGS Imagery' : 'Esri World Imagery'} • Zoom range: 10-18 • Circuit location marked with red pin
       </Text>
+      {retryCount > 0 && (
+        <Text style={styles.sourceIndicator}>
+          Using alternative imagery source (attempt {retryCount})
+        </Text>
+      )}
     </View>
   );
 };
