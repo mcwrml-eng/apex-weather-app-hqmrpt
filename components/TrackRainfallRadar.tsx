@@ -16,6 +16,7 @@ import Animated, {
   interpolate,
   cancelAnimation,
   runOnJS,
+  useAnimatedStyle,
 } from 'react-native-reanimated';
 
 interface TrackRainfallRadarProps {
@@ -55,6 +56,7 @@ interface RadarData {
   rainDirection: number;
   rainSpeed: number;
   hasRain: boolean;
+  frameTimes: string[];
 }
 
 interface PrecipitationZone {
@@ -64,10 +66,11 @@ interface PrecipitationZone {
   radius: number;
 }
 
-// Create animated Path component
+// Create animated components
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 const AnimatedPolygon = Animated.createAnimatedComponent(Polygon);
 const AnimatedLine = Animated.createAnimatedComponent(Line);
+const AnimatedView = Animated.createAnimatedComponent(View);
 
 const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   latitude,
@@ -76,7 +79,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   country,
   category,
   compact = false,
-  showControls = false,
+  showControls = true,
   autoStartAnimation = true,
 }) => {
   const { isDark } = useTheme();
@@ -95,6 +98,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   const animationProgress = useSharedValue(0);
   const radarSweepRotation = useSharedValue(0);
   const pulseAnimation = useSharedValue(1);
+  const timeSliderPosition = useSharedValue(0);
 
   // Distance scale in kilometers for each ring
   const distanceRings = [5, 10, 20, 30, 40, 50];
@@ -170,12 +174,13 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         hasRain
       });
       
-      // Generate multiple time frames for animation (8 frames)
-      const numFrames = 8;
+      // Generate multiple time frames for animation (12 frames for smoother animation)
+      const numFrames = 12;
       const gridDataFrames: PrecipitationZone[][] = [];
+      const frameTimes: string[] = [];
       
       for (let frame = 0; frame < numFrames; frame++) {
-        const timeOffset = frame * 15; // 15 minutes per frame
+        const timeOffset = frame * 10; // 10 minutes per frame
         const frameData = minutelyData.length > 0 
           ? minutelyData.slice(timeOffset, timeOffset + 24)
           : hourlyData.slice(Math.floor(timeOffset / 60), Math.floor(timeOffset / 60) + 6);
@@ -190,6 +195,9 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
               frame / numFrames
             )
           );
+          
+          // Store the time for this frame
+          frameTimes.push(frameData[0].time);
         }
       }
       
@@ -204,6 +212,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
             0
           )
         );
+        frameTimes.push(minutelyData.length > 0 ? minutelyData[0].time : hourlyData[0].time);
       }
       
       let summary = '';
@@ -249,6 +258,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         rainDirection: avgWindDirection,
         rainSpeed: avgWindSpeed,
         hasRain,
+        frameTimes,
       });
       
       setLoading(false);
@@ -366,6 +376,26 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     }
   };
 
+  const formatTimeDetailed = (timeString: string): string => {
+    try {
+      const date = new Date(timeString);
+      const now = new Date();
+      const diffMinutes = Math.floor((date.getTime() - now.getTime()) / 60000);
+      
+      if (diffMinutes < 0) {
+        return 'Now';
+      } else if (diffMinutes < 60) {
+        return `+${diffMinutes}min`;
+      } else {
+        const hours = Math.floor(diffMinutes / 60);
+        const mins = diffMinutes % 60;
+        return mins > 0 ? `+${hours}h ${mins}m` : `+${hours}h`;
+      }
+    } catch {
+      return timeString;
+    }
+  };
+
   const getWindDirectionLabel = (degrees: number): string => {
     const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
     const index = Math.round(degrees / 22.5) % 16;
@@ -380,9 +410,23 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     return 'Very Fast';
   };
 
-  const togglePlayPause = () => {
-    setIsPlaying(!isPlaying);
-  };
+  const togglePlayPause = useCallback(() => {
+    setIsPlaying(prev => !prev);
+  }, []);
+
+  const handleSliderChange = useCallback((position: number) => {
+    if (!radarData?.gridData) return;
+    
+    const numFrames = radarData.gridData.length;
+    const newFrame = Math.floor(position * (numFrames - 1));
+    setCurrentFrame(newFrame);
+    timeSliderPosition.value = position;
+    
+    // Pause animation when manually scrubbing
+    if (isPlaying) {
+      setIsPlaying(false);
+    }
+  }, [radarData?.gridData, isPlaying, timeSliderPosition]);
 
   // Fetch data on mount and when coordinates change
   useEffect(() => {
@@ -391,13 +435,15 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
 
   // Start/stop animations based on isPlaying state
   useEffect(() => {
-    if (isPlaying && radarData?.hasRain) {
+    if (!radarData?.hasRain) return;
+
+    if (isPlaying) {
       console.log('Starting rain forecast animation');
       
       // Main animation progress (cycles through time frames)
       animationProgress.value = withRepeat(
         withTiming(1, {
-          duration: 8000,
+          duration: 10000,
           easing: Easing.linear,
         }),
         -1,
@@ -428,9 +474,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       cancelAnimation(animationProgress);
       cancelAnimation(radarSweepRotation);
       cancelAnimation(pulseAnimation);
-      animationProgress.value = 0;
-      radarSweepRotation.value = 0;
-      pulseAnimation.value = 1;
     }
 
     return () => {
@@ -438,20 +481,22 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       cancelAnimation(radarSweepRotation);
       cancelAnimation(pulseAnimation);
     };
-  }, [isPlaying, radarData?.hasRain, animationProgress, radarSweepRotation, pulseAnimation]);
+  }, [isPlaying, radarData?.hasRain]);
 
   // Update current frame based on animation progress
   useEffect(() => {
-    if (!radarData?.gridData || radarData.gridData.length === 0) return;
+    if (!radarData?.gridData || radarData.gridData.length === 0 || !isPlaying) return;
     
     const interval = setInterval(() => {
-      if (isPlaying) {
-        setCurrentFrame(prev => (prev + 1) % radarData.gridData.length);
-      }
-    }, 1000); // Update frame every second
+      setCurrentFrame(prev => {
+        const next = (prev + 1) % radarData.gridData.length;
+        timeSliderPosition.value = next / (radarData.gridData.length - 1);
+        return next;
+      });
+    }, 833); // ~12 frames per 10 seconds
     
     return () => clearInterval(interval);
-  }, [isPlaying, radarData?.gridData]);
+  }, [isPlaying, radarData?.gridData, timeSliderPosition]);
 
   const styles = useMemo(() => StyleSheet.create({
     container: {
@@ -821,6 +866,91 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       alignItems: 'center',
       gap: 12,
     },
+    timelineContainer: {
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: borderRadius.md,
+      padding: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    timelineHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    timelineTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+      fontFamily: 'Roboto_600SemiBold',
+    },
+    currentTimeDisplay: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.primary,
+      fontFamily: 'Roboto_700Bold',
+    },
+    sliderContainer: {
+      height: 40,
+      justifyContent: 'center',
+      marginBottom: 8,
+    },
+    sliderTrack: {
+      height: 6,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+      borderRadius: 3,
+      overflow: 'hidden',
+    },
+    sliderProgress: {
+      height: '100%',
+      backgroundColor: colors.primary,
+      borderRadius: 3,
+    },
+    sliderThumb: {
+      position: 'absolute',
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: colors.primary,
+      borderWidth: 3,
+      borderColor: '#fff',
+      boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)',
+    },
+    timelineLabels: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    timelineLabel: {
+      fontSize: 10,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+    },
+    playbackControls: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 16,
+      marginTop: 12,
+    },
+    playButton: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
+    },
+    skipButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
   }), [colors, shadows, compact, isDark]);
 
   const radarSize = compact ? 280 : 340;
@@ -900,8 +1030,10 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
 
   // Animated rain direction arrow
   const AnimatedRainDirectionArrow = () => {
+    if (!radarData) return null;
+    
     const arrowLength = maxRadius * 0.6;
-    const direction = radarData?.rainDirection || 0;
+    const direction = radarData.rainDirection || 0;
     
     const angleRad = ((direction - 90) * Math.PI) / 180;
     const endX = centerX + arrowLength * Math.cos(angleRad);
@@ -975,6 +1107,20 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
 
   const currentGridData = getCurrentFrameData();
 
+  // Animated slider progress style
+  const sliderProgressStyle = useAnimatedStyle(() => {
+    return {
+      width: `${timeSliderPosition.value * 100}%`,
+    };
+  });
+
+  const sliderThumbStyle = useAnimatedStyle(() => {
+    return {
+      left: `${timeSliderPosition.value * 100}%`,
+      marginLeft: -10,
+    };
+  });
+
   if (loading) {
     return (
       <View style={styles.container}>
@@ -1024,6 +1170,8 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     return null;
   }
 
+  const currentFrameTime = radarData.frameTimes[currentFrame] || radarData.frameTimes[0];
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -1032,18 +1180,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
           <Text style={styles.title}>Projected Rain Forecast</Text>
         </View>
         <View style={styles.headerControls}>
-          {showControls && radarData.hasRain && (
-            <TouchableOpacity 
-              onPress={togglePlayPause}
-              activeOpacity={0.7}
-            >
-              <Icon 
-                name={isPlaying ? 'pause' : 'play'} 
-                size={20} 
-                color={colors.primary} 
-              />
-            </TouchableOpacity>
-          )}
           <TouchableOpacity 
             onPress={fetchRainfallData}
             activeOpacity={0.7}
@@ -1055,7 +1191,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       
       <Text style={styles.subtitle}>
         High-resolution precipitation forecast for {circuitName}
-        {radarData.hasRain && isPlaying && ' • Animating'}
       </Text>
 
       {!radarData.hasRain && (
@@ -1070,6 +1205,69 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
             <Text style={styles.noRainBannerText}>
               Clear conditions forecast for the next 24 hours
             </Text>
+          </View>
+        </View>
+      )}
+
+      {radarData.hasRain && showControls && (
+        <View style={styles.timelineContainer}>
+          <View style={styles.timelineHeader}>
+            <Text style={styles.timelineTitle}>Forecast Timeline</Text>
+            <Text style={styles.currentTimeDisplay}>
+              {formatTimeDetailed(currentFrameTime)}
+            </Text>
+          </View>
+          
+          <View style={styles.sliderContainer}>
+            <View style={styles.sliderTrack}>
+              <AnimatedView style={[styles.sliderProgress, sliderProgressStyle]} />
+            </View>
+            <AnimatedView style={[styles.sliderThumb, sliderThumbStyle]} />
+          </View>
+          
+          <View style={styles.timelineLabels}>
+            <Text style={styles.timelineLabel}>Now</Text>
+            <Text style={styles.timelineLabel}>
+              +{Math.floor((radarData.gridData.length - 1) * 10 / 60)}h
+            </Text>
+          </View>
+          
+          <View style={styles.playbackControls}>
+            <TouchableOpacity
+              style={styles.skipButton}
+              onPress={() => {
+                const newFrame = Math.max(0, currentFrame - 1);
+                setCurrentFrame(newFrame);
+                handleSliderChange(newFrame / (radarData.gridData.length - 1));
+              }}
+              activeOpacity={0.7}
+            >
+              <Icon name="play-skip-back" size={20} color={colors.text} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.playButton}
+              onPress={togglePlayPause}
+              activeOpacity={0.8}
+            >
+              <Icon 
+                name={isPlaying ? 'pause' : 'play'} 
+                size={24} 
+                color="#fff" 
+              />
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.skipButton}
+              onPress={() => {
+                const newFrame = Math.min(radarData.gridData.length - 1, currentFrame + 1);
+                setCurrentFrame(newFrame);
+                handleSliderChange(newFrame / (radarData.gridData.length - 1));
+              }}
+              activeOpacity={0.7}
+            >
+              <Icon name="play-skip-forward" size={20} color={colors.text} />
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -1190,7 +1388,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         
         <Text style={styles.infoText}>
           Circuit location • Distance rings: {distanceRings.join('km, ')}km
-          {radarData.hasRain && isPlaying && ` • Frame ${currentFrame + 1}/${radarData.gridData.length}`}
+          {radarData.hasRain && ` • Frame ${currentFrame + 1}/${radarData.gridData.length}`}
         </Text>
       </View>
 
