@@ -40,7 +40,7 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentZoom, setCurrentZoom] = useState(zoom);
-  const [activeLayer, setActiveLayer] = useState<'cloud' | 'radar'>('cloud');
+  const [activeLayer, setActiveLayer] = useState<'cloud' | 'radar'>('radar');
   const [cloudFrames, setCloudFrames] = useState<ImageryFrame[]>([]);
   const [radarFrames, setRadarFrames] = useState<ImageryFrame[]>([]);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -53,11 +53,13 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
   const getTileCoordinates = useCallback((lat: number, lon: number, zoom: number) => {
     const scale = 1 << zoom;
     const worldCoordX = ((lon + 180) / 360) * scale;
-    const worldCoordY = ((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2) * scale;
+    const latRad = lat * Math.PI / 180;
+    const worldCoordY = ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * scale;
     
     return {
       x: Math.floor(worldCoordX),
       y: Math.floor(worldCoordY),
+      zoom: zoom,
     };
   }, []);
 
@@ -77,45 +79,41 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
       });
       return true;
     } catch (error) {
-      console.error('Error preloading frame:', error);
+      console.error('Error preloading frame:', url, error);
       return false;
     }
   }, []);
 
-  // Fetch cloud imagery frames from Windy
+  // Fetch cloud imagery frames using OpenWeatherMap
   const fetchCloudFrames = useCallback(async () => {
     console.log('========================================');
-    console.log('FETCHING WINDY CLOUD IMAGERY');
+    console.log('FETCHING CLOUD IMAGERY');
     console.log('========================================');
     console.log('Location:', { latitude, longitude, zoom: currentZoom });
     
     try {
-      const { x, y } = getTileCoordinates(latitude, longitude, currentZoom);
-      console.log('Tile coordinates:', { x, y, zoom: currentZoom });
+      const { x, y, zoom: z } = getTileCoordinates(latitude, longitude, currentZoom);
+      console.log('Tile coordinates:', { x, y, zoom: z });
       
       const frames: ImageryFrame[] = [];
-      const now = Date.now();
       
-      // Windy provides satellite cloud imagery
-      // Generate frames for animation (simulating recent cloud movement)
-      for (let i = 0; i < 8; i++) {
-        const frameTime = now - (i * 10 * 60 * 1000); // 10-minute intervals
-        const timestamp = frameTime;
+      // OpenWeatherMap provides free cloud tiles
+      // Using clouds_new layer which shows cloud coverage
+      for (let i = 0; i < 1; i++) {
+        const cloudUrl = `https://tile.openweathermap.org/map/clouds_new/${z}/${x}/${y}.png?appid=439d4b804bc8187953eb36d2a8c26a02`;
         
-        // Windy satellite/cloud layer
-        // Note: Windy's tile service may require API key for production use
-        const cloudUrl = `https://tiles.windy.com/tiles/v9.0/satellite/${currentZoom}/${x}/${y}.jpg?t=${Math.floor(timestamp / 1000)}`;
+        console.log('Cloud tile URL:', cloudUrl);
         
         frames.push({
           url: cloudUrl,
-          timestamp: timestamp,
-          time: formatTime(timestamp),
+          timestamp: Date.now(),
+          time: formatTime(Date.now()),
           loaded: false,
           type: 'cloud',
         });
       }
       
-      console.log(`Generated ${frames.length} Windy cloud frame URLs`);
+      console.log(`Generated ${frames.length} cloud frame URLs`);
       
       // Preload frames
       const preloadResults = await Promise.allSettled(
@@ -124,6 +122,8 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
             if (success) {
               frames[index].loaded = true;
               console.log(`✓ Cloud frame ${index + 1}/${frames.length} loaded`);
+            } else {
+              console.log(`✗ Cloud frame ${index + 1}/${frames.length} failed`);
             }
             return success;
           })
@@ -138,9 +138,10 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
       
       if (successCount > 0) {
         setCloudFrames(frames);
-        console.log('✓ Windy cloud frames ready');
+        console.log('✓ Cloud frames ready');
       } else {
-        throw new Error('Failed to load cloud frames');
+        console.warn('No cloud frames loaded successfully');
+        setCloudFrames(frames); // Still set them to show the attempt
       }
     } catch (error) {
       console.error('Error fetching cloud frames:', error);
@@ -148,27 +149,45 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
     }
   }, [latitude, longitude, currentZoom, getTileCoordinates, formatTime, preloadImage]);
 
-  // Fetch radar imagery frames from Windy
+  // Fetch radar imagery frames from RainViewer
   const fetchRadarFrames = useCallback(async () => {
     console.log('========================================');
-    console.log('FETCHING WINDY RADAR IMAGERY');
+    console.log('FETCHING RADAR IMAGERY (RainViewer)');
     console.log('========================================');
     console.log('Location:', { latitude, longitude, zoom: currentZoom });
     
     try {
-      const { x, y } = getTileCoordinates(latitude, longitude, currentZoom);
-      console.log('Tile coordinates:', { x, y, zoom: currentZoom });
+      // First, fetch available radar timestamps from RainViewer API
+      const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+      
+      if (!response.ok) {
+        throw new Error(`RainViewer API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('RainViewer API response:', data);
+      
+      if (!data.radar || !data.radar.past || data.radar.past.length === 0) {
+        throw new Error('No radar data available from RainViewer');
+      }
+      
+      const { x, y, zoom: z } = getTileCoordinates(latitude, longitude, currentZoom);
+      console.log('Tile coordinates:', { x, y, zoom: z });
       
       const frames: ImageryFrame[] = [];
-      const now = Date.now();
       
-      // Windy provides rainfall radar imagery
-      for (let i = 0; i < 8; i++) {
-        const frameTime = now - (i * 10 * 60 * 1000); // 10-minute intervals
-        const timestamp = frameTime;
+      // Use the last 8 available radar frames
+      const radarTimestamps = data.radar.past.slice(-8);
+      console.log(`Using ${radarTimestamps.length} radar timestamps`);
+      
+      for (const radarData of radarTimestamps) {
+        const timestamp = radarData.time * 1000; // Convert to milliseconds
+        const path = radarData.path;
         
-        // Windy radar layer
-        const radarUrl = `https://tiles.windy.com/tiles/v9.0/radar/${currentZoom}/${x}/${y}.png?t=${Math.floor(timestamp / 1000)}`;
+        // RainViewer tile URL format
+        const radarUrl = `https://tilecache.rainviewer.com${path}/256/${z}/${x}/${y}/2/1_1.png`;
+        
+        console.log('Radar tile URL:', radarUrl);
         
         frames.push({
           url: radarUrl,
@@ -179,7 +198,7 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
         });
       }
       
-      console.log(`Generated ${frames.length} Windy radar frame URLs`);
+      console.log(`Generated ${frames.length} radar frame URLs`);
       
       // Preload frames
       const preloadResults = await Promise.allSettled(
@@ -188,6 +207,8 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
             if (success) {
               frames[index].loaded = true;
               console.log(`✓ Radar frame ${index + 1}/${frames.length} loaded`);
+            } else {
+              console.log(`✗ Radar frame ${index + 1}/${frames.length} failed`);
             }
             return success;
           })
@@ -202,7 +223,7 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
       
       if (successCount > 0) {
         setRadarFrames(frames);
-        console.log('✓ Windy radar frames ready');
+        console.log('✓ Radar frames ready');
       } else {
         throw new Error('Failed to load radar frames');
       }
@@ -222,7 +243,10 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
       try {
         // Fetch both cloud and radar frames
         await Promise.all([
-          fetchCloudFrames(),
+          fetchCloudFrames().catch(err => {
+            console.error('Cloud frames error:', err);
+            // Don't fail completely if cloud fails
+          }),
           fetchRadarFrames(),
         ]);
         
@@ -230,8 +254,8 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
         setCurrentFrameIndex(0);
         setLoading(false);
       } catch (err) {
-        console.error('Error loading Windy imagery:', err);
-        setError('Unable to load Windy imagery. Please try again.');
+        console.error('Error loading imagery:', err);
+        setError('Unable to load weather imagery. Please check your connection and try again.');
         setLoading(false);
       }
     };
@@ -267,7 +291,7 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
         const next = (prev + 1) % currentFrames.length;
         return next;
       });
-    }, 800);
+    }, 500); // 500ms per frame for smooth animation
 
     return () => {
       if (animationIntervalRef.current) {
@@ -584,6 +608,26 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
       boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.3)',
       zIndex: 5,
     },
+    baseMapLayer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      width: '100%',
+      height: '100%',
+      zIndex: 1,
+    },
+    weatherLayer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      width: '100%',
+      height: '100%',
+      zIndex: 2,
+    },
   }), [colors, shadows, compact, activeLayer]);
 
   const imageContainerStyle = useMemo(() => ({
@@ -591,6 +635,13 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
     width: compact ? 280 : width,
     height: compact ? 280 : height,
   }), [styles.imageContainer, compact, width, height]);
+
+  // Get base map tile URL
+  const getBaseMapUrl = useMemo(() => {
+    const { x, y, zoom: z } = getTileCoordinates(latitude, longitude, currentZoom);
+    // Using OpenStreetMap tiles as base layer
+    return `https://tile.openstreetmap.org/${z}/${x}/${y}.png`;
+  }, [latitude, longitude, currentZoom, getTileCoordinates]);
 
   return (
     <View style={styles.container}>
@@ -648,7 +699,7 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Loading Windy imagery...</Text>
+            <Text style={styles.loadingText}>Loading weather imagery...</Text>
           </View>
         ) : error ? (
           <View style={styles.errorContainer}>
@@ -663,17 +714,29 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
               <Text style={styles.retryButtonText}>Retry</Text>
             </TouchableOpacity>
           </View>
-        ) : framesReady && currentFrame ? (
+        ) : framesReady ? (
           <>
+            {/* Base map layer */}
             <Image
-              key={`${activeLayer}-${currentFrameIndex}`}
-              source={{ uri: currentFrame.url }}
-              style={[styles.imageryFrame, { opacity }]}
+              source={{ uri: getBaseMapUrl }}
+              style={styles.baseMapLayer}
               contentFit="cover"
-              transition={200}
               cachePolicy="memory-disk"
-              priority="normal"
+              priority="high"
             />
+            
+            {/* Weather overlay layer */}
+            {currentFrame && (
+              <Image
+                key={`${activeLayer}-${currentFrameIndex}`}
+                source={{ uri: currentFrame.url }}
+                style={[styles.weatherLayer, { opacity }]}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="memory-disk"
+                priority="normal"
+              />
+            )}
             
             {/* Layer Badge */}
             <View style={styles.layerBadge}>
@@ -688,11 +751,13 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
             </View>
             
             {/* Timestamp */}
-            <View style={styles.timeStamp}>
-              <Text style={styles.timeStampText}>
-                {currentFrame.time}
-              </Text>
-            </View>
+            {currentFrame && (
+              <View style={styles.timeStamp}>
+                <Text style={styles.timeStampText}>
+                  {currentFrame.time}
+                </Text>
+              </View>
+            )}
             
             {/* Location marker */}
             <View style={styles.locationMarker} />
@@ -726,7 +791,7 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
       </View>
 
       {/* Animation Controls */}
-      {framesReady && (
+      {framesReady && activeLayer === 'radar' && radarFrames.length > 1 && (
         <View style={styles.animationControls}>
           <TouchableOpacity
             style={[styles.controlButton, isPlaying && styles.controlButtonActive]}
@@ -744,7 +809,7 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
           </TouchableOpacity>
           
           <Text style={styles.frameIndicator}>
-            Frame {currentFrameIndex + 1} / {activeLayer === 'cloud' ? cloudFrames.length : radarFrames.length}
+            Frame {currentFrameIndex + 1} / {radarFrames.length}
           </Text>
           
           <TouchableOpacity
@@ -783,7 +848,7 @@ const WindyCloudRadar: React.FC<WindyCloudRadarProps> = ({
       )}
 
       <Text style={styles.infoText}>
-        Powered by Windy.com • Real-time satellite and radar data • Zoom: 4-12
+        Powered by RainViewer & OpenWeatherMap • Real-time radar and cloud data
       </Text>
     </View>
   );
