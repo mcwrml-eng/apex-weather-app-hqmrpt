@@ -108,46 +108,27 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
     return `${hours}:${minutes}`;
   };
 
-  // Preload a single image and return a promise
-  const preloadImage = useCallback((url: string): Promise<boolean> => {
-    return new Promise((resolve) => {
+  // Preload a single image using expo-image prefetch
+  const preloadImage = useCallback(async (url: string): Promise<boolean> => {
+    try {
       console.log('Preloading cloud frame:', url);
       
-      // Create a test image to verify URL works
-      const testImage = new window.Image();
+      // Use expo-image prefetch which works on all platforms
+      const result = await Image.prefetch(url, {
+        cachePolicy: 'memory-disk',
+      });
       
-      testImage.onload = () => {
-        console.log('Successfully verified cloud frame URL:', url);
-        // Now prefetch with expo-image for caching
-        Image.prefetch(url, {
-          cachePolicy: 'memory-disk',
-        })
-          .then(() => {
-            console.log('Successfully cached cloud frame:', url);
-            resolve(true);
-          })
-          .catch((error) => {
-            console.error('Failed to cache cloud frame:', url, error);
-            // Still resolve true since the URL is valid
-            resolve(true);
-          });
-      };
-      
-      testImage.onerror = (error) => {
-        console.error('Failed to verify cloud frame URL:', url, error);
-        resolve(false);
-      };
-      
-      // Set a timeout for the test
-      setTimeout(() => {
-        if (!testImage.complete) {
-          console.warn('Cloud frame verification timeout:', url);
-          resolve(false);
-        }
-      }, 5000);
-      
-      testImage.src = url;
-    });
+      if (result) {
+        console.log('Successfully preloaded cloud frame:', url);
+        return true;
+      } else {
+        console.warn('Failed to preload cloud frame (returned false):', url);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error preloading cloud frame:', url, error);
+      return false;
+    }
   }, []);
 
   // Fetch cloud cover frames from RainViewer API
@@ -314,7 +295,7 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
       console.log('Triggering cloud frame fetch...');
       fetchCloudFrames();
     }
-  }, [showCloudCover, loading, error, latitude, longitude, currentZoom]);
+  }, [showCloudCover, loading, error, latitude, longitude, currentZoom, fetchCloudFrames]);
 
   // Animation loop for cloud frames
   useEffect(() => {
