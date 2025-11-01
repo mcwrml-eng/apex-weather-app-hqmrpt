@@ -1,7 +1,7 @@
 
 {
   "app_title": "RaceWeather Pro",
-  "app_subtitle": "Prévisions météorologiques professionnelles pour les circuits de sport automobile du monde entier",
+  "app_subtitle": "Prévisions météorologiques professionnelles pour les circuits de sport automobile dans le monde entier",
   "enter_app": "Entrer dans l'App",
   "loading_weather": "Chargement des données météo...",
   "select_language": "Sélectionner la Langue",
@@ -18,6 +18,7 @@
   
   "calendar": "Calendrier",
   "disclaimer": "Avertissement",
+  "legal_info": "Légal et Infos",
   
   "temperature": "Température",
   "wind_speed": "Vitesse du Vent",
@@ -26,6 +27,8 @@
   "pressure": "Pression",
   "visibility": "Visibilité",
   "uv_index": "Indice UV",
+  "dew_point": "Point de Rosée",
+  "cloud_cover": "Couverture Nuageuse",
   
   "hourly_forecast": "Prévisions Horaires",
   "daily_forecast": "Prévisions Quotidiennes",
@@ -41,5 +44,61 @@
   "imperial": "Impérial",
   
   "light_mode": "Mode Clair",
-  "dark_mode": "Mode Sombre"
+  "dark_mode": "Mode Sombre",
+  
+  "search_circuits": "Rechercher des circuits ou des pays...",
+  "all_circuits": "Tous les Circuits",
+  "circuits": "Circuits",
+  "races": "Courses",
+  "teams": "Équipes",
+  "no_circuits_found": "Aucun circuit trouvé correspondant à",
+  "loading": "Chargement...",
+  
+  "championship_calendar": "Calendrier du Championnat 2026",
+  "race_calendar": "Calendrier des Courses",
+  "championship_schedule": "Calendrier du Championnat 2026",
+  "all": "Tous",
+  "total_races": "Courses Totales",
+  "months": "Mois",
+  "categories": "Catégories",
+  "round": "Manche",
+  
+  "terms_privacy": "Conditions, Confidentialité et Support",
+  "privacy_data": "Confidentialité et Données",
+  "privacy_description": "Votre vie privée est importante pour nous. Cette application collecte un minimum de données pour fournir des prévisions météorologiques pour les circuits de sport automobile.",
+  "privacy_point_1": "Les données de localisation sont utilisées uniquement pour les services météorologiques",
+  "privacy_point_2": "Aucune information personnelle n'est stockée ou partagée",
+  "privacy_point_3": "Toutes les données sont traitées en toute sécurité",
+  "privacy_point_4": "Vous pouvez désactiver les services de localisation à tout moment",
+  
+  "terms_of_use": "Conditions d'Utilisation",
+  "terms_description": "En utilisant cette application, vous acceptez les termes et conditions suivants:",
+  "terms_point_1": "Les données météorologiques sont fournies à titre informatif uniquement",
+  "terms_point_2": "Les prévisions peuvent ne pas être précises à 100%",
+  "terms_point_3": "Utilisez des services météorologiques professionnels pour les décisions critiques",
+  "terms_point_4": "Les informations sur les circuits sont sujettes à modification",
+  
+  "disclaimer_title": "Avertissement",
+  "disclaimer_description": "Cette application de prévisions météorologiques est conçue pour les passionnés de sport automobile et fournit des informations météorologiques pour les circuits de course.",
+  "disclaimer_point_1": "Les données météorologiques proviennent de services météorologiques fiables",
+  "disclaimer_point_2": "Les prévisions sont des estimations et peuvent varier par rapport aux conditions réelles",
+  "disclaimer_point_3": "Consultez toujours les services météorologiques officiels des courses pour les décisions de compétition",
+  "disclaimer_point_4": "L'application n'est pas affiliée aux organisations F1, MotoGP ou IndyCar",
+  
+  "weather_data_sources": "Sources de Données Météorologiques",
+  "weather_sources_description": "Nos prévisions météorologiques sont alimentées par plusieurs sources fiables:",
+  "weather_source_1": "API Open-Meteo pour les données météorologiques mondiales",
+  "weather_source_2": "Mises à jour en temps réel toutes les 15 minutes",
+  "weather_source_3": "Prévisions détaillées sur 7 jours",
+  "weather_source_4": "Paramètres météorologiques spécialisés pour le sport automobile",
+  
+  "support_contact": "Support et Contact",
+  "support_description": "Besoin d'aide ou avez-vous des questions? Nous sommes là pour vous aider avec tout problème ou commentaire.",
+  "contact_support": "Contacter le Support",
+  
+  "version_info": "Application Météo Sport Automobile v1.0.0\nFait avec ❤️ pour les fans de course du monde entier",
+  
+  "this_week": "Cette Semaine",
+  "wind": "Vent",
+  "featured": "En Vedette"
 }

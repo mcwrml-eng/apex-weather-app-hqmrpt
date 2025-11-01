@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout } from '../../styles/commonStyles';
 import { useTheme } from '../../state/ThemeContext';
+import { useLanguage } from '../../state/LanguageContext';
 import AppHeader from '../../components/AppHeader';
 import { f1Circuits, motogpCircuits, indycarCircuits } from '../../data/circuits';
 import { router } from 'expo-router';
@@ -18,6 +19,7 @@ interface RaceEvent {
 export default function CalendarScreen() {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'f1' | 'motogp' | 'indycar'>('all');
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   
   const colors = getColors(isDark);
   const commonStyles = getCommonStyles(isDark);
@@ -247,14 +249,14 @@ export default function CalendarScreen() {
   return (
     <View style={styles.container}>
       <AppHeader
-        title="Race Calendar"
-        subtitle="2026 Championship Schedule"
+        title={t('race_calendar')}
+        subtitle={t('championship_schedule')}
         icon={<Ionicons name="calendar" size={32} color={colors.primary} />}
       />
 
       <View style={styles.filterContainer}>
         {[
-          { key: 'all', label: 'All' },
+          { key: 'all', label: t('all') },
           { key: 'f1', label: 'F1' },
           { key: 'motogp', label: 'MotoGP' },
           { key: 'indycar', label: 'IndyCar' },
@@ -282,15 +284,15 @@ export default function CalendarScreen() {
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{filteredEvents.length}</Text>
-              <Text style={styles.statLabel}>Total Races</Text>
+              <Text style={styles.statLabel}>{t('total_races')}</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{Object.keys(groupedEvents).length}</Text>
-              <Text style={styles.statLabel}>Months</Text>
+              <Text style={styles.statLabel}>{t('months')}</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>3</Text>
-              <Text style={styles.statLabel}>Categories</Text>
+              <Text style={styles.statLabel}>{t('categories')}</Text>
             </View>
           </View>
 
@@ -306,7 +308,7 @@ export default function CalendarScreen() {
                 >
                   <View style={styles.eventHeader}>
                     <Text style={styles.eventDate}>
-                      {formatDate(event.date)} • Round {event.round}
+                      {formatDate(event.date)} • {t('round')} {event.round}
                     </Text>
                     <View style={[
                       styles.categoryBadge,

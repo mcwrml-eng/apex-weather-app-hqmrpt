@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout } from '../../styles/commonStyles';
 import { useTheme } from '../../state/ThemeContext';
+import { useLanguage } from '../../state/LanguageContext';
 import CircuitCard from '../../components/CircuitCard';
 import FeaturedTrackCard from '../../components/FeaturedTrackCard';
 import ChequeredFlag from '../../components/ChequeredFlag';
@@ -14,6 +15,7 @@ import { f1Circuits } from '../../data/circuits';
 export default function F1Screen() {
   const [searchQuery, setSearchQuery] = useState('');
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   
   const colors = getColors(isDark);
   const commonStyles = getCommonStyles(isDark);
@@ -128,8 +130,8 @@ export default function F1Screen() {
     <ErrorBoundary>
       <View style={styles.container}>
         <AppHeader
-          title="Formula 1"
-          subtitle={`2026 Championship Calendar • ${f1Circuits.length} Circuits`}
+          title={t('formula_one')}
+          subtitle={`${t('championship_calendar')} • ${f1Circuits.length} ${t('circuits')}`}
           icon={<ChequeredFlag size={32} />}
         />
 
@@ -142,7 +144,7 @@ export default function F1Screen() {
           />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search circuits or countries..."
+            placeholder={t('search_circuits')}
             placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -166,20 +168,20 @@ export default function F1Screen() {
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
                 <Text style={styles.statNumber}>{f1Circuits.length}</Text>
-                <Text style={styles.statLabel}>Circuits</Text>
+                <Text style={styles.statLabel}>{t('circuits')}</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statNumber}>24</Text>
-                <Text style={styles.statLabel}>Races</Text>
+                <Text style={styles.statLabel}>{t('races')}</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statNumber}>11</Text>
-                <Text style={styles.statLabel}>Teams</Text>
+                <Text style={styles.statLabel}>{t('teams')}</Text>
               </View>
             </View>
 
             <Text style={styles.sectionTitle}>
-              All Circuits ({filteredCircuits.length})
+              {t('all_circuits')} ({filteredCircuits.length})
             </Text>
 
             {filteredCircuits.length > 0 ? (
@@ -201,7 +203,7 @@ export default function F1Screen() {
                   color={colors.textMuted} 
                 />
                 <Text style={styles.emptyText}>
-                  No circuits found matching &quot;{searchQuery}&quot;
+                  {t('no_circuits_found')} &quot;{searchQuery}&quot;
                 </Text>
               </View>
             )}

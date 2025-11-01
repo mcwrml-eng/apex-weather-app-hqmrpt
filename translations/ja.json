@@ -18,14 +18,17 @@
   
   "calendar": "カレンダー",
   "disclaimer": "免責事項",
+  "legal_info": "法的情報",
   
   "temperature": "気温",
   "wind_speed": "風速",
   "humidity": "湿度",
   "precipitation": "降水量",
   "pressure": "気圧",
-  "visibility": "視界",
+  "visibility": "視程",
   "uv_index": "UV指数",
+  "dew_point": "露点",
+  "cloud_cover": "雲量",
   
   "hourly_forecast": "時間別予報",
   "daily_forecast": "日別予報",
@@ -41,5 +44,61 @@
   "imperial": "ヤード・ポンド法",
   
   "light_mode": "ライトモード",
-  "dark_mode": "ダークモード"
+  "dark_mode": "ダークモード",
+  
+  "search_circuits": "サーキットまたは国を検索...",
+  "all_circuits": "すべてのサーキット",
+  "circuits": "サーキット",
+  "races": "レース",
+  "teams": "チーム",
+  "no_circuits_found": "一致するサーキットが見つかりません",
+  "loading": "読み込み中...",
+  
+  "championship_calendar": "2026年チャンピオンシップカレンダー",
+  "race_calendar": "レースカレンダー",
+  "championship_schedule": "2026年チャンピオンシップスケジュール",
+  "all": "すべて",
+  "total_races": "総レース数",
+  "months": "月",
+  "categories": "カテゴリー",
+  "round": "ラウンド",
+  
+  "terms_privacy": "利用規約、プライバシー、サポート",
+  "privacy_data": "プライバシーとデータ",
+  "privacy_description": "お客様のプライバシーは私たちにとって重要です。このアプリは、モータースポーツサーキットの天気予報を提供するために最小限のデータを収集します。",
+  "privacy_point_1": "位置情報データは天気サービスのみに使用されます",
+  "privacy_point_2": "個人情報は保存または共有されません",
+  "privacy_point_3": "すべてのデータは安全に処理されます",
+  "privacy_point_4": "位置情報サービスはいつでも無効にできます",
+  
+  "terms_of_use": "利用規約",
+  "terms_description": "このアプリを使用することにより、以下の利用規約に同意したものとみなされます：",
+  "terms_point_1": "天気データは情報提供のみを目的として提供されます",
+  "terms_point_2": "予報は100%正確ではない場合があります",
+  "terms_point_3": "重要な決定にはプロの天気サービスを使用してください",
+  "terms_point_4": "サーキット情報は変更される場合があります",
+  
+  "disclaimer_title": "免責事項",
+  "disclaimer_description": "この天気予報アプリは、モータースポーツ愛好家向けに設計されており、レースサーキットの天気情報を提供します。",
+  "disclaimer_point_1": "天気データは信頼できる気象サービスから提供されています",
+  "disclaimer_point_2": "予報は推定値であり、実際の状況とは異なる場合があります",
+  "disclaimer_point_3": "競技の決定には常に公式のレース天気サービスを参照してください",
+  "disclaimer_point_4": "このアプリはF1、MotoGP、またはIndyCar組織とは提携していません",
+  
+  "weather_data_sources": "天気データソース",
+  "weather_sources_description": "当社の天気予報は、複数の信頼できるソースによって提供されています：",
+  "weather_source_1": "グローバル天気データのためのOpen-Meteo API",
+  "weather_source_2": "15分ごとのリアルタイム更新",
+  "weather_source_3": "7日間の詳細予報",
+  "weather_source_4": "モータースポーツ専用の天気パラメータ",
+  
+  "support_contact": "サポートとお問い合わせ",
+  "support_description": "ヘルプが必要ですか、または質問がありますか？問題やフィードバックについてお手伝いします。",
+  "contact_support": "サポートに連絡",
+  
+  "version_info": "モータースポーツ天気アプリ v1.0.0\n世界中のレースファンのために❤️を込めて作成",
+  
+  "this_week": "今週",
+  "wind": "風",
+  "featured": "注目"
 }

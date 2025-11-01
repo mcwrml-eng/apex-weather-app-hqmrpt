@@ -8,6 +8,7 @@ import WeatherSymbol from './WeatherSymbol';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useUnit } from '../state/UnitContext';
 import { useTheme } from '../state/ThemeContext';
+import { useLanguage } from '../state/LanguageContext';
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { getCircuitBySlug } from '../data/circuits';
@@ -20,6 +21,7 @@ export default function FeaturedTrackCard({ category }: Props) {
   // Call all hooks at the top level unconditionally
   const { unit } = useUnit();
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   const scaleAnim = useMemo(() => new Animated.Value(1), []);
   
   const colors = getColors(isDark);
@@ -177,13 +179,13 @@ export default function FeaturedTrackCard({ category }: Props) {
   const getCategoryTitle = () => {
     switch (category) {
       case 'f1':
-        return 'Formula 1';
+        return t('formula_one');
       case 'motogp':
-        return 'MotoGP';
+        return t('motogp');
       case 'indycar':
-        return 'IndyCar';
+        return t('indycar');
       default:
-        return 'Featured';
+        return t('featured');
     }
   };
 
@@ -232,7 +234,7 @@ export default function FeaturedTrackCard({ category }: Props) {
         >
           <View style={styles.badge}>
             <Text style={styles.badgeText}>
-              {getCategoryTitle()} • This Week
+              {getCategoryTitle()} • {t('this_week')}
             </Text>
           </View>
 
@@ -253,7 +255,7 @@ export default function FeaturedTrackCard({ category }: Props) {
               {loading ? (
                 <View style={styles.loadingContainer}>
                   <WeatherSymbol weatherCode={1} size={48} />
-                  <Text style={styles.loadingText}>Loading...</Text>
+                  <Text style={styles.loadingText}>{t('loading')}</Text>
                 </View>
               ) : current ? (
                 <>
@@ -276,25 +278,25 @@ export default function FeaturedTrackCard({ category }: Props) {
           {current && !loading && (
             <View style={styles.weatherInfo}>
               <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Wind Speed</Text>
+                <Text style={styles.infoLabel}>{t('wind_speed')}</Text>
                 <Text style={styles.infoValue}>
                   {Math.round(current.wind_speed)} {unit === 'metric' ? 'km/h' : 'mph'}
                 </Text>
               </View>
               <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Humidity</Text>
+                <Text style={styles.infoLabel}>{t('humidity')}</Text>
                 <Text style={styles.infoValue}>
                   {Math.round(current.humidity)}%
                 </Text>
               </View>
               <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Pressure</Text>
+                <Text style={styles.infoLabel}>{t('pressure')}</Text>
                 <Text style={styles.infoValue}>
                   {Math.round(current.pressure)} hPa
                 </Text>
               </View>
               <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>UV Index</Text>
+                <Text style={styles.infoLabel}>{t('uv_index')}</Text>
                 <Text style={styles.infoValue}>
                   {Math.round(current.uv_index)}
                 </Text>

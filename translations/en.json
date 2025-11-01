@@ -18,6 +18,7 @@
   
   "calendar": "Calendar",
   "disclaimer": "Disclaimer",
+  "legal_info": "Legal & Info",
   
   "temperature": "Temperature",
   "wind_speed": "Wind Speed",
@@ -26,6 +27,8 @@
   "pressure": "Pressure",
   "visibility": "Visibility",
   "uv_index": "UV Index",
+  "dew_point": "Dew Point",
+  "cloud_cover": "Cloud Cover",
   
   "hourly_forecast": "Hourly Forecast",
   "daily_forecast": "Daily Forecast",
@@ -41,5 +44,61 @@
   "imperial": "Imperial",
   
   "light_mode": "Light Mode",
-  "dark_mode": "Dark Mode"
+  "dark_mode": "Dark Mode",
+  
+  "search_circuits": "Search circuits or countries...",
+  "all_circuits": "All Circuits",
+  "circuits": "Circuits",
+  "races": "Races",
+  "teams": "Teams",
+  "no_circuits_found": "No circuits found matching",
+  "loading": "Loading...",
+  
+  "championship_calendar": "2026 Championship Calendar",
+  "race_calendar": "Race Calendar",
+  "championship_schedule": "2026 Championship Schedule",
+  "all": "All",
+  "total_races": "Total Races",
+  "months": "Months",
+  "categories": "Categories",
+  "round": "Round",
+  
+  "terms_privacy": "Terms, Privacy & Support",
+  "privacy_data": "Privacy & Data",
+  "privacy_description": "Your privacy is important to us. This app collects minimal data to provide weather forecasts for motorsport circuits.",
+  "privacy_point_1": "Location data is used only for weather services",
+  "privacy_point_2": "No personal information is stored or shared",
+  "privacy_point_3": "All data is processed securely",
+  "privacy_point_4": "You can disable location services anytime",
+  
+  "terms_of_use": "Terms of Use",
+  "terms_description": "By using this app, you agree to the following terms and conditions:",
+  "terms_point_1": "Weather data is provided for informational purposes only",
+  "terms_point_2": "Forecasts may not be 100% accurate",
+  "terms_point_3": "Use professional weather services for critical decisions",
+  "terms_point_4": "Circuit information is subject to change",
+  
+  "disclaimer_title": "Disclaimer",
+  "disclaimer_description": "This weather forecasting app is designed for motorsport enthusiasts and provides weather information for racing circuits.",
+  "disclaimer_point_1": "Weather data is sourced from reliable meteorological services",
+  "disclaimer_point_2": "Forecasts are estimates and may vary from actual conditions",
+  "disclaimer_point_3": "Always consult official race weather services for competition decisions",
+  "disclaimer_point_4": "The app is not affiliated with F1, MotoGP, or IndyCar organizations",
+  
+  "weather_data_sources": "Weather Data Sources",
+  "weather_sources_description": "Our weather forecasts are powered by multiple reliable sources:",
+  "weather_source_1": "Open-Meteo API for global weather data",
+  "weather_source_2": "Real-time updates every 15 minutes",
+  "weather_source_3": "7-day detailed forecasts",
+  "weather_source_4": "Specialized motorsport weather parameters",
+  
+  "support_contact": "Support & Contact",
+  "support_description": "Need help or have questions? We're here to assist you with any issues or feedback.",
+  "contact_support": "Contact Support",
+  
+  "version_info": "Motorsport Weather App v1.0.0\nBuilt with ❤️ for racing fans worldwide",
+  
+  "this_week": "This Week",
+  "wind": "Wind",
+  "featured": "Featured"
 }

@@ -18,14 +18,17 @@
   
   "calendar": "日历",
   "disclaimer": "免责声明",
+  "legal_info": "法律与信息",
   
   "temperature": "温度",
   "wind_speed": "风速",
   "humidity": "湿度",
-  "precipitation": "降水",
+  "precipitation": "降水量",
   "pressure": "气压",
   "visibility": "能见度",
   "uv_index": "紫外线指数",
+  "dew_point": "露点",
+  "cloud_cover": "云量",
   
   "hourly_forecast": "每小时预报",
   "daily_forecast": "每日预报",
@@ -41,5 +44,61 @@
   "imperial": "英制",
   
   "light_mode": "浅色模式",
-  "dark_mode": "深色模式"
+  "dark_mode": "深色模式",
+  
+  "search_circuits": "搜索赛道或国家...",
+  "all_circuits": "所有赛道",
+  "circuits": "赛道",
+  "races": "比赛",
+  "teams": "车队",
+  "no_circuits_found": "未找到匹配的赛道",
+  "loading": "加载中...",
+  
+  "championship_calendar": "2026年锦标赛日历",
+  "race_calendar": "比赛日历",
+  "championship_schedule": "2026年锦标赛赛程",
+  "all": "全部",
+  "total_races": "总比赛数",
+  "months": "月份",
+  "categories": "类别",
+  "round": "回合",
+  
+  "terms_privacy": "条款、隐私与支持",
+  "privacy_data": "隐私与数据",
+  "privacy_description": "您的隐私对我们很重要。此应用收集最少的数据以提供赛车赛道的天气预报。",
+  "privacy_point_1": "位置数据仅用于天气服务",
+  "privacy_point_2": "不存储或共享个人信息",
+  "privacy_point_3": "所有数据均安全处理",
+  "privacy_point_4": "您可以随时禁用位置服务",
+  
+  "terms_of_use": "使用条款",
+  "terms_description": "使用此应用即表示您同意以下条款和条件：",
+  "terms_point_1": "天气数据仅供参考",
+  "terms_point_2": "预报可能不是100%准确",
+  "terms_point_3": "对于关键决策，请使用专业天气服务",
+  "terms_point_4": "赛道信息可能会发生变化",
+  
+  "disclaimer_title": "免责声明",
+  "disclaimer_description": "此天气预报应用专为赛车运动爱好者设计，提供赛车赛道的天气信息。",
+  "disclaimer_point_1": "天气数据来自可靠的气象服务",
+  "disclaimer_point_2": "预报是估计值，可能与实际情况有所不同",
+  "disclaimer_point_3": "对于比赛决策，请始终咨询官方赛事天气服务",
+  "disclaimer_point_4": "该应用与F1、MotoGP或IndyCar组织无关",
+  
+  "weather_data_sources": "天气数据来源",
+  "weather_sources_description": "我们的天气预报由多个可靠来源提供支持：",
+  "weather_source_1": "Open-Meteo API提供全球天气数据",
+  "weather_source_2": "每15分钟实时更新",
+  "weather_source_3": "7天详细预报",
+  "weather_source_4": "专业赛车运动天气参数",
+  
+  "support_contact": "支持与联系",
+  "support_description": "需要帮助或有疑问？我们随时为您提供任何问题或反馈的帮助。",
+  "contact_support": "联系支持",
+  
+  "version_info": "赛车运动天气应用 v1.0.0\n为全球赛车迷用❤️打造",
+  
+  "this_week": "本周",
+  "wind": "风",
+  "featured": "精选"
 }

@@ -18,6 +18,7 @@
   
   "calendar": "Calendario",
   "disclaimer": "Aviso Legal",
+  "legal_info": "Legal e Información",
   
   "temperature": "Temperatura",
   "wind_speed": "Velocidad del Viento",
@@ -26,6 +27,8 @@
   "pressure": "Presión",
   "visibility": "Visibilidad",
   "uv_index": "Índice UV",
+  "dew_point": "Punto de Rocío",
+  "cloud_cover": "Cobertura de Nubes",
   
   "hourly_forecast": "Pronóstico por Hora",
   "daily_forecast": "Pronóstico Diario",
@@ -41,5 +44,61 @@
   "imperial": "Imperial",
   
   "light_mode": "Modo Claro",
-  "dark_mode": "Modo Oscuro"
+  "dark_mode": "Modo Oscuro",
+  
+  "search_circuits": "Buscar circuitos o países...",
+  "all_circuits": "Todos los Circuitos",
+  "circuits": "Circuitos",
+  "races": "Carreras",
+  "teams": "Equipos",
+  "no_circuits_found": "No se encontraron circuitos que coincidan con",
+  "loading": "Cargando...",
+  
+  "championship_calendar": "Calendario del Campeonato 2026",
+  "race_calendar": "Calendario de Carreras",
+  "championship_schedule": "Calendario del Campeonato 2026",
+  "all": "Todos",
+  "total_races": "Carreras Totales",
+  "months": "Meses",
+  "categories": "Categorías",
+  "round": "Ronda",
+  
+  "terms_privacy": "Términos, Privacidad y Soporte",
+  "privacy_data": "Privacidad y Datos",
+  "privacy_description": "Tu privacidad es importante para nosotros. Esta aplicación recopila datos mínimos para proporcionar pronósticos meteorológicos para circuitos de automovilismo.",
+  "privacy_point_1": "Los datos de ubicación se utilizan solo para servicios meteorológicos",
+  "privacy_point_2": "No se almacena ni comparte información personal",
+  "privacy_point_3": "Todos los datos se procesan de forma segura",
+  "privacy_point_4": "Puedes desactivar los servicios de ubicación en cualquier momento",
+  
+  "terms_of_use": "Términos de Uso",
+  "terms_description": "Al usar esta aplicación, aceptas los siguientes términos y condiciones:",
+  "terms_point_1": "Los datos meteorológicos se proporcionan solo con fines informativos",
+  "terms_point_2": "Los pronósticos pueden no ser 100% precisos",
+  "terms_point_3": "Utiliza servicios meteorológicos profesionales para decisiones críticas",
+  "terms_point_4": "La información del circuito está sujeta a cambios",
+  
+  "disclaimer_title": "Aviso Legal",
+  "disclaimer_description": "Esta aplicación de pronóstico meteorológico está diseñada para entusiastas del automovilismo y proporciona información meteorológica para circuitos de carreras.",
+  "disclaimer_point_1": "Los datos meteorológicos provienen de servicios meteorológicos confiables",
+  "disclaimer_point_2": "Los pronósticos son estimaciones y pueden variar de las condiciones reales",
+  "disclaimer_point_3": "Siempre consulta los servicios meteorológicos oficiales de carreras para decisiones de competición",
+  "disclaimer_point_4": "La aplicación no está afiliada con las organizaciones de F1, MotoGP o IndyCar",
+  
+  "weather_data_sources": "Fuentes de Datos Meteorológicos",
+  "weather_sources_description": "Nuestros pronósticos meteorológicos están impulsados por múltiples fuentes confiables:",
+  "weather_source_1": "API Open-Meteo para datos meteorológicos globales",
+  "weather_source_2": "Actualizaciones en tiempo real cada 15 minutos",
+  "weather_source_3": "Pronósticos detallados de 7 días",
+  "weather_source_4": "Parámetros meteorológicos especializados para automovilismo",
+  
+  "support_contact": "Soporte y Contacto",
+  "support_description": "¿Necesitas ayuda o tienes preguntas? Estamos aquí para ayudarte con cualquier problema o comentario.",
+  "contact_support": "Contactar Soporte",
+  
+  "version_info": "Aplicación Meteorológica de Automovilismo v1.0.0\nHecho con ❤️ para fanáticos de las carreras en todo el mundo",
+  
+  "this_week": "Esta Semana",
+  "wind": "Viento",
+  "featured": "Destacado"
 }

@@ -4,12 +4,14 @@ import { View, Text, ScrollView, StyleSheet, Animated, Linking, TouchableOpacity
 import { Ionicons } from '@expo/vector-icons';
 import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout } from '../../styles/commonStyles';
 import { useTheme } from '../../state/ThemeContext';
+import { useLanguage } from '../../state/LanguageContext';
 import AppHeader from '../../components/AppHeader';
 import Logo from '../../components/Logo';
 
 export default function DisclaimerScreen() {
   const scrollY = useRef(new Animated.Value(0)).current;
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   
   const colors = getColors(isDark);
   const commonStyles = getCommonStyles(isDark);
@@ -107,8 +109,8 @@ export default function DisclaimerScreen() {
   return (
     <View style={styles.container}>
       <AppHeader
-        title="Legal & Info"
-        subtitle="Terms, Privacy & Support"
+        title={t('legal_info')}
+        subtitle={t('terms_privacy')}
         icon={<Ionicons name="information-circle" size={32} color={colors.primary} />}
       />
 
@@ -128,75 +130,74 @@ export default function DisclaimerScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               <Ionicons name="shield-checkmark" size={24} color={colors.success} style={styles.sectionIcon} />
-              Privacy & Data
+              {t('privacy_data')}
             </Text>
             <Text style={styles.sectionText}>
-              Your privacy is important to us. This app collects minimal data to provide weather forecasts for motorsport circuits.
+              {t('privacy_description')}
             </Text>
-            <Text style={styles.bulletPoint}>• Location data is used only for weather services</Text>
-            <Text style={styles.bulletPoint}>• No personal information is stored or shared</Text>
-            <Text style={styles.bulletPoint}>• All data is processed securely</Text>
-            <Text style={styles.bulletPoint}>• You can disable location services anytime</Text>
+            <Text style={styles.bulletPoint}>• {t('privacy_point_1')}</Text>
+            <Text style={styles.bulletPoint}>• {t('privacy_point_2')}</Text>
+            <Text style={styles.bulletPoint}>• {t('privacy_point_3')}</Text>
+            <Text style={styles.bulletPoint}>• {t('privacy_point_4')}</Text>
           </View>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               <Ionicons name="document-text" size={24} color={colors.info} style={styles.sectionIcon} />
-              Terms of Use
+              {t('terms_of_use')}
             </Text>
             <Text style={styles.sectionText}>
-              By using this app, you agree to the following terms and conditions:
+              {t('terms_description')}
             </Text>
-            <Text style={styles.bulletPoint}>• Weather data is provided for informational purposes only</Text>
-            <Text style={styles.bulletPoint}>• Forecasts may not be 100% accurate</Text>
-            <Text style={styles.bulletPoint}>• Use professional weather services for critical decisions</Text>
-            <Text style={styles.bulletPoint}>• Circuit information is subject to change</Text>
+            <Text style={styles.bulletPoint}>• {t('terms_point_1')}</Text>
+            <Text style={styles.bulletPoint}>• {t('terms_point_2')}</Text>
+            <Text style={styles.bulletPoint}>• {t('terms_point_3')}</Text>
+            <Text style={styles.bulletPoint}>• {t('terms_point_4')}</Text>
           </View>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               <Ionicons name="warning" size={24} color={colors.warning} style={styles.sectionIcon} />
-              Disclaimer
+              {t('disclaimer_title')}
             </Text>
             <Text style={styles.sectionText}>
-              This weather forecasting app is designed for motorsport enthusiasts and provides weather information for racing circuits.
+              {t('disclaimer_description')}
             </Text>
-            <Text style={styles.bulletPoint}>• Weather data is sourced from reliable meteorological services</Text>
-            <Text style={styles.bulletPoint}>• Forecasts are estimates and may vary from actual conditions</Text>
-            <Text style={styles.bulletPoint}>• Always consult official race weather services for competition decisions</Text>
-            <Text style={styles.bulletPoint}>• The app is not affiliated with F1, MotoGP, or IndyCar organizations</Text>
+            <Text style={styles.bulletPoint}>• {t('disclaimer_point_1')}</Text>
+            <Text style={styles.bulletPoint}>• {t('disclaimer_point_2')}</Text>
+            <Text style={styles.bulletPoint}>• {t('disclaimer_point_3')}</Text>
+            <Text style={styles.bulletPoint}>• {t('disclaimer_point_4')}</Text>
           </View>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               <Ionicons name="cloud" size={24} color={colors.primary} style={styles.sectionIcon} />
-              Weather Data Sources
+              {t('weather_data_sources')}
             </Text>
             <Text style={styles.sectionText}>
-              Our weather forecasts are powered by multiple reliable sources:
+              {t('weather_sources_description')}
             </Text>
-            <Text style={styles.bulletPoint}>• Open-Meteo API for global weather data</Text>
-            <Text style={styles.bulletPoint}>• Real-time updates every 15 minutes</Text>
-            <Text style={styles.bulletPoint}>• 7-day detailed forecasts</Text>
-            <Text style={styles.bulletPoint}>• Specialized motorsport weather parameters</Text>
+            <Text style={styles.bulletPoint}>• {t('weather_source_1')}</Text>
+            <Text style={styles.bulletPoint}>• {t('weather_source_2')}</Text>
+            <Text style={styles.bulletPoint}>• {t('weather_source_3')}</Text>
+            <Text style={styles.bulletPoint}>• {t('weather_source_4')}</Text>
           </View>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               <Ionicons name="help-circle" size={24} color={colors.accent} style={styles.sectionIcon} />
-              Support & Contact
+              {t('support_contact')}
             </Text>
             <Text style={styles.sectionText}>
-              Need help or have questions? We&apos;re here to assist you with any issues or feedback.
+              {t('support_description')}
             </Text>
             <TouchableOpacity style={styles.contactButton} onPress={handleEmailPress}>
-              <Text style={styles.contactButtonText}>Contact Support</Text>
+              <Text style={styles.contactButtonText}>{t('contact_support')}</Text>
             </TouchableOpacity>
           </View>
 
           <Text style={styles.versionText}>
-            Motorsport Weather App v1.0.0{'\n'}
-            Built with ❤️ for racing fans worldwide
+            {t('version_info')}
           </Text>
         </View>
       </ScrollView>

@@ -18,6 +18,7 @@
   
   "calendar": "Kalender",
   "disclaimer": "Haftungsausschluss",
+  "legal_info": "Rechtliches & Info",
   
   "temperature": "Temperatur",
   "wind_speed": "Windgeschwindigkeit",
@@ -26,6 +27,8 @@
   "pressure": "Druck",
   "visibility": "Sichtweite",
   "uv_index": "UV-Index",
+  "dew_point": "Taupunkt",
+  "cloud_cover": "Wolkendecke",
   
   "hourly_forecast": "Stündliche Vorhersage",
   "daily_forecast": "Tägliche Vorhersage",
@@ -41,5 +44,61 @@
   "imperial": "Imperial",
   
   "light_mode": "Heller Modus",
-  "dark_mode": "Dunkler Modus"
+  "dark_mode": "Dunkler Modus",
+  
+  "search_circuits": "Rennstrecken oder Länder suchen...",
+  "all_circuits": "Alle Rennstrecken",
+  "circuits": "Rennstrecken",
+  "races": "Rennen",
+  "teams": "Teams",
+  "no_circuits_found": "Keine Rennstrecken gefunden, die übereinstimmen mit",
+  "loading": "Laden...",
+  
+  "championship_calendar": "Meisterschaftskalender 2026",
+  "race_calendar": "Rennkalender",
+  "championship_schedule": "Meisterschaftsplan 2026",
+  "all": "Alle",
+  "total_races": "Rennen Gesamt",
+  "months": "Monate",
+  "categories": "Kategorien",
+  "round": "Runde",
+  
+  "terms_privacy": "Bedingungen, Datenschutz & Support",
+  "privacy_data": "Datenschutz & Daten",
+  "privacy_description": "Ihre Privatsphäre ist uns wichtig. Diese App sammelt minimale Daten, um Wettervorhersagen für Motorsport-Rennstrecken bereitzustellen.",
+  "privacy_point_1": "Standortdaten werden nur für Wetterdienste verwendet",
+  "privacy_point_2": "Keine persönlichen Informationen werden gespeichert oder geteilt",
+  "privacy_point_3": "Alle Daten werden sicher verarbeitet",
+  "privacy_point_4": "Sie können Standortdienste jederzeit deaktivieren",
+  
+  "terms_of_use": "Nutzungsbedingungen",
+  "terms_description": "Durch die Nutzung dieser App stimmen Sie den folgenden Geschäftsbedingungen zu:",
+  "terms_point_1": "Wetterdaten werden nur zu Informationszwecken bereitgestellt",
+  "terms_point_2": "Vorhersagen sind möglicherweise nicht zu 100% genau",
+  "terms_point_3": "Verwenden Sie professionelle Wetterdienste für kritische Entscheidungen",
+  "terms_point_4": "Rennstreckeninformationen können sich ändern",
+  
+  "disclaimer_title": "Haftungsausschluss",
+  "disclaimer_description": "Diese Wettervorhersage-App ist für Motorsport-Enthusiasten konzipiert und bietet Wetterinformationen für Rennstrecken.",
+  "disclaimer_point_1": "Wetterdaten stammen aus zuverlässigen meteorologischen Diensten",
+  "disclaimer_point_2": "Vorhersagen sind Schätzungen und können von den tatsächlichen Bedingungen abweichen",
+  "disclaimer_point_3": "Konsultieren Sie immer offizielle Rennwetterdienste für Wettbewerbsentscheidungen",
+  "disclaimer_point_4": "Die App ist nicht mit F1-, MotoGP- oder IndyCar-Organisationen verbunden",
+  
+  "weather_data_sources": "Wetterdatenquellen",
+  "weather_sources_description": "Unsere Wettervorhersagen werden von mehreren zuverlässigen Quellen unterstützt:",
+  "weather_source_1": "Open-Meteo API für globale Wetterdaten",
+  "weather_source_2": "Echtzeit-Updates alle 15 Minuten",
+  "weather_source_3": "7-Tage-Detailvorhersagen",
+  "weather_source_4": "Spezialisierte Motorsport-Wetterparameter",
+  
+  "support_contact": "Support & Kontakt",
+  "support_description": "Benötigen Sie Hilfe oder haben Sie Fragen? Wir sind hier, um Ihnen bei Problemen oder Feedback zu helfen.",
+  "contact_support": "Support Kontaktieren",
+  
+  "version_info": "Motorsport Wetter App v1.0.0\nMit ❤️ für Rennfans weltweit erstellt",
+  
+  "this_week": "Diese Woche",
+  "wind": "Wind",
+  "featured": "Hervorgehoben"
 }

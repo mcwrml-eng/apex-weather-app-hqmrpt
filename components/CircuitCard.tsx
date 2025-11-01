@@ -6,6 +6,7 @@ import WeatherSymbol from './WeatherSymbol';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useUnit } from '../state/UnitContext';
 import { useTheme } from '../state/ThemeContext';
+import { useLanguage } from '../state/LanguageContext';
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 
@@ -28,6 +29,7 @@ export default function CircuitCard({ circuit, category }: Props) {
   const { current, loading } = useWeather(circuit.latitude, circuit.longitude, 'metric');
   const { unit } = useUnit();
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   
   const colors = getColors(isDark);
   const commonStyles = getCommonStyles(isDark);
@@ -183,7 +185,7 @@ export default function CircuitCard({ circuit, category }: Props) {
               {loading ? (
                 <View style={styles.loadingContainer}>
                   <WeatherSymbol weatherCode={1} size={32} />
-                  <Text style={styles.loadingText}>Loading...</Text>
+                  <Text style={styles.loadingText}>{t('loading')}</Text>
                 </View>
               ) : current ? (
                 <>
@@ -206,19 +208,19 @@ export default function CircuitCard({ circuit, category }: Props) {
           {current && !loading && (
             <View style={styles.weatherInfo}>
               <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Wind</Text>
+                <Text style={styles.infoLabel}>{t('wind')}</Text>
                 <Text style={styles.infoValue}>
                   {Math.round(current.wind_speed)} {unit === 'metric' ? 'km/h' : 'mph'}
                 </Text>
               </View>
               <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Humidity</Text>
+                <Text style={styles.infoLabel}>{t('humidity')}</Text>
                 <Text style={styles.infoValue}>
                   {Math.round(current.humidity)}%
                 </Text>
               </View>
               <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Pressure</Text>
+                <Text style={styles.infoLabel}>{t('pressure')}</Text>
                 <Text style={styles.infoValue}>
                   {Math.round(current.pressure)} hPa
                 </Text>
