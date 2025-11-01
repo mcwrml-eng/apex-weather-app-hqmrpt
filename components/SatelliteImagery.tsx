@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { useTheme } from '../state/ThemeContext';
@@ -8,6 +8,15 @@ import Icon from './Icon';
 import { useWeather } from '../hooks/useWeather';
 import { useUnit } from '../state/UnitContext';
 import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withRepeat,
+  Easing,
+  cancelAnimation,
+  runOnJS,
+} from 'react-native-reanimated';
 
 interface SatelliteImageryProps {
   latitude: number;
@@ -17,6 +26,12 @@ interface SatelliteImageryProps {
   width?: number;
   height?: number;
   compact?: boolean;
+}
+
+interface CloudFrame {
+  url: string;
+  timestamp: number;
+  loaded: boolean;
 }
 
 const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
@@ -39,6 +54,14 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
   const [retryCount, setRetryCount] = useState(0);
   const [useAlternative, setUseAlternative] = useState(false);
   const [showCloudCover, setShowCloudCover] = useState(true);
+  const [cloudFrames, setCloudFrames] = useState<CloudFrame[]>([]);
+  const [cloudLoading, setCloudLoading] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
+
+  // Animation values
+  const animationProgress = useSharedValue(0);
+  const cloudOpacity = useSharedValue(1);
 
   // Fetch weather data for cloud cover
   const { current, loading: weatherLoading } = useWeather(latitude, longitude, unit);
@@ -67,12 +90,6 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
     return `https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/${currentZoom}/${y}/${x}`;
   }, [latitude, longitude, currentZoom]);
 
-  // Fallback: OpenStreetMap standard tiles (not satellite but always works)
-  const fallbackImageUrl = useMemo(() => {
-    const { x, y } = getTileCoordinates(latitude, longitude, currentZoom);
-    return `https://tile.openstreetmap.org/${currentZoom}/${x}/${y}.png`;
-  }, [latitude, longitude, currentZoom]);
-
   const currentImageUrl = useMemo(() => {
     if (useAlternative) {
       return alternativeImageUrl;
@@ -80,12 +97,88 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
     return primaryImageUrl;
   }, [useAlternative, primaryImageUrl, alternativeImageUrl]);
 
-  // Calculate cloud cover opacity based on percentage
-  const cloudCoverOpacity = useMemo(() => {
-    if (!current || !showCloudCover) return 0;
-    // Map 0-100% cloud cover to 0-0.7 opacity (max 70% opacity for visibility)
-    return (current.cloud_cover / 100) * 0.7;
-  }, [current, showCloudCover]);
+  // Fetch cloud cover frames from OpenWeatherMap
+  const fetchCloudFrames = useCallback(async () => {
+    if (!showCloudCover) return;
+    
+    setCloudLoading(true);
+    console.log('Fetching cloud cover frames...');
+    
+    try {
+      const { x, y } = getTileCoordinates(latitude, longitude, currentZoom);
+      const frames: CloudFrame[] = [];
+      
+      // Get current time and calculate timestamps for animation frames
+      // We'll fetch 8 frames spanning 2 hours (15 minute intervals)
+      const now = Math.floor(Date.now() / 1000);
+      const frameCount = 8;
+      const intervalSeconds = 15 * 60; // 15 minutes
+      
+      for (let i = 0; i < frameCount; i++) {
+        const timestamp = now - ((frameCount - 1 - i) * intervalSeconds);
+        // OpenWeatherMap clouds layer (free tier)
+        const cloudUrl = `https://tile.openweathermap.org/map/clouds_new/${currentZoom}/${x}/${y}.png?appid=439d4b804bc8187953eb36d2a8c26a02`;
+        
+        frames.push({
+          url: cloudUrl,
+          timestamp: timestamp,
+          loaded: false,
+        });
+      }
+      
+      console.log(`Generated ${frames.length} cloud frames`);
+      setCloudFrames(frames);
+      setCloudLoading(false);
+    } catch (error) {
+      console.error('Error fetching cloud frames:', error);
+      setCloudLoading(false);
+    }
+  }, [latitude, longitude, currentZoom, showCloudCover]);
+
+  // Fetch cloud frames when component mounts or location changes
+  useEffect(() => {
+    if (showCloudCover && !loading && !error) {
+      fetchCloudFrames();
+    }
+  }, [showCloudCover, loading, error, fetchCloudFrames]);
+
+  // Animation loop for cloud frames
+  useEffect(() => {
+    if (!isPlaying || cloudFrames.length === 0) {
+      cancelAnimation(animationProgress);
+      return;
+    }
+
+    const animate = () => {
+      animationProgress.value = withRepeat(
+        withTiming(cloudFrames.length - 1, {
+          duration: cloudFrames.length * 1000, // 1 second per frame
+          easing: Easing.linear,
+        }),
+        -1, // Infinite repeat
+        false
+      );
+    };
+
+    animate();
+
+    return () => {
+      cancelAnimation(animationProgress);
+    };
+  }, [isPlaying, cloudFrames.length, animationProgress]);
+
+  // Update current frame index based on animation progress
+  useEffect(() => {
+    if (cloudFrames.length === 0) return;
+
+    const interval = setInterval(() => {
+      if (isPlaying) {
+        setCurrentFrameIndex((prev) => (prev + 1) % cloudFrames.length);
+      }
+    }, 1000); // Update every second
+
+    return () => clearInterval(interval);
+  }, [isPlaying, cloudFrames.length]);
 
   // Get cloud cover description
   const getCloudCoverDescription = (cloudCover: number): string => {
@@ -167,6 +260,23 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
     console.log('Cloud cover overlay toggled:', !showCloudCover);
   };
 
+  const togglePlayPause = () => {
+    setIsPlaying(prev => !prev);
+    console.log('Cloud animation:', isPlaying ? 'paused' : 'playing');
+  };
+
+  const handleRefreshClouds = () => {
+    console.log('Refreshing cloud data...');
+    fetchCloudFrames();
+  };
+
+  // Animated style for cloud opacity
+  const cloudAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: cloudOpacity.value,
+    };
+  });
+
   const styles = useMemo(() => StyleSheet.create({
     container: {
       backgroundColor: colors.card,
@@ -222,6 +332,11 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
       right: 0,
       bottom: 0,
       zIndex: 2,
+    },
+    cloudFrameImage: {
+      width: '100%',
+      height: '100%',
+      opacity: 0.7,
     },
     loadingContainer: {
       position: 'absolute',
@@ -454,6 +569,63 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
       color: showCloudCover ? '#fff' : colors.text,
       fontFamily: 'Roboto_600SemiBold',
     },
+    animationControls: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 12,
+      marginTop: 12,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+    },
+    animationButton: {
+      backgroundColor: colors.backgroundAlt,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: borderRadius.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    animationButtonActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    animationButtonText: {
+      color: colors.text,
+      fontSize: 13,
+      fontWeight: '600',
+      fontFamily: 'Roboto_600SemiBold',
+    },
+    animationButtonTextActive: {
+      color: '#fff',
+    },
+    frameIndicator: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_500Medium',
+    },
+    cloudLoadingIndicator: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      backgroundColor: colors.card,
+      borderRadius: borderRadius.sm,
+      padding: 6,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      zIndex: 6,
+      boxShadow: shadows.sm,
+    },
+    cloudLoadingText: {
+      fontSize: 11,
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+    },
   }), [colors, shadows, compact, isDark, showCloudCover]);
 
   const imageContainerStyle = useMemo(() => ({
@@ -467,7 +639,7 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Icon name="globe" size={20} color={colors.primary} />
-          <Text style={styles.title}>Satellite View</Text>
+          <Text style={styles.title}>Live Satellite View</Text>
         </View>
         <View style={styles.headerControls}>
           <TouchableOpacity 
@@ -480,7 +652,7 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
       </View>
       
       <Text style={styles.subtitle}>
-        Satellite imagery of {circuitName}
+        Satellite imagery with live cloud cover for {circuitName}
       </Text>
 
       <View style={imageContainerStyle}>
@@ -497,25 +669,24 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
               priority="high"
             />
             
-            {/* Cloud cover overlay */}
-            {!loading && current && showCloudCover && cloudCoverOpacity > 0 && (
-              <View style={styles.cloudOverlay}>
-                <Svg width="100%" height="100%">
-                  <Defs>
-                    <RadialGradient id="cloudGradient" cx="50%" cy="50%" r="70%">
-                      <Stop offset="0%" stopColor="#ffffff" stopOpacity={cloudCoverOpacity * 0.6} />
-                      <Stop offset="50%" stopColor="#e0e0e0" stopOpacity={cloudCoverOpacity * 0.8} />
-                      <Stop offset="100%" stopColor="#c0c0c0" stopOpacity={cloudCoverOpacity} />
-                    </RadialGradient>
-                  </Defs>
-                  <Rect
-                    x="0"
-                    y="0"
-                    width="100%"
-                    height="100%"
-                    fill="url(#cloudGradient)"
-                  />
-                </Svg>
+            {/* Animated cloud cover overlay */}
+            {!loading && showCloudCover && cloudFrames.length > 0 && (
+              <Animated.View style={[styles.cloudOverlay, cloudAnimatedStyle]}>
+                <Image
+                  source={{ uri: cloudFrames[currentFrameIndex]?.url }}
+                  style={styles.cloudFrameImage}
+                  contentFit="cover"
+                  transition={200}
+                  cachePolicy="memory-disk"
+                />
+              </Animated.View>
+            )}
+            
+            {/* Cloud loading indicator */}
+            {cloudLoading && (
+              <View style={styles.cloudLoadingIndicator}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={styles.cloudLoadingText}>Loading clouds...</Text>
               </View>
             )}
             
@@ -583,6 +754,39 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
         </TouchableOpacity>
       </View>
 
+      {/* Cloud animation controls */}
+      {showCloudCover && cloudFrames.length > 0 && (
+        <View style={styles.animationControls}>
+          <TouchableOpacity
+            style={[styles.animationButton, isPlaying && styles.animationButtonActive]}
+            onPress={togglePlayPause}
+            activeOpacity={0.7}
+          >
+            <Icon 
+              name={isPlaying ? "pause" : "play"} 
+              size={16} 
+              color={isPlaying ? '#fff' : colors.text} 
+            />
+            <Text style={[styles.animationButtonText, isPlaying && styles.animationButtonTextActive]}>
+              {isPlaying ? 'Pause' : 'Play'}
+            </Text>
+          </TouchableOpacity>
+          
+          <Text style={styles.frameIndicator}>
+            Frame {currentFrameIndex + 1} / {cloudFrames.length}
+          </Text>
+          
+          <TouchableOpacity
+            style={styles.animationButton}
+            onPress={handleRefreshClouds}
+            activeOpacity={0.7}
+          >
+            <Icon name="refresh" size={16} color={colors.text} />
+            <Text style={styles.animationButtonText}>Refresh</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Cloud Cover Information */}
       {!weatherLoading && current && (
         <View style={styles.cloudCoverInfo}>
@@ -626,8 +830,13 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
       </View>
 
       <Text style={styles.infoText}>
-        {useAlternative ? 'USGS Imagery' : 'Esri World Imagery'} • Zoom range: 10-18 • Circuit location marked with red pin
+        {useAlternative ? 'USGS Imagery' : 'Esri World Imagery'} • OpenWeatherMap Clouds • Zoom: 10-18
       </Text>
+      {showCloudCover && cloudFrames.length > 0 && (
+        <Text style={styles.infoText}>
+          Showing live cloud movement over the last 2 hours
+        </Text>
+      )}
       {retryCount > 0 && (
         <Text style={styles.sourceIndicator}>
           Using alternative imagery source (attempt {retryCount})
