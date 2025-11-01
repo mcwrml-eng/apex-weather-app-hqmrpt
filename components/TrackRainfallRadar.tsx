@@ -103,6 +103,77 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   // Distance scale in kilometers for each ring
   const distanceRings = [5, 10, 20, 30, 40, 50];
 
+  const generateEnhancedRadarGrid = useCallback((
+    timeData: PrecipitationData[], 
+    currentPrecip: number,
+    currentWindSpeed: number,
+    currentWindDirection: number,
+    timeProgress: number
+  ): PrecipitationZone[] => {
+    const zones: PrecipitationZone[] = [];
+    const numAngles = 24;
+    const numRings = 6;
+    
+    const calculateWindInfluence = (angle: number, windDirection: number, windSpeed: number): number => {
+      const angleDiff = Math.abs(((angle - windDirection + 180) % 360) - 180);
+      const windFactor = 1 + (windSpeed / 50) * (1 - angleDiff / 180) * 0.3;
+      return Math.max(0.7, Math.min(1.3, windFactor));
+    };
+    
+    for (let ring = 0; ring < numRings; ring++) {
+      for (let angle = 0; angle < numAngles; angle++) {
+        const angleRad = (angle / numAngles) * 2 * Math.PI;
+        const angleDeg = (angle / numAngles) * 360;
+        const distance = (ring + 1) / numRings;
+        
+        const timeIndex = Math.min(Math.floor((ring * numAngles + angle) / 3), timeData.length - 1);
+        const baseIntensity = timeData[timeIndex]?.precipitation || 0;
+        
+        const windInfluence = calculateWindInfluence(angleDeg, currentWindDirection, currentWindSpeed);
+        
+        // Add time-based movement
+        const movementOffset = Math.sin(angleRad + timeProgress * Math.PI * 2) * 0.1;
+        const variation = Math.sin(angleRad * 3) * 0.15 + Math.cos(angleRad * 2) * 0.1 + movementOffset;
+        
+        let distanceFactor = 1;
+        if (ring === 0) {
+          distanceFactor = 0.9;
+        } else if (ring === 1) {
+          distanceFactor = 0.6;
+        } else if (ring === 2) {
+          distanceFactor = 0.3;
+        } else {
+          distanceFactor = 0.1;
+        }
+        
+        let intensity = 0;
+        
+        if (ring <= 2) {
+          const currentComponent = currentPrecip * distanceFactor;
+          const forecastComponent = baseIntensity * (1 - distanceFactor);
+          intensity = (currentComponent + forecastComponent) * windInfluence * (1 + variation);
+        } else {
+          intensity = baseIntensity * (1 - (distance * 0.2)) * windInfluence * (1 + variation);
+          
+          if (currentPrecip > 0) {
+            intensity += currentPrecip * 0.1 * (1 - distance);
+          }
+        }
+        
+        intensity = Math.max(0, intensity);
+        
+        zones.push({
+          angle: angleDeg,
+          distance: distance,
+          intensity: intensity,
+          radius: 15 + (ring * 20),
+        });
+      }
+    }
+    
+    return zones;
+  }, []);
+
   const fetchRainfallData = useCallback(async () => {
     setLoading(true);
     setError(false);
@@ -268,72 +339,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       setErrorMessage(err instanceof Error ? err.message : 'Failed to load projected rain forecast');
       setLoading(false);
     }
-  }, [latitude, longitude, circuitName]);
-
-  const generateEnhancedRadarGrid = (
-    timeData: PrecipitationData[], 
-    currentPrecip: number,
-    currentWindSpeed: number,
-    currentWindDirection: number,
-    timeProgress: number
-  ): PrecipitationZone[] => {
-    const zones: PrecipitationZone[] = [];
-    const numAngles = 24;
-    const numRings = 6;
-    
-    for (let ring = 0; ring < numRings; ring++) {
-      for (let angle = 0; angle < numAngles; angle++) {
-        const angleRad = (angle / numAngles) * 2 * Math.PI;
-        const angleDeg = (angle / numAngles) * 360;
-        const distance = (ring + 1) / numRings;
-        
-        const timeIndex = Math.min(Math.floor((ring * numAngles + angle) / 3), timeData.length - 1);
-        const baseIntensity = timeData[timeIndex]?.precipitation || 0;
-        
-        const windInfluence = calculateWindInfluence(angleDeg, currentWindDirection, currentWindSpeed);
-        
-        // Add time-based movement
-        const movementOffset = Math.sin(angleRad + timeProgress * Math.PI * 2) * 0.1;
-        const variation = Math.sin(angleRad * 3) * 0.15 + Math.cos(angleRad * 2) * 0.1 + movementOffset;
-        
-        let distanceFactor = 1;
-        if (ring === 0) {
-          distanceFactor = 0.9;
-        } else if (ring === 1) {
-          distanceFactor = 0.6;
-        } else if (ring === 2) {
-          distanceFactor = 0.3;
-        } else {
-          distanceFactor = 0.1;
-        }
-        
-        let intensity = 0;
-        
-        if (ring <= 2) {
-          const currentComponent = currentPrecip * distanceFactor;
-          const forecastComponent = baseIntensity * (1 - distanceFactor);
-          intensity = (currentComponent + forecastComponent) * windInfluence * (1 + variation);
-        } else {
-          intensity = baseIntensity * (1 - (distance * 0.2)) * windInfluence * (1 + variation);
-          
-          if (currentPrecip > 0) {
-            intensity += currentPrecip * 0.1 * (1 - distance);
-          }
-        }
-        
-        intensity = Math.max(0, intensity);
-        
-        zones.push({
-          angle: angleDeg,
-          distance: distance,
-          intensity: intensity,
-          radius: 15 + (ring * 20),
-        });
-      }
-    }
-    
-    return zones;
-  };
+  }, [latitude, longitude, circuitName, generateEnhancedRadarGrid]);
 
   const calculateWindInfluence = (angle: number, windDirection: number, windSpeed: number): number => {
     const angleDiff = Math.abs(((angle - windDirection + 180) % 360) - 180);
@@ -481,7 +487,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       cancelAnimation(radarSweepRotation);
       cancelAnimation(pulseAnimation);
     };
-  }, [isPlaying, radarData?.hasRain]);
+  }, [isPlaying, radarData?.hasRain, animationProgress, radarSweepRotation, pulseAnimation]);
 
   // Update current frame based on animation progress
   useEffect(() => {
@@ -982,7 +988,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     return radarData.gridData[frameIndex] || radarData.gridData[0];
   };
 
-  // Animated precipitation zone component
+  // Animated precipitation zone component - Always call hooks unconditionally
   const AnimatedPrecipitationZone = ({ zone, index }: { zone: PrecipitationZone; index: number }) => {
     const angleRad = (zone.angle - 90) * (Math.PI / 180);
     const angleSpan = (360 / 24) * (Math.PI / 180);
@@ -1028,12 +1034,10 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     );
   };
 
-  // Animated rain direction arrow
+  // Animated rain direction arrow - Always call hooks unconditionally
   const AnimatedRainDirectionArrow = () => {
-    if (!radarData) return null;
-    
     const arrowLength = maxRadius * 0.6;
-    const direction = radarData.rainDirection || 0;
+    const direction = radarData?.rainDirection || 0;
     
     const angleRad = ((direction - 90) * Math.PI) / 180;
     const endX = centerX + arrowLength * Math.cos(angleRad);
@@ -1069,6 +1073,9 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         fillOpacity: opacity,
       };
     });
+    
+    // Only render if radarData exists
+    if (!radarData) return null;
     
     return (
       <G>
