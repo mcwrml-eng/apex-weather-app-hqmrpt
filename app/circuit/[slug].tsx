@@ -14,7 +14,7 @@ import EnhancedWeatherForecast from '../../components/EnhancedWeatherForecast';
 import WeatherTextForecast from '../../components/WeatherTextForecast';
 import WeatherAlerts from '../../components/WeatherAlerts';
 import TrackRainfallRadar from '../../components/TrackRainfallRadar';
-import SatelliteImagery from '../../components/SatelliteImagery';
+import WindyCloudRadar from '../../components/WindyCloudRadar';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
@@ -800,14 +800,14 @@ function DetailScreen() {
             </View>
           )}
 
-          {/* Satellite Imagery */}
+          {/* Windy Cloud & Radar Imagery */}
           {!loading && circuit && (
-            <SafeComponent componentName="SatelliteImagery">
-              <SatelliteImagery
+            <SafeComponent componentName="WindyCloudRadar">
+              <WindyCloudRadar
                 latitude={circuit.latitude}
                 longitude={circuit.longitude}
                 circuitName={circuit.name}
-                zoom={15}
+                zoom={8}
                 width={340}
                 height={340}
                 compact={false}
