@@ -14,6 +14,7 @@ import EnhancedWeatherForecast from '../../components/EnhancedWeatherForecast';
 import WeatherTextForecast from '../../components/WeatherTextForecast';
 import WeatherAlerts from '../../components/WeatherAlerts';
 import TrackRainfallRadar from '../../components/TrackRainfallRadar';
+import SatelliteImagery from '../../components/SatelliteImagery';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
@@ -797,6 +798,21 @@ function DetailScreen() {
                 Updated {lastUpdated.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
               </Text>
             </View>
+          )}
+
+          {/* Satellite Imagery */}
+          {!loading && circuit && (
+            <SafeComponent componentName="SatelliteImagery">
+              <SatelliteImagery
+                latitude={circuit.latitude}
+                longitude={circuit.longitude}
+                circuitName={circuit.name}
+                zoom={15}
+                width={340}
+                height={340}
+                compact={false}
+              />
+            </SafeComponent>
           )}
 
           {/* Rainfall Radar */}
