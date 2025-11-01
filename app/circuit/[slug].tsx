@@ -15,7 +15,7 @@ import WeatherTextForecast from '../../components/WeatherTextForecast';
 import WeatherAlerts from '../../components/WeatherAlerts';
 import TrackRainfallRadar from '../../components/TrackRainfallRadar';
 import WindyCloudRadar from '../../components/WindyCloudRadar';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetView, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
 import ErrorBoundary from '../../components/ErrorBoundary';
@@ -724,11 +724,13 @@ function DetailScreen() {
       backgroundColor: colors.divider,
     },
     sheet: { 
-      padding: 16, 
-      flex: 1,
+      padding: 16,
       backgroundColor: colors.background,
     },
-    sheetTitle: { fontSize: 18, fontWeight: '700', color: colors.text, fontFamily: 'Roboto_700Bold' },
+    sheetTitle: { fontSize: 18, fontWeight: '700', color: colors.text, fontFamily: 'Roboto_700Bold', marginBottom: 12 },
+    sheetScrollContent: {
+      paddingBottom: 40,
+    },
   }), [colors, shadows]);
 
   // Handle errors after all hooks are called
@@ -1239,7 +1241,6 @@ function DetailScreen() {
         >
           <BottomSheetView style={styles.sheet}>
             <Text style={styles.sheetTitle}>Settings</Text>
-            <View style={{ height: 8 }} />
             <Text style={styles.muted}>Units</Text>
             <View style={{ height: 10 }} />
             <Button
@@ -1264,62 +1265,61 @@ function DetailScreen() {
           backgroundStyle={styles.bottomSheetBackground}
           handleIndicatorStyle={styles.bottomSheetHandle}
         >
-          <BottomSheetView style={styles.sheet}>
+          <BottomSheetScrollView 
+            style={styles.sheet}
+            contentContainerStyle={styles.sheetScrollContent}
+          >
             <Text style={styles.sheetTitle}>Weather Analysis</Text>
-            <View style={{ height: 8 }} />
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {chartData.length > 0 && (
-                <>
-                  <SafeComponent componentName="TemperatureChart">
-                    <WeatherChart
-                      data={chartData}
-                      type="temperature"
-                      unit={unit}
-                      height={120}
-                    />
-                  </SafeComponent>
-                  <SafeComponent componentName="WindChart">
-                    <WeatherChart
-                      data={chartData}
-                      type="wind"
-                      unit={unit}
-                      height={120}
-                    />
-                  </SafeComponent>
-                  <SafeComponent componentName="HumidityChart">
-                    <WeatherChart
-                      data={chartData}
-                      type="humidity"
-                      unit={unit}
-                      height={120}
-                    />
-                  </SafeComponent>
-                  <SafeComponent componentName="PrecipitationChart">
-                    <WeatherChart
-                      data={chartData}
-                      type="precipitation"
-                      unit={unit}
-                      height={120}
-                    />
-                  </SafeComponent>
-                </>
-              )}
-              
-              {windData.length > 0 && (
-                <SafeComponent componentName="WindRadarAnalysis">
-                  <WindRadarGraph
-                    hourlyData={windData}
+            {chartData.length > 0 && (
+              <>
+                <SafeComponent componentName="TemperatureChart">
+                  <WeatherChart
+                    data={chartData}
+                    type="temperature"
                     unit={unit}
+                    height={120}
                   />
                 </SafeComponent>
-              )}
-              
-              <View style={{ height: 20 }} />
-              <Text style={styles.muted}>
-                72-hour enhanced forecast data with number scales for precise readings. Charts update every 10 minutes with detailed atmospheric conditions. Wind radar analysis shows directional patterns and frequency distribution.
-              </Text>
-            </ScrollView>
-          </BottomSheetView>
+                <SafeComponent componentName="WindChart">
+                  <WeatherChart
+                    data={chartData}
+                    type="wind"
+                    unit={unit}
+                    height={120}
+                  />
+                </SafeComponent>
+                <SafeComponent componentName="HumidityChart">
+                  <WeatherChart
+                    data={chartData}
+                    type="humidity"
+                    unit={unit}
+                    height={120}
+                  />
+                </SafeComponent>
+                <SafeComponent componentName="PrecipitationChart">
+                  <WeatherChart
+                    data={chartData}
+                    type="precipitation"
+                    unit={unit}
+                    height={120}
+                  />
+                </SafeComponent>
+              </>
+            )}
+            
+            {windData.length > 0 && (
+              <SafeComponent componentName="WindRadarAnalysis">
+                <WindRadarGraph
+                  hourlyData={windData}
+                  unit={unit}
+                />
+              </SafeComponent>
+            )}
+            
+            <Text style={styles.muted}>
+              72-hour enhanced forecast data with number scales for precise readings. Charts update every 10 minutes with detailed atmospheric conditions. Wind radar analysis shows directional patterns and frequency distribution.
+            </Text>
+          </BottomSheetScrollView>
         </BottomSheet>
 
         {/* Enhanced Forecast Bottom Sheet */}
@@ -1333,7 +1333,6 @@ function DetailScreen() {
         >
           <BottomSheetView style={styles.sheet}>
             <Text style={styles.sheetTitle}>Detailed Forecast</Text>
-            <View style={{ height: 8 }} />
             <SafeComponent componentName="EnhancedWeatherForecast">
               <EnhancedWeatherForecast
                 hourlyData={hourly}
