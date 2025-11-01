@@ -373,15 +373,23 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     return 'rgba(244, 67, 54, 0.9)';
   };
 
+  // Format time in local timezone with hour and minute
   const formatTime = (timeString: string): string => {
     try {
       const date = new Date(timeString);
-      return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    } catch {
+      // Use toLocaleTimeString to display in user's local time
+      return date.toLocaleTimeString([], { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      });
+    } catch (err) {
+      console.error('Error formatting time:', err);
       return timeString;
     }
   };
 
+  // Format time with relative offset from now
   const formatTimeDetailed = (timeString: string): string => {
     try {
       const date = new Date(timeString);
@@ -397,7 +405,25 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         const mins = diffMinutes % 60;
         return mins > 0 ? `+${hours}h ${mins}m` : `+${hours}h`;
       }
-    } catch {
+    } catch (err) {
+      console.error('Error formatting detailed time:', err);
+      return timeString;
+    }
+  };
+
+  // Format time with full date and time in local timezone
+  const formatTimeWithDate = (timeString: string): string => {
+    try {
+      const date = new Date(timeString);
+      return date.toLocaleString([], {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (err) {
+      console.error('Error formatting time with date:', err);
       return timeString;
     }
   };
@@ -1197,7 +1223,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       </View>
       
       <Text style={styles.subtitle}>
-        High-resolution precipitation forecast for {circuitName}
+        High-resolution precipitation forecast for {circuitName} (Local Time)
       </Text>
 
       {!radarData.hasRain && (
@@ -1219,9 +1245,9 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       {radarData.hasRain && showControls && (
         <View style={styles.timelineContainer}>
           <View style={styles.timelineHeader}>
-            <Text style={styles.timelineTitle}>Forecast Timeline</Text>
+            <Text style={styles.timelineTitle}>Forecast Timeline (Local Time)</Text>
             <Text style={styles.currentTimeDisplay}>
-              {formatTimeDetailed(currentFrameTime)}
+              {formatTime(currentFrameTime)}
             </Text>
           </View>
           
@@ -1433,7 +1459,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
 
       <View style={styles.forecastContainer}>
         <Text style={styles.forecastTitle}>
-          {showMinutelyView && radarData.minutely.length > 0 ? 'Next 6 Hours (15-min intervals)' : 'Next 24 Hours'}
+          {showMinutelyView && radarData.minutely.length > 0 ? 'Next 6 Hours (15-min intervals, Local Time)' : 'Next 24 Hours (Local Time)'}
         </Text>
         <ScrollView 
           horizontal 
@@ -1508,7 +1534,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       </View>
 
       <Text style={styles.infoText}>
-        High-resolution data from Open-Meteo • Animated precipitation zones • Rain direction based on wind patterns
+        High-resolution data from Open-Meteo • Animated precipitation zones • Rain direction based on wind patterns • All times shown in local timezone
       </Text>
     </View>
   );
