@@ -1,0 +1,45 @@
+
+{
+  "app_title": "RaceWeather Pro",
+  "app_subtitle": "توقعات الطقس الاحترافية لحلبات رياضة السيارات في جميع أنحاء العالم",
+  "enter_app": "دخول التطبيق",
+  "loading_weather": "جاري تحميل بيانات الطقس...",
+  "select_language": "اختر اللغة",
+  "language_selected": "تم اختيار اللغة",
+  "continue": "متابعة",
+  
+  "weather_clear": "صافي",
+  "weather_rain": "مطر",
+  "weather_snow": "ثلج",
+  
+  "formula_one": "فورمولا 1",
+  "motogp": "موتو جي بي",
+  "indycar": "إندي كار",
+  
+  "calendar": "التقويم",
+  "disclaimer": "إخلاء المسؤولية",
+  
+  "temperature": "درجة الحرارة",
+  "wind_speed": "سرعة الرياح",
+  "humidity": "الرطوبة",
+  "precipitation": "الهطول",
+  "pressure": "الضغط",
+  "visibility": "الرؤية",
+  "uv_index": "مؤشر الأشعة فوق البنفسجية",
+  
+  "hourly_forecast": "التوقعات الساعية",
+  "daily_forecast": "التوقعات اليومية",
+  "weather_analysis": "تحليل الطقس",
+  "rainfall_radar": "رادار الأمطار",
+  "wind_radar": "رادار الرياح",
+  
+  "back": "رجوع",
+  "refresh": "تحديث",
+  "settings": "الإعدادات",
+  
+  "metric": "متري",
+  "imperial": "إمبراطوري",
+  
+  "light_mode": "الوضع الفاتح",
+  "dark_mode": "الوضع الداكن"
+}

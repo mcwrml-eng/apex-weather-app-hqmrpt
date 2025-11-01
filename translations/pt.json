@@ -1,0 +1,45 @@
+
+{
+  "app_title": "RaceWeather Pro",
+  "app_subtitle": "Previsão meteorológica profissional para circuitos de automobilismo em todo o mundo",
+  "enter_app": "Entrar no App",
+  "loading_weather": "Carregando dados meteorológicos...",
+  "select_language": "Selecionar Idioma",
+  "language_selected": "Idioma Selecionado",
+  "continue": "Continuar",
+  
+  "weather_clear": "Limpo",
+  "weather_rain": "Chuva",
+  "weather_snow": "Neve",
+  
+  "formula_one": "Fórmula 1",
+  "motogp": "MotoGP",
+  "indycar": "IndyCar",
+  
+  "calendar": "Calendário",
+  "disclaimer": "Aviso Legal",
+  
+  "temperature": "Temperatura",
+  "wind_speed": "Velocidade do Vento",
+  "humidity": "Umidade",
+  "precipitation": "Precipitação",
+  "pressure": "Pressão",
+  "visibility": "Visibilidade",
+  "uv_index": "Índice UV",
+  
+  "hourly_forecast": "Previsão Horária",
+  "daily_forecast": "Previsão Diária",
+  "weather_analysis": "Análise Meteorológica",
+  "rainfall_radar": "Radar de Chuva",
+  "wind_radar": "Radar de Vento",
+  
+  "back": "Voltar",
+  "refresh": "Atualizar",
+  "settings": "Configurações",
+  
+  "metric": "Métrico",
+  "imperial": "Imperial",
+  
+  "light_mode": "Modo Claro",
+  "dark_mode": "Modo Escuro"
+}

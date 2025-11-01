@@ -1,0 +1,45 @@
+
+{
+  "app_title": "RaceWeather Pro",
+  "app_subtitle": "全球赛车赛道专业天气预报",
+  "enter_app": "进入应用",
+  "loading_weather": "正在加载天气数据...",
+  "select_language": "选择语言",
+  "language_selected": "语言已选择",
+  "continue": "继续",
+  
+  "weather_clear": "晴朗",
+  "weather_rain": "雨",
+  "weather_snow": "雪",
+  
+  "formula_one": "一级方程式",
+  "motogp": "世界摩托车锦标赛",
+  "indycar": "印地赛车",
+  
+  "calendar": "日历",
+  "disclaimer": "免责声明",
+  
+  "temperature": "温度",
+  "wind_speed": "风速",
+  "humidity": "湿度",
+  "precipitation": "降水",
+  "pressure": "气压",
+  "visibility": "能见度",
+  "uv_index": "紫外线指数",
+  
+  "hourly_forecast": "每小时预报",
+  "daily_forecast": "每日预报",
+  "weather_analysis": "天气分析",
+  "rainfall_radar": "降雨雷达",
+  "wind_radar": "风力雷达",
+  
+  "back": "返回",
+  "refresh": "刷新",
+  "settings": "设置",
+  
+  "metric": "公制",
+  "imperial": "英制",
+  
+  "light_mode": "浅色模式",
+  "dark_mode": "深色模式"
+}

@@ -11,6 +11,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, Roboto_400Regular, Roboto_500Medium, Roboto_700Bold } from '@expo-google-fonts/roboto';
 import { UnitProvider } from '../state/UnitContext';
 import { ThemeProvider, useTheme } from '../state/ThemeContext';
+import { LanguageProvider } from '../state/LanguageContext';
 import ErrorBoundary from '../components/ErrorBoundary';
 
 const STORAGE_KEY = 'emulated_device';
@@ -97,11 +98,13 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <UnitProvider>
-          <ErrorBoundary>
-            <AppContent />
-          </ErrorBoundary>
-        </UnitProvider>
+        <LanguageProvider>
+          <UnitProvider>
+            <ErrorBoundary>
+              <AppContent />
+            </ErrorBoundary>
+          </UnitProvider>
+        </LanguageProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

@@ -1,0 +1,45 @@
+
+{
+  "app_title": "RaceWeather Pro",
+  "app_subtitle": "Профессиональный прогноз погоды для автоспортивных трасс по всему миру",
+  "enter_app": "Войти в приложение",
+  "loading_weather": "Загрузка данных о погоде...",
+  "select_language": "Выбрать язык",
+  "language_selected": "Язык выбран",
+  "continue": "Продолжить",
+  
+  "weather_clear": "Ясно",
+  "weather_rain": "Дождь",
+  "weather_snow": "Снег",
+  
+  "formula_one": "Формула 1",
+  "motogp": "MotoGP",
+  "indycar": "IndyCar",
+  
+  "calendar": "Календарь",
+  "disclaimer": "Отказ от ответственности",
+  
+  "temperature": "Температура",
+  "wind_speed": "Скорость ветра",
+  "humidity": "Влажность",
+  "precipitation": "Осадки",
+  "pressure": "Давление",
+  "visibility": "Видимость",
+  "uv_index": "УФ-индекс",
+  
+  "hourly_forecast": "Почасовой прогноз",
+  "daily_forecast": "Ежедневный прогноз",
+  "weather_analysis": "Анализ погоды",
+  "rainfall_radar": "Радар осадков",
+  "wind_radar": "Радар ветра",
+  
+  "back": "Назад",
+  "refresh": "Обновить",
+  "settings": "Настройки",
+  
+  "metric": "Метрическая",
+  "imperial": "Имперская",
+  
+  "light_mode": "Светлый режим",
+  "dark_mode": "Темный режим"
+}

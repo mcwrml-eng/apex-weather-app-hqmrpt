@@ -1,0 +1,45 @@
+
+{
+  "app_title": "RaceWeather Pro",
+  "app_subtitle": "世界中のモータースポーツサーキットのプロフェッショナル天気予報",
+  "enter_app": "アプリに入る",
+  "loading_weather": "天気データを読み込んでいます...",
+  "select_language": "言語を選択",
+  "language_selected": "言語が選択されました",
+  "continue": "続ける",
+  
+  "weather_clear": "晴れ",
+  "weather_rain": "雨",
+  "weather_snow": "雪",
+  
+  "formula_one": "フォーミュラ1",
+  "motogp": "MotoGP",
+  "indycar": "インディカー",
+  
+  "calendar": "カレンダー",
+  "disclaimer": "免責事項",
+  
+  "temperature": "気温",
+  "wind_speed": "風速",
+  "humidity": "湿度",
+  "precipitation": "降水量",
+  "pressure": "気圧",
+  "visibility": "視界",
+  "uv_index": "UV指数",
+  
+  "hourly_forecast": "時間別予報",
+  "daily_forecast": "日別予報",
+  "weather_analysis": "天気分析",
+  "rainfall_radar": "降雨レーダー",
+  "wind_radar": "風レーダー",
+  
+  "back": "戻る",
+  "refresh": "更新",
+  "settings": "設定",
+  
+  "metric": "メートル法",
+  "imperial": "ヤード・ポンド法",
+  
+  "light_mode": "ライトモード",
+  "dark_mode": "ダークモード"
+}
