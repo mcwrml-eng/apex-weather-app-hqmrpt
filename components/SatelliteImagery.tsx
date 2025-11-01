@@ -5,6 +5,9 @@ import { Image } from 'expo-image';
 import { useTheme } from '../state/ThemeContext';
 import { getColors, borderRadius, getShadows } from '../styles/commonStyles';
 import Icon from './Icon';
+import { useWeather } from '../hooks/useWeather';
+import { useUnit } from '../state/UnitContext';
+import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
 
 interface SatelliteImageryProps {
   latitude: number;
@@ -28,12 +31,17 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
   const { isDark } = useTheme();
   const colors = getColors(isDark);
   const shadows = getShadows(isDark);
+  const { unit } = useUnit();
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [currentZoom, setCurrentZoom] = useState(zoom);
   const [retryCount, setRetryCount] = useState(0);
   const [useAlternative, setUseAlternative] = useState(false);
+  const [showCloudCover, setShowCloudCover] = useState(true);
+
+  // Fetch weather data for cloud cover
+  const { current, loading: weatherLoading } = useWeather(latitude, longitude, unit);
 
   // Calculate tile coordinates from lat/lon for tile-based services
   const getTileCoordinates = (lat: number, lon: number, zoom: number) => {
@@ -71,6 +79,22 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
     }
     return primaryImageUrl;
   }, [useAlternative, primaryImageUrl, alternativeImageUrl]);
+
+  // Calculate cloud cover opacity based on percentage
+  const cloudCoverOpacity = useMemo(() => {
+    if (!current || !showCloudCover) return 0;
+    // Map 0-100% cloud cover to 0-0.7 opacity (max 70% opacity for visibility)
+    return (current.cloud_cover / 100) * 0.7;
+  }, [current, showCloudCover]);
+
+  // Get cloud cover description
+  const getCloudCoverDescription = (cloudCover: number): string => {
+    if (cloudCover === 0) return 'Clear';
+    if (cloudCover < 25) return 'Mostly Clear';
+    if (cloudCover < 50) return 'Partly Cloudy';
+    if (cloudCover < 75) return 'Mostly Cloudy';
+    return 'Overcast';
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -138,6 +162,11 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
     setUseAlternative(prev => !prev);
   };
 
+  const toggleCloudCover = () => {
+    setShowCloudCover(prev => !prev);
+    console.log('Cloud cover overlay toggled:', !showCloudCover);
+  };
+
   const styles = useMemo(() => StyleSheet.create({
     container: {
       backgroundColor: colors.card,
@@ -185,6 +214,14 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
     satelliteImage: {
       width: '100%',
       height: '100%',
+    },
+    cloudOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 2,
     },
     loadingContainer: {
       position: 'absolute',
@@ -266,11 +303,18 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
     controlButtonDisabled: {
       opacity: 0.4,
     },
+    controlButtonActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
     controlButtonText: {
       color: colors.text,
       fontSize: 13,
       fontWeight: '600',
       fontFamily: 'Roboto_600SemiBold',
+    },
+    controlButtonTextActive: {
+      color: '#fff',
     },
     zoomLevel: {
       fontSize: 13,
@@ -350,7 +394,67 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
       marginTop: 4,
       textAlign: 'center',
     },
-  }), [colors, shadows, compact, isDark]);
+    cloudCoverInfo: {
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: borderRadius.md,
+      padding: 12,
+      marginTop: 12,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    cloudCoverLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      flex: 1,
+    },
+    cloudCoverIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cloudCoverTextContainer: {
+      flex: 1,
+    },
+    cloudCoverLabel: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 2,
+    },
+    cloudCoverValue: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+    },
+    cloudCoverDescription: {
+      fontSize: 11,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: 2,
+    },
+    toggleButton: {
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: borderRadius.sm,
+      backgroundColor: showCloudCover ? colors.primary : colors.backgroundAlt,
+      borderWidth: 1,
+      borderColor: showCloudCover ? colors.primary : colors.divider,
+    },
+    toggleButtonText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: showCloudCover ? '#fff' : colors.text,
+      fontFamily: 'Roboto_600SemiBold',
+    },
+  }), [colors, shadows, compact, isDark, showCloudCover]);
 
   const imageContainerStyle = useMemo(() => ({
     ...styles.imageContainer,
@@ -392,6 +496,28 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
               cachePolicy="memory-disk"
               priority="high"
             />
+            
+            {/* Cloud cover overlay */}
+            {!loading && current && showCloudCover && cloudCoverOpacity > 0 && (
+              <View style={styles.cloudOverlay}>
+                <Svg width="100%" height="100%">
+                  <Defs>
+                    <RadialGradient id="cloudGradient" cx="50%" cy="50%" r="70%">
+                      <Stop offset="0%" stopColor="#ffffff" stopOpacity={cloudCoverOpacity * 0.6} />
+                      <Stop offset="50%" stopColor="#e0e0e0" stopOpacity={cloudCoverOpacity * 0.8} />
+                      <Stop offset="100%" stopColor="#c0c0c0" stopOpacity={cloudCoverOpacity} />
+                    </RadialGradient>
+                  </Defs>
+                  <Rect
+                    x="0"
+                    y="0"
+                    width="100%"
+                    height="100%"
+                    fill="url(#cloudGradient)"
+                  />
+                </Svg>
+              </View>
+            )}
             
             {/* Location marker */}
             {!loading && (
@@ -456,6 +582,37 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
           <Text style={styles.controlButtonText}>Zoom Out</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Cloud Cover Information */}
+      {!weatherLoading && current && (
+        <View style={styles.cloudCoverInfo}>
+          <View style={styles.cloudCoverLeft}>
+            <View style={styles.cloudCoverIcon}>
+              <Icon 
+                name={current.cloud_cover > 50 ? "cloud" : current.cloud_cover > 25 ? "partly-sunny" : "sunny"} 
+                size={24} 
+                color={colors.primary} 
+              />
+            </View>
+            <View style={styles.cloudCoverTextContainer}>
+              <Text style={styles.cloudCoverLabel}>Live Cloud Cover</Text>
+              <Text style={styles.cloudCoverValue}>{Math.round(current.cloud_cover)}%</Text>
+              <Text style={styles.cloudCoverDescription}>
+                {getCloudCoverDescription(current.cloud_cover)}
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.toggleButton}
+            onPress={toggleCloudCover}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.toggleButtonText}>
+              {showCloudCover ? 'Hide' : 'Show'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <View style={styles.coordinatesInfo}>
         <View style={styles.coordinatesRow}>
