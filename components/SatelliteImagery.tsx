@@ -60,11 +60,12 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   const [framesReady, setFramesReady] = useState(false);
   const [cloudError, setCloudError] = useState<string | null>(null);
+  const [satelliteImageLoaded, setSatelliteImageLoaded] = useState(false);
   const animationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Animation values
   const animationProgress = useSharedValue(0);
-  const cloudOpacity = useSharedValue(0.7);
+  const cloudOpacity = useSharedValue(0.8);
 
   // Fetch weather data for cloud cover
   const { current, loading: weatherLoading } = useWeather(latitude, longitude, unit);
@@ -303,11 +304,11 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
 
   // Fetch cloud frames when component mounts or location changes
   useEffect(() => {
-    if (showCloudCover && !loading && !error) {
+    if (showCloudCover) {
       console.log('Triggering cloud frame fetch...');
       fetchCloudFrames();
     }
-  }, [showCloudCover, loading, error, latitude, longitude, currentZoom, fetchCloudFrames]);
+  }, [showCloudCover, latitude, longitude, currentZoom, fetchCloudFrames]);
 
   // Animation loop for cloud frames
   useEffect(() => {
@@ -370,6 +371,7 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
   useEffect(() => {
     setLoading(true);
     setError(false);
+    setSatelliteImageLoaded(false);
     console.log(`Loading satellite imagery for ${circuitName} at ${latitude}, ${longitude}, zoom ${currentZoom}`);
     console.log(`Image URL: ${currentImageUrl}`);
   }, [latitude, longitude, currentZoom, circuitName, currentImageUrl]);
@@ -379,11 +381,13 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
     setLoading(false);
     setError(false);
     setRetryCount(0);
+    setSatelliteImageLoaded(true);
   };
 
   const handleImageError = (error: any) => {
     console.error('✗ Failed to load satellite imagery:', error);
     setLoading(false);
+    setSatelliteImageLoaded(false);
     
     // Try alternative source on first error
     if (!useAlternative && retryCount === 0) {
@@ -517,6 +521,12 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
     satelliteImage: {
       width: '100%',
       height: '100%',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 1,
     },
     cloudOverlay: {
       position: 'absolute',
@@ -526,7 +536,8 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
       bottom: 0,
       width: '100%',
       height: '100%',
-      zIndex: 2,
+      zIndex: 3,
+      pointerEvents: 'none',
     },
     cloudFrameImage: {
       width: '100%',
@@ -911,6 +922,7 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
       <View style={imageContainerStyle}>
         {!error ? (
           <>
+            {/* Satellite base image */}
             <Image
               source={{ uri: currentImageUrl }}
               style={styles.satelliteImage}
@@ -922,8 +934,8 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
               priority="high"
             />
             
-            {/* Animated cloud cover overlay */}
-            {!loading && showCloudCover && framesReady && currentFrame && (
+            {/* Animated cloud cover overlay - ALWAYS render when conditions are met */}
+            {satelliteImageLoaded && showCloudCover && framesReady && currentFrame && (
               <Animated.View style={[styles.cloudOverlay, cloudAnimatedStyle]}>
                 <Image
                   key={`cloud-frame-${currentFrameIndex}-${currentFrame.timestamp}`}
@@ -934,17 +946,34 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
                   cachePolicy="memory-disk"
                   priority="normal"
                   onLoad={() => {
-                    console.log(`✓ Cloud frame ${currentFrameIndex + 1} rendered successfully`);
+                    console.log(`✓✓✓ Cloud frame ${currentFrameIndex + 1} RENDERED ON SCREEN ✓✓✓`);
                   }}
                   onError={(e) => {
-                    console.error(`✗ Cloud frame ${currentFrameIndex + 1} failed to render:`, currentFrame.url, e);
+                    console.error(`✗✗✗ Cloud frame ${currentFrameIndex + 1} RENDER ERROR ✗✗✗`, currentFrame.url, e);
                   }}
                 />
               </Animated.View>
             )}
             
+            {/* Debug: Show when cloud should be visible */}
+            {satelliteImageLoaded && showCloudCover && framesReady && currentFrame && (
+              <View style={{
+                position: 'absolute',
+                top: 40,
+                left: 8,
+                backgroundColor: 'rgba(0, 255, 0, 0.8)',
+                padding: 4,
+                borderRadius: 4,
+                zIndex: 7,
+              }}>
+                <Text style={{ fontSize: 9, color: '#000', fontWeight: 'bold' }}>
+                  CLOUD VISIBLE
+                </Text>
+              </View>
+            )}
+            
             {/* Frames ready indicator */}
-            {!loading && showCloudCover && framesReady && cloudFrames.length > 0 && !cloudError && (
+            {satelliteImageLoaded && showCloudCover && framesReady && cloudFrames.length > 0 && !cloudError && (
               <View style={styles.framesReadyIndicator}>
                 <Icon name="checkmark-circle" size={14} color="#fff" />
                 <Text style={styles.framesReadyText}>
@@ -954,7 +983,7 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
             )}
             
             {/* Cloud error indicator */}
-            {!loading && showCloudCover && cloudError && (
+            {satelliteImageLoaded && showCloudCover && cloudError && (
               <View style={styles.cloudErrorIndicator}>
                 <Icon name="alert-circle" size={14} color="#fff" />
                 <Text style={styles.cloudErrorText} numberOfLines={2}>
@@ -964,7 +993,7 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
             )}
             
             {/* Timestamp overlay */}
-            {!loading && showCloudCover && framesReady && currentFrame && (
+            {satelliteImageLoaded && showCloudCover && framesReady && currentFrame && (
               <View style={styles.timeStamp}>
                 <Text style={styles.timeStampText}>
                   {currentFrame.time}
@@ -981,7 +1010,7 @@ const SatelliteImagery: React.FC<SatelliteImageryProps> = ({
             )}
             
             {/* Location marker */}
-            {!loading && (
+            {satelliteImageLoaded && (
               <>
                 <View style={styles.locationMarkerPulse} />
                 <View style={styles.locationMarker} />
