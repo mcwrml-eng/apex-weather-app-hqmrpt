@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
 import { useTheme } from '../state/ThemeContext';
 import { getColors, borderRadius, getShadows } from '../styles/commonStyles';
@@ -99,62 +99,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   // Distance scale in kilometers for each ring
   const distanceRings = [5, 10, 20, 30, 40, 50];
 
-  useEffect(() => {
-    fetchRainfallData();
-  }, [latitude, longitude]);
-
-  // Start/stop animations based on isPlaying state
-  useEffect(() => {
-    if (isPlaying && radarData?.hasRain) {
-      console.log('Starting rain forecast animation');
-      
-      // Main animation progress (cycles through time frames)
-      animationProgress.value = withRepeat(
-        withTiming(1, {
-          duration: 8000,
-          easing: Easing.linear,
-        }),
-        -1,
-        false
-      );
-
-      // Radar sweep effect
-      radarSweepRotation.value = withRepeat(
-        withTiming(360, {
-          duration: 4000,
-          easing: Easing.linear,
-        }),
-        -1,
-        false
-      );
-
-      // Pulse effect for intensity
-      pulseAnimation.value = withRepeat(
-        withSequence(
-          withTiming(1.15, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-          withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) })
-        ),
-        -1,
-        false
-      );
-    } else {
-      console.log('Stopping rain forecast animation');
-      cancelAnimation(animationProgress);
-      cancelAnimation(radarSweepRotation);
-      cancelAnimation(pulseAnimation);
-      animationProgress.value = 0;
-      radarSweepRotation.value = 0;
-      pulseAnimation.value = 1;
-    }
-
-    return () => {
-      cancelAnimation(animationProgress);
-      cancelAnimation(radarSweepRotation);
-      cancelAnimation(pulseAnimation);
-    };
-  }, [isPlaying, radarData?.hasRain]);
-
-  const fetchRainfallData = async () => {
+  const fetchRainfallData = useCallback(async () => {
     setLoading(true);
     setError(false);
     setErrorMessage('');
@@ -313,7 +258,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       setErrorMessage(err instanceof Error ? err.message : 'Failed to load projected rain forecast');
       setLoading(false);
     }
-  };
+  }, [latitude, longitude, circuitName]);
 
   const generateEnhancedRadarGrid = (
     timeData: PrecipitationData[], 
@@ -438,6 +383,75 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   const togglePlayPause = () => {
     setIsPlaying(!isPlaying);
   };
+
+  // Fetch data on mount and when coordinates change
+  useEffect(() => {
+    fetchRainfallData();
+  }, [fetchRainfallData]);
+
+  // Start/stop animations based on isPlaying state
+  useEffect(() => {
+    if (isPlaying && radarData?.hasRain) {
+      console.log('Starting rain forecast animation');
+      
+      // Main animation progress (cycles through time frames)
+      animationProgress.value = withRepeat(
+        withTiming(1, {
+          duration: 8000,
+          easing: Easing.linear,
+        }),
+        -1,
+        false
+      );
+
+      // Radar sweep effect
+      radarSweepRotation.value = withRepeat(
+        withTiming(360, {
+          duration: 4000,
+          easing: Easing.linear,
+        }),
+        -1,
+        false
+      );
+
+      // Pulse effect for intensity
+      pulseAnimation.value = withRepeat(
+        withSequence(
+          withTiming(1.15, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        false
+      );
+    } else {
+      console.log('Stopping rain forecast animation');
+      cancelAnimation(animationProgress);
+      cancelAnimation(radarSweepRotation);
+      cancelAnimation(pulseAnimation);
+      animationProgress.value = 0;
+      radarSweepRotation.value = 0;
+      pulseAnimation.value = 1;
+    }
+
+    return () => {
+      cancelAnimation(animationProgress);
+      cancelAnimation(radarSweepRotation);
+      cancelAnimation(pulseAnimation);
+    };
+  }, [isPlaying, radarData?.hasRain, animationProgress, radarSweepRotation, pulseAnimation]);
+
+  // Update current frame based on animation progress
+  useEffect(() => {
+    if (!radarData?.gridData || radarData.gridData.length === 0) return;
+    
+    const interval = setInterval(() => {
+      if (isPlaying) {
+        setCurrentFrame(prev => (prev + 1) % radarData.gridData.length);
+      }
+    }, 1000); // Update frame every second
+    
+    return () => clearInterval(interval);
+  }, [isPlaying, radarData?.gridData]);
 
   const styles = useMemo(() => StyleSheet.create({
     container: {
@@ -809,55 +823,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     },
   }), [colors, shadows, compact, isDark]);
 
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.titleContainer}>
-            <Icon name="rainy" size={20} color={colors.precipitation} />
-            <Text style={styles.title}>Projected Rain Forecast</Text>
-          </View>
-        </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading detailed forecast data...</Text>
-        </View>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.titleContainer}>
-            <Icon name="rainy" size={20} color={colors.precipitation} />
-            <Text style={styles.title}>Projected Rain Forecast</Text>
-          </View>
-        </View>
-        <View style={styles.errorContainer}>
-          <Icon name="cloud-offline" size={48} color={colors.error} />
-          <Text style={styles.errorText}>Unable to load forecast data</Text>
-          {errorMessage ? (
-            <Text style={styles.errorDetails}>{errorMessage}</Text>
-          ) : null}
-          <TouchableOpacity 
-            style={styles.retryButton}
-            onPress={fetchRainfallData}
-            activeOpacity={0.8}
-          >
-            <Icon name="refresh" size={16} color="#fff" />
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
-
-  if (!radarData) {
-    return null;
-  }
-
   const radarSize = compact ? 280 : 340;
   const centerX = radarSize / 2;
   const centerY = radarSize / 2;
@@ -878,7 +843,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
 
   // Get current frame data based on animation progress
   const getCurrentFrameData = (): PrecipitationZone[] => {
-    if (!radarData.gridData || radarData.gridData.length === 0) {
+    if (!radarData?.gridData || radarData.gridData.length === 0) {
       return [];
     }
     
@@ -936,7 +901,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   // Animated rain direction arrow
   const AnimatedRainDirectionArrow = () => {
     const arrowLength = maxRadius * 0.6;
-    const direction = radarData.rainDirection;
+    const direction = radarData?.rainDirection || 0;
     
     const angleRad = ((direction - 90) * Math.PI) / 180;
     const endX = centerX + arrowLength * Math.cos(angleRad);
@@ -1008,20 +973,56 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     );
   };
 
-  // Update current frame based on animation progress
-  useEffect(() => {
-    if (!radarData?.gridData || radarData.gridData.length === 0) return;
-    
-    const interval = setInterval(() => {
-      if (isPlaying) {
-        setCurrentFrame(prev => (prev + 1) % radarData.gridData.length);
-      }
-    }, 1000); // Update frame every second
-    
-    return () => clearInterval(interval);
-  }, [isPlaying, radarData?.gridData]);
-
   const currentGridData = getCurrentFrameData();
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <View style={styles.titleContainer}>
+            <Icon name="rainy" size={20} color={colors.precipitation} />
+            <Text style={styles.title}>Projected Rain Forecast</Text>
+          </View>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Loading detailed forecast data...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <View style={styles.titleContainer}>
+            <Icon name="rainy" size={20} color={colors.precipitation} />
+            <Text style={styles.title}>Projected Rain Forecast</Text>
+          </View>
+        </View>
+        <View style={styles.errorContainer}>
+          <Icon name="cloud-offline" size={48} color={colors.error} />
+          <Text style={styles.errorText}>Unable to load forecast data</Text>
+          {errorMessage ? (
+            <Text style={styles.errorDetails}>{errorMessage}</Text>
+          ) : null}
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={fetchRainfallData}
+            activeOpacity={0.8}
+          >
+            <Icon name="refresh" size={16} color="#fff" />
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  if (!radarData) {
+    return null;
+  }
 
   return (
     <View style={styles.container}>
