@@ -561,6 +561,9 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       borderColor: colors.divider,
       boxShadow: shadows.md,
       marginBottom: 16,
+      width: '100%',
+      maxWidth: '100%',
+      overflow: 'hidden',
     },
     header: {
       flexDirection: 'row',
@@ -645,12 +648,17 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       alignItems: 'center',
       borderWidth: 1,
       borderColor: colors.divider,
+      width: '100%',
+      maxWidth: '100%',
+      overflow: 'hidden',
     },
     radarDisplay: {
-      width: compact ? 280 : 340,
-      height: compact ? 280 : 340,
+      width: compact ? 280 : 320,
+      height: compact ? 280 : 320,
+      maxWidth: '100%',
       alignItems: 'center',
       justifyContent: 'center',
+      alignSelf: 'center',
     },
     noRainOverlay: {
       position: 'absolute',
@@ -694,6 +702,8 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       marginBottom: 16,
       borderWidth: 1,
       borderColor: colors.divider,
+      width: '100%',
+      maxWidth: '100%',
     },
     conditionsRow: {
       flexDirection: 'row',
@@ -751,6 +761,8 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       flexDirection: 'row',
       alignItems: 'center',
       gap: 12,
+      width: '100%',
+      maxWidth: '100%',
     },
     noRainBannerContent: {
       flex: 1,
@@ -783,6 +795,8 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       marginBottom: 16,
       borderWidth: 1,
       borderColor: colors.divider,
+      width: '100%',
+      maxWidth: '100%',
     },
     viewToggleButton: {
       flex: 1,
@@ -805,6 +819,8 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     },
     forecastContainer: {
       marginBottom: 16,
+      width: '100%',
+      maxWidth: '100%',
     },
     forecastTitle: {
       fontSize: 15,
@@ -850,6 +866,8 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       flexWrap: 'wrap',
       gap: 8,
       marginTop: 8,
+      width: '100%',
+      maxWidth: '100%',
     },
     legendItem: {
       flexDirection: 'row',
@@ -927,6 +945,8 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       marginBottom: 16,
       borderWidth: 1,
       borderColor: colors.divider,
+      width: '100%',
+      maxWidth: '100%',
     },
     timelineHeader: {
       flexDirection: 'row',
@@ -1007,7 +1027,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     },
   }), [colors, shadows, compact, isDark]);
 
-  const radarSize = compact ? 280 : 340;
+  const radarSize = compact ? 280 : 320;
   const centerX = radarSize / 2;
   const centerY = radarSize / 2;
   const maxRadius = radarSize / 2 - 30;
@@ -1352,7 +1372,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
 
       <View style={styles.radarContainer}>
         <View style={styles.radarDisplay}>
-          <Svg width={radarSize} height={radarSize}>
+          <Svg width={radarSize} height={radarSize} viewBox={`0 0 ${radarSize} ${radarSize}`}>
             <Defs>
               <RadialGradient id="radarBg" cx="50%" cy="50%">
                 <Stop offset="0%" stopColor={isDark ? '#1a1a1a' : '#f5f5f5'} stopOpacity="1" />
