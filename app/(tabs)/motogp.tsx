@@ -1,212 +1,169 @@
 
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout } from '../../styles/commonStyles';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
 import { useTheme } from '../../state/ThemeContext';
-import CircuitCard from '../../components/CircuitCard';
-import FeaturedTrackCard from '../../components/FeaturedTrackCard';
-import AppHeader from '../../components/AppHeader';
-import ErrorBoundary from '../../components/ErrorBoundary';
+import { getColors, spacing, borderRadius, getShadows } from '../../styles/commonStyles';
 import { motogpCircuits } from '../../data/circuits';
+import CircuitCard from '../../components/CircuitCard';
+import SearchBar from '../../components/SearchBar';
+import Icon from '../../components/Icon';
+import InteractiveGlobe from '../../components/InteractiveGlobe';
 
 export default function MotoGPScreen() {
-  const [searchQuery, setSearchQuery] = useState('');
   const { isDark } = useTheme();
-  
   const colors = getColors(isDark);
-  const commonStyles = getCommonStyles(isDark);
   const shadows = getShadows(isDark);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showGlobe, setShowGlobe] = useState(false);
+
+  const filteredCircuits = useMemo(() => {
+    if (!searchQuery.trim()) return motogpCircuits;
+    const query = searchQuery.toLowerCase();
+    return motogpCircuits.filter(
+      (c) =>
+        c.name.toLowerCase().includes(query) ||
+        c.country.toLowerCase().includes(query)
+    );
+  }, [searchQuery]);
+
+  const handleTrackSelect = (slug: string) => {
+    router.push({
+      pathname: '/circuit/[slug]',
+      params: { slug, category: 'motogp' },
+    });
+  };
 
   const styles = StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background,
     },
-    searchContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: colors.backgroundAlt,
-      borderRadius: borderRadius.lg,
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-      marginHorizontal: layout.screenPadding,
-      marginBottom: spacing.lg,
+    header: {
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.md,
     },
-    searchIcon: {
-      marginRight: spacing.md,
-    },
-    searchInput: {
-      flex: 1,
-      fontSize: 16,
+    title: {
+      fontSize: 32,
+      fontWeight: '700',
       color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+      marginBottom: 8,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: colors.textMuted,
       fontFamily: 'Roboto_400Regular',
     },
-    content: {
-      flex: 1,
+    toggleContainer: {
+      flexDirection: 'row',
+      gap: 8,
+      marginTop: 12,
     },
-    scrollContent: {
-      padding: layout.screenPadding,
+    toggleButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.backgroundAlt,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: borderRadius.md,
+      borderWidth: 1,
+      borderColor: colors.divider,
     },
-    sectionTitle: {
-      fontSize: 20,
+    toggleButtonActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    toggleButtonText: {
+      fontSize: 13,
       fontWeight: '600',
       color: colors.text,
-      fontFamily: 'Roboto_500Medium',
-      marginBottom: spacing.lg,
-      marginTop: spacing.md,
+      fontFamily: 'Roboto_600SemiBold',
     },
-    circuitsGrid: {
-      gap: spacing.md,
+    toggleButtonTextActive: {
+      color: '#fff',
     },
-    statsContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginBottom: spacing.xl,
+    content: {
       paddingHorizontal: spacing.md,
+      paddingBottom: 100,
     },
-    statItem: {
-      alignItems: 'center',
-      backgroundColor: colors.card,
-      padding: spacing.lg,
-      borderRadius: borderRadius.lg,
-      flex: 1,
-      marginHorizontal: spacing.xs,
-      borderWidth: 1,
-      borderColor: colors.borderLight,
-      boxShadow: shadows.sm,
+    searchContainer: {
+      marginBottom: spacing.md,
     },
-    statNumber: {
-      fontSize: 24,
-      fontWeight: '700',
-      color: colors.motogpBlue,
-      fontFamily: 'Roboto_700Bold',
-    },
-    statLabel: {
-      fontSize: 12,
+    resultsText: {
+      fontSize: 14,
       color: colors.textMuted,
       fontFamily: 'Roboto_400Regular',
-      textTransform: 'uppercase',
-      letterSpacing: 0.5,
-      marginTop: spacing.xs,
-    },
-    emptyState: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: spacing.massive,
-    },
-    emptyText: {
-      fontSize: 16,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      textAlign: 'center',
-      marginTop: spacing.lg,
+      marginBottom: spacing.sm,
     },
   });
 
-  const filteredCircuits = useMemo(() => {
-    try {
-      if (!searchQuery.trim()) return motogpCircuits;
-      
-      const query = searchQuery.toLowerCase().trim();
-      return motogpCircuits.filter(circuit => 
-        circuit.name.toLowerCase().includes(query) ||
-        circuit.country.toLowerCase().includes(query)
-      );
-    } catch (error) {
-      console.error('MotoGPScreen: Error filtering circuits:', error);
-      return motogpCircuits;
-    }
-  }, [searchQuery]);
-
-  console.log('MotoGPScreen: Rendering with', filteredCircuits.length, 'circuits, theme:', isDark ? 'dark' : 'light');
-
   return (
-    <ErrorBoundary>
-      <View style={styles.container}>
-        <AppHeader
-          title="MotoGP"
-          subtitle={`2026 Championship Calendar • ${motogpCircuits.length} Circuits`}
-          icon={<Ionicons name="bicycle" size={32} color={colors.motogpBlue} />}
-        />
-
-        <View style={styles.searchContainer}>
-          <Ionicons 
-            name="search" 
-            size={20} 
-            color={colors.textMuted} 
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search circuits or countries..."
-            placeholderTextColor={colors.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <Ionicons 
-              name="close-circle" 
-              size={20} 
-              color={colors.textMuted}
-              onPress={() => setSearchQuery('')}
-            />
-          )}
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>MotoGP</Text>
+        <Text style={styles.subtitle}>
+          {motogpCircuits.length} circuits • 2025/2026 season
+        </Text>
+        <View style={styles.toggleContainer}>
+          <TouchableOpacity
+            style={[styles.toggleButton, !showGlobe && styles.toggleButtonActive]}
+            onPress={() => setShowGlobe(false)}
+            activeOpacity={0.7}
+          >
+            <Icon name="list" size={16} color={!showGlobe ? '#fff' : colors.text} />
+            <Text style={[styles.toggleButtonText, !showGlobe && styles.toggleButtonTextActive]}>
+              List View
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.toggleButton, showGlobe && styles.toggleButtonActive]}
+            onPress={() => setShowGlobe(true)}
+            activeOpacity={0.7}
+          >
+            <Icon name="globe-outline" size={16} color={showGlobe ? '#fff' : colors.text} />
+            <Text style={[styles.toggleButtonText, showGlobe && styles.toggleButtonTextActive]}>
+              Globe View
+            </Text>
+          </TouchableOpacity>
         </View>
+      </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.scrollContent}>
-            <ErrorBoundary>
-              <FeaturedTrackCard category="motogp" />
-            </ErrorBoundary>
-
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{motogpCircuits.length}</Text>
-                <Text style={styles.statLabel}>Circuits</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>22</Text>
-                <Text style={styles.statLabel}>Races</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>11</Text>
-                <Text style={styles.statLabel}>Teams</Text>
-              </View>
+      <ScrollView contentContainerStyle={styles.content}>
+        {showGlobe ? (
+          <InteractiveGlobe
+            category="motogp"
+            onTrackSelect={handleTrackSelect}
+          />
+        ) : (
+          <>
+            <View style={styles.searchContainer}>
+              <SearchBar
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="Search MotoGP circuits..."
+              />
             </View>
 
-            <Text style={styles.sectionTitle}>
-              All Circuits ({filteredCircuits.length})
-            </Text>
-
-            {filteredCircuits.length > 0 ? (
-              <View style={styles.circuitsGrid}>
-                {filteredCircuits.map((circuit) => (
-                  <ErrorBoundary key={circuit.slug}>
-                    <CircuitCard
-                      circuit={circuit}
-                      category="motogp"
-                    />
-                  </ErrorBoundary>
-                ))}
-              </View>
-            ) : (
-              <View style={styles.emptyState}>
-                <Ionicons 
-                  name="search" 
-                  size={48} 
-                  color={colors.textMuted} 
-                />
-                <Text style={styles.emptyText}>
-                  No circuits found matching &quot;{searchQuery}&quot;
-                </Text>
-              </View>
+            {searchQuery.trim() !== '' && (
+              <Text style={styles.resultsText}>
+                {filteredCircuits.length} result{filteredCircuits.length !== 1 ? 's' : ''} found
+              </Text>
             )}
-          </View>
-        </ScrollView>
-      </View>
-    </ErrorBoundary>
+
+            {filteredCircuits.map((circuit) => (
+              <CircuitCard
+                key={circuit.slug}
+                circuit={circuit}
+                category="motogp"
+                onPress={() => handleTrackSelect(circuit.slug)}
+              />
+            ))}
+          </>
+        )}
+      </ScrollView>
+    </View>
   );
 }
