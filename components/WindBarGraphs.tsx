@@ -631,14 +631,6 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
               </Text>
             </View>
           </View>
-          <Text style={styles.summaryNote}>
-            Enhanced accuracy: Wind speed and gusts now displayed in separate charts for better visibility. 
-            Wind direction now shown as a scatter plot for better trend analysis and pattern recognition.
-            Wind direction arrows show precise direction wind is blowing TO. 
-            All measurements validated and normalized for motorsport analysis. 
-            Gust factor indicates wind turbulence level - higher values mean more gusty conditions.
-            Time scales display at optimal 3-hour intervals for 24-hour racing strategy analysis.
-          </Text>
         </View>
       </ScrollView>
     </View>
