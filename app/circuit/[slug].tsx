@@ -711,7 +711,7 @@ function DetailScreen() {
             <SafeComponent componentName="SunriseSunsetBar">
               <View style={styles.sunTimesBar}>
                 <View style={styles.sunTimeItem}>
-                  <Icon name="arrow-up" size={20} color={colors.warning} />
+                  <Icon name="sunny" size={24} color="#FFA726" />
                   <View>
                     <Text style={styles.sunTimeLabel}>Sunrise</Text>
                     <Text style={styles.sunTimeText}>{formatTimeForDisplay(todaySunTimes.sunrise)}</Text>
@@ -730,7 +730,7 @@ function DetailScreen() {
                 <View style={styles.sunTimeDivider} />
                 
                 <View style={styles.sunTimeItem}>
-                  <Icon name="arrow-down" size={20} color={colors.primary} />
+                  <Icon name="moon" size={24} color="#5C6BC0" />
                   <View>
                     <Text style={styles.sunTimeLabel}>Sunset</Text>
                     <Text style={styles.sunTimeText}>{formatTimeForDisplay(todaySunTimes.sunset)}</Text>
