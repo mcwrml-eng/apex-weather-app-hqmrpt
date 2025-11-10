@@ -80,12 +80,41 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
   const focalX = useSharedValue(0);
   const focalY = useSharedValue(0);
 
+  // Track current transform state for particle calculations
+  const [currentScale, setCurrentScale] = useState(1);
+  const [currentTranslateX, setCurrentTranslateX] = useState(0);
+  const [currentTranslateY, setCurrentTranslateY] = useState(0);
+
   // Map tile configuration
   const [mapZoom, setMapZoom] = useState(10);
   const mapTileSize = 256;
 
   // Distance scale in kilometers for each ring
   const distanceRings = [5, 10, 20, 30, 40, 50];
+
+  // Calculate visible bounds based on current transform
+  const getVisibleBounds = useCallback(() => {
+    // Calculate the inverse transform to get world coordinates from screen coordinates
+    const invScale = 1 / currentScale;
+    
+    // Screen corners in world space
+    const left = -currentTranslateX * invScale;
+    const top = -currentTranslateY * invScale;
+    const right = left + width * invScale;
+    const bottom = top + height * invScale;
+    
+    // Add padding to ensure particles spawn slightly outside visible area
+    const padding = Math.max(width, height) * 0.2 * invScale;
+    
+    return {
+      left: left - padding,
+      top: top - padding,
+      right: right + padding,
+      bottom: bottom + padding,
+      width: right - left + padding * 2,
+      height: bottom - top + padding * 2,
+    };
+  }, [currentScale, currentTranslateX, currentTranslateY, width, height]);
 
   // Calculate particle velocity based on wind speed and direction
   const calculateVelocity = useCallback((speed: number, direction: number) => {
@@ -102,17 +131,20 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     };
   }, []);
 
-  // Initialize particles
+  // Initialize particles based on visible bounds
   const initializeParticles = useCallback(() => {
+    const bounds = getVisibleBounds();
     const newParticles: Particle[] = [];
     const { vx, vy } = calculateVelocity(windSpeed, windDirection);
+    
+    console.log('Initializing particles with bounds:', bounds);
     
     for (let i = 0; i < particleCount; i++) {
       const maxLife = 100 + Math.random() * 100;
       newParticles.push({
         id: i,
-        x: Math.random() * width,
-        y: Math.random() * height,
+        x: bounds.left + Math.random() * bounds.width,
+        y: bounds.top + Math.random() * bounds.height,
         vx: vx * (0.8 + Math.random() * 0.4), // Add some variation
         vy: vy * (0.8 + Math.random() * 0.4),
         life: Math.random() * maxLife,
@@ -123,7 +155,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     }
     
     return newParticles;
-  }, [windSpeed, windDirection, particleCount, width, height, calculateVelocity]);
+  }, [windSpeed, windDirection, particleCount, getVisibleBounds, calculateVelocity]);
 
   // Update particle positions
   const updateParticles = useCallback(() => {
@@ -132,19 +164,22 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     lastUpdateRef.current = now;
 
     const { vx, vy } = calculateVelocity(windSpeed, windDirection);
+    const bounds = getVisibleBounds();
     
     const updatedParticles = particlesRef.current.map(particle => {
       let newX = particle.x + particle.vx * deltaTime;
       let newY = particle.y + particle.vy * deltaTime;
       let newLife = particle.life - deltaTime;
       
-      // Reset particle if it goes off screen or life expires
-      if (newX < -10 || newX > width + 10 || newY < -10 || newY > height + 10 || newLife <= 0) {
+      // Reset particle if it goes off visible bounds or life expires
+      if (newX < bounds.left || newX > bounds.right || 
+          newY < bounds.top || newY > bounds.bottom || 
+          newLife <= 0) {
         const maxLife = 100 + Math.random() * 100;
         return {
           ...particle,
-          x: Math.random() * width,
-          y: Math.random() * height,
+          x: bounds.left + Math.random() * bounds.width,
+          y: bounds.top + Math.random() * bounds.height,
           vx: vx * (0.8 + Math.random() * 0.4),
           vy: vy * (0.8 + Math.random() * 0.4),
           life: maxLife,
@@ -170,7 +205,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     
     particlesRef.current = updatedParticles;
     setParticles([...updatedParticles]);
-  }, [windSpeed, windDirection, width, height, calculateVelocity]);
+  }, [windSpeed, windDirection, calculateVelocity, getVisibleBounds]);
 
   // Animation loop
   useEffect(() => {
@@ -194,6 +229,19 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     particlesRef.current = newParticles;
     setParticles(newParticles);
   }, [initializeParticles]);
+
+  // Reinitialize particles when transform changes significantly
+  useEffect(() => {
+    console.log('Transform changed - reinitializing particles:', {
+      scale: currentScale,
+      translateX: currentTranslateX,
+      translateY: currentTranslateY,
+    });
+    
+    const newParticles = initializeParticles();
+    particlesRef.current = newParticles;
+    setParticles(newParticles);
+  }, [currentScale, currentTranslateX, currentTranslateY, initializeParticles]);
 
   // Calculate map tile coordinates from lat/lon
   const getTileCoordinates = useCallback((lat: number, lon: number, zoom: number) => {
@@ -302,17 +350,18 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     return particle.opacity * lifeRatio;
   }, []);
 
-  // Draw wind flow lines (streamlines)
+  // Draw wind flow lines (streamlines) - now covers visible bounds
   const streamlines = useMemo(() => {
     if (!showGrid) return [];
     
+    const bounds = getVisibleBounds();
     const lines: { x1: number; y1: number; x2: number; y2: number }[] = [];
     const { vx, vy } = calculateVelocity(windSpeed, windDirection);
-    const gridSpacing = 40;
-    const lineLength = 30;
+    const gridSpacing = 40 / currentScale; // Adjust spacing based on zoom
+    const lineLength = 30 / currentScale;
     
-    for (let x = gridSpacing; x < width; x += gridSpacing) {
-      for (let y = gridSpacing; y < height; y += gridSpacing) {
+    for (let x = bounds.left; x < bounds.right; x += gridSpacing) {
+      for (let y = bounds.top; y < bounds.bottom; y += gridSpacing) {
         const magnitude = Math.sqrt(vx * vx + vy * vy);
         if (magnitude > 0.01) {
           const normalizedVx = (vx / magnitude) * lineLength;
@@ -329,7 +378,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     }
     
     return lines;
-  }, [windSpeed, windDirection, width, height, showGrid, calculateVelocity]);
+  }, [windSpeed, windDirection, showGrid, calculateVelocity, getVisibleBounds, currentScale]);
 
   // Reset zoom and pan
   const handleResetZoom = useCallback(() => {
@@ -341,6 +390,11 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     savedTranslateX.value = 0;
     savedTranslateY.value = 0;
     setMapZoom(10); // Reset map zoom too
+    
+    // Update state for particle recalculation
+    setCurrentScale(1);
+    setCurrentTranslateX(0);
+    setCurrentTranslateY(0);
   }, [scale, translateX, translateY, savedScale, savedTranslateX, savedTranslateY]);
 
   // Pinch gesture for zoom with focal point
@@ -358,6 +412,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     .onEnd(() => {
       console.log('Wind animation: Pinch gesture end - saving scale');
       savedScale.value = scale.value;
+      runOnJS(setCurrentScale)(scale.value);
     });
 
   // Pan gesture for dragging
@@ -375,6 +430,8 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       console.log('Wind animation: Pan gesture end - saving position - translateX:', translateX.value, 'translateY:', translateY.value);
       savedTranslateX.value = translateX.value;
       savedTranslateY.value = translateY.value;
+      runOnJS(setCurrentTranslateX)(translateX.value);
+      runOnJS(setCurrentTranslateY)(translateY.value);
     });
 
   // Combine gestures - simultaneous allows both to work together
@@ -771,7 +828,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       
       <Text style={styles.infoText}>
         {latitude && longitude 
-          ? `Wind flow visualization with map underlay • Lat: ${latitude.toFixed(4)}°, Lon: ${longitude.toFixed(4)}° • Distance rings: ${distanceRings.join('km, ')}km • Map zoom: ${mapZoom} • Marker: (${markerPosition.x.toFixed(1)}, ${markerPosition.y.toFixed(1)})`
+          ? `Wind flow visualization with map underlay • Lat: ${latitude.toFixed(4)}°, Lon: ${longitude.toFixed(4)}° • Distance rings: ${distanceRings.join('km, ')}km • Map zoom: ${mapZoom} • Marker: (${markerPosition.x.toFixed(1)}, ${markerPosition.y.toFixed(1)}) • Scale: ${currentScale.toFixed(2)}x`
           : `Wind flow visualization • Distance rings: ${distanceRings.join('km, ')}km`
         }
       </Text>
