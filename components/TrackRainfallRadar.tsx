@@ -71,6 +71,7 @@ const AnimatedPath = Animated.createAnimatedComponent(Path);
 const AnimatedPolygon = Animated.createAnimatedComponent(Polygon);
 const AnimatedLine = Animated.createAnimatedComponent(Line);
 const AnimatedView = Animated.createAnimatedComponent(View);
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   latitude,
@@ -99,6 +100,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   const radarSweepRotation = useSharedValue(0);
   const pulseAnimation = useSharedValue(1);
   const timeSliderPosition = useSharedValue(0);
+  const markerPulse = useSharedValue(1);
 
   // Distance scale in kilometers for each ring
   const distanceRings = [5, 10, 20, 30, 40, 50];
@@ -551,6 +553,22 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     
     return () => clearInterval(interval);
   }, [isPlaying, radarData?.gridData, timeSliderPosition]);
+
+  // Continuous marker pulse animation
+  useEffect(() => {
+    markerPulse.value = withRepeat(
+      withSequence(
+        withTiming(1.3, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      false
+    );
+
+    return () => {
+      cancelAnimation(markerPulse);
+    };
+  }, [markerPulse]);
 
   const styles = useMemo(() => StyleSheet.create({
     container: {
@@ -1180,6 +1198,58 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     );
   };
 
+  // Animated track marker component
+  const AnimatedTrackMarker = () => {
+    const markerAnimatedProps = useAnimatedProps(() => {
+      const scale = markerPulse.value;
+      return {
+        r: 9 * scale,
+      };
+    });
+
+    const outerRingAnimatedProps = useAnimatedProps(() => {
+      const scale = markerPulse.value;
+      const opacity = interpolate(scale, [1, 1.3], [0.6, 0.2]);
+      return {
+        r: 15 * scale,
+        strokeOpacity: opacity,
+      };
+    });
+
+    return (
+      <G>
+        {/* Outer pulsing ring */}
+        <AnimatedCircle
+          cx={centerX}
+          cy={centerY}
+          animatedProps={outerRingAnimatedProps}
+          fill="none"
+          stroke={colors.primary}
+          strokeWidth="2"
+        />
+        
+        {/* Main marker circle with white border */}
+        <AnimatedCircle
+          cx={centerX}
+          cy={centerY}
+          animatedProps={markerAnimatedProps}
+          fill={colors.primary}
+          stroke="#fff"
+          strokeWidth="3"
+        />
+        
+        {/* Center dot for precision */}
+        <Circle
+          cx={centerX}
+          cy={centerY}
+          r={3}
+          fill="#fff"
+          opacity={0.9}
+        />
+      </G>
+    );
+  };
+
   const currentGridData = getCurrentFrameData();
 
   // Animated slider progress style
@@ -1433,14 +1503,8 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
             
             {radarData.hasRain && radarData.rainSpeed > 2 && <AnimatedRainDirectionArrow />}
             
-            <Circle
-              cx={centerX}
-              cy={centerY}
-              r={9}
-              fill={colors.primary}
-              stroke="#fff"
-              strokeWidth="3"
-            />
+            {/* Enhanced animated track marker */}
+            <AnimatedTrackMarker />
             
             <SvgText x={centerX} y={18} fontSize="12" fontWeight="600" fill={colors.text} textAnchor="middle">N</SvgText>
             <SvgText x={radarSize - 18} y={centerY + 5} fontSize="12" fontWeight="600" fill={colors.text} textAnchor="middle">E</SvgText>
@@ -1462,7 +1526,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         </View>
         
         <Text style={styles.infoText}>
-          Circuit location • Distance rings: {distanceRings.join('km, ')}km
+          Pulsing marker indicates exact circuit location • Distance rings: {distanceRings.join('km, ')}km
           {radarData.hasRain && ` • Frame ${currentFrame + 1}/${radarData.gridData.length}`}
         </Text>
       </View>
