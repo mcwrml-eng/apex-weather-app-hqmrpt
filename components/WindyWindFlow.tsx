@@ -34,6 +34,7 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
   const [currentZoom, setCurrentZoom] = useState(zoom);
   const [currentLayer, setCurrentLayer] = useState<'wind' | 'gust' | 'temp'>('wind');
   const [retryCount, setRetryCount] = useState(0);
+  const [debugInfo, setDebugInfo] = useState<string>('');
   const webViewRef = useRef<WebView>(null);
 
   // Generate complete HTML with Windy API integration
@@ -52,6 +53,10 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>Windy Wind Flow</title>
+  
+  <!-- Load Leaflet CSS first -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css" />
+  
   <style>
     * {
       margin: 0;
@@ -113,6 +118,14 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
       font-weight: 500;
     }
     
+    .debug-info {
+      margin-top: 8px;
+      color: ${colors.textMuted};
+      font-size: 11px;
+      text-align: center;
+      max-width: 80%;
+    }
+    
     .error-overlay {
       position: absolute;
       top: 0;
@@ -162,22 +175,44 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
   <div id="loading" class="loading-overlay">
     <div class="spinner"></div>
     <div class="loading-text">Loading wind flow map...</div>
+    <div id="debug" class="debug-info"></div>
   </div>
   
   <div id="error" class="error-overlay">
     <div class="error-icon">⚠️</div>
-    <div class="error-text">Failed to load wind flow map</div>
+    <div class="error-text" id="error-message">Failed to load wind flow map</div>
     <button class="retry-button" onclick="retryLoad()">Retry</button>
   </div>
 
+  <!-- Load Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css" />
+  
+  <!-- Load Windy API -->
   <script src="https://api.windy.com/assets/map-forecast/libBoot.js"></script>
 
   <script>
     let windyAPI = null;
     let loadAttempts = 0;
     const maxAttempts = 3;
+    let loadTimeout = null;
+    let scriptsLoaded = false;
+    
+    // Debug logging
+    function log(message) {
+      console.log('[WindyWindFlow]', message);
+      const debugEl = document.getElementById('debug');
+      if (debugEl) {
+        debugEl.textContent = message;
+      }
+      
+      // Send to React Native
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'debug',
+          message: message
+        }));
+      }
+    }
     
     function hideLoading() {
       const loading = document.getElementById('loading');
@@ -190,14 +225,18 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
     }
     
     function showError(message) {
+      log('Error: ' + message);
       hideLoading();
+      
       const error = document.getElementById('error');
+      const errorMessage = document.getElementById('error-message');
+      
       if (error) {
         error.classList.add('visible');
-        const errorText = error.querySelector('.error-text');
-        if (errorText && message) {
-          errorText.textContent = message;
-        }
+      }
+      
+      if (errorMessage && message) {
+        errorMessage.textContent = message;
       }
       
       // Send error message to React Native
@@ -210,6 +249,7 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
     }
     
     function retryLoad() {
+      log('Retrying...');
       const error = document.getElementById('error');
       if (error) {
         error.classList.remove('visible');
@@ -222,103 +262,243 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
       }
       
       loadAttempts = 0;
-      initWindy();
+      scriptsLoaded = false;
+      
+      // Clear any existing timeout
+      if (loadTimeout) {
+        clearTimeout(loadTimeout);
+        loadTimeout = null;
+      }
+      
+      // Reload the page
+      window.location.reload();
+    }
+    
+    // Check if required libraries are loaded
+    function checkLibraries() {
+      log('Checking libraries...');
+      
+      if (typeof L === 'undefined') {
+        log('Leaflet not loaded');
+        return false;
+      }
+      
+      if (typeof windyInit === 'undefined') {
+        log('Windy API not loaded');
+        return false;
+      }
+      
+      log('All libraries loaded');
+      scriptsLoaded = true;
+      return true;
     }
     
     function initWindy() {
       loadAttempts++;
-      console.log('Initializing Windy API, attempt:', loadAttempts);
+      log('Initializing Windy API (attempt ' + loadAttempts + '/' + maxAttempts + ')');
       
       if (loadAttempts > maxAttempts) {
-        showError('Failed to load after multiple attempts. Please check your internet connection.');
+        showError('Failed to load after ' + maxAttempts + ' attempts. Please check your internet connection and try again.');
         return;
       }
       
+      // Check if libraries are loaded
+      if (!checkLibraries()) {
+        log('Libraries not ready, waiting...');
+        setTimeout(() => {
+          initWindy();
+        }, 1000);
+        return;
+      }
+      
+      // Set a timeout for the entire initialization process
+      loadTimeout = setTimeout(() => {
+        log('Initialization timeout');
+        showError('Map loading timed out. Please try again.');
+      }, 15000); // 15 second timeout
+      
       const options = {
-        key: 'PsLAtXpj93NkYXlM7dMQjYcIliTVAE7k', // Public demo key
+        key: 'PsLAtXpj93NkYXlM7dMQjYcIliTVAE7k',
         lat: ${latitude.toFixed(4)},
         lon: ${longitude.toFixed(4)},
         zoom: ${currentZoom},
       };
       
+      log('Calling windyInit with options: ' + JSON.stringify(options));
+      
       try {
         windyInit(options, windyAPIReady);
       } catch (err) {
-        console.error('Error initializing Windy:', err);
-        setTimeout(() => {
-          initWindy();
-        }, 2000);
+        log('Error calling windyInit: ' + err.message);
+        clearTimeout(loadTimeout);
+        
+        if (loadAttempts < maxAttempts) {
+          setTimeout(() => {
+            initWindy();
+          }, 2000);
+        } else {
+          showError('Failed to initialize Windy API: ' + err.message);
+        }
       }
     }
     
     function windyAPIReady(windyAPIInstance) {
-      console.log('Windy API ready');
+      log('Windy API ready callback triggered');
+      
+      // Clear the timeout
+      if (loadTimeout) {
+        clearTimeout(loadTimeout);
+        loadTimeout = null;
+      }
+      
       windyAPI = windyAPIInstance;
       
       try {
         const { map, overlays, store } = windyAPI;
         
+        if (!map) {
+          throw new Error('Map object not available');
+        }
+        
+        log('Map object available, setting up...');
+        
         // Set the overlay based on current layer
         const overlayName = '${overlayMap[currentLayer]}';
-        console.log('Setting overlay to:', overlayName);
+        log('Setting overlay to: ' + overlayName);
         
-        // Wait for map to be ready
-        map.on('load', () => {
-          console.log('Map loaded successfully');
+        // Set up map event handlers
+        let mapLoaded = false;
+        
+        // Set a timeout for map load
+        const mapLoadTimeout = setTimeout(() => {
+          if (!mapLoaded) {
+            log('Map load event timeout, assuming loaded');
+            finishSetup();
+          }
+        }, 10000); // 10 second timeout for map load
+        
+        function finishSetup() {
+          if (mapLoaded) return;
+          mapLoaded = true;
           
-          // Set overlay
-          overlays.wind.setMetric('${currentLayer === 'temp' ? 'temp' : 'wind'}');
-          store.set('overlay', overlayName);
+          clearTimeout(mapLoadTimeout);
+          log('Finishing map setup');
           
-          // Add marker at circuit location
-          const marker = L.marker([${latitude}, ${longitude}], {
-            icon: L.divIcon({
+          try {
+            // Set overlay
+            store.set('overlay', overlayName);
+            
+            // Add marker at circuit location
+            const markerIcon = L.divIcon({
               className: 'custom-marker',
               html: '<div style="background-color: ${colors.primary}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
               iconSize: [12, 12],
               iconAnchor: [6, 6]
-            })
-          }).addTo(map);
-          
-          // Center map on location
-          map.setView([${latitude}, ${longitude}], ${currentZoom});
-          
-          // Hide loading overlay
-          hideLoading();
-          
-          // Send success message to React Native
-          if (window.ReactNativeWebView) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({
-              type: 'loaded',
-              message: 'Wind flow map loaded successfully'
-            }));
+            });
+            
+            const marker = L.marker([${latitude}, ${longitude}], {
+              icon: markerIcon
+            }).addTo(map);
+            
+            log('Marker added');
+            
+            // Center map on location
+            map.setView([${latitude}, ${longitude}], ${currentZoom});
+            
+            log('Map centered');
+            
+            // Force map to render
+            setTimeout(() => {
+              map.invalidateSize();
+              log('Map size invalidated');
+            }, 100);
+            
+            // Hide loading overlay
+            hideLoading();
+            
+            log('Map loaded successfully');
+            
+            // Send success message to React Native
+            if (window.ReactNativeWebView) {
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'loaded',
+                message: 'Wind flow map loaded successfully'
+              }));
+            }
+          } catch (err) {
+            log('Error in finishSetup: ' + err.message);
+            showError('Failed to complete map setup: ' + err.message);
+          }
+        }
+        
+        // Try multiple events to detect when map is ready
+        map.on('load', () => {
+          log('Map load event fired');
+          finishSetup();
+        });
+        
+        map.on('zoomend', () => {
+          if (!mapLoaded) {
+            log('Map zoomend event fired (assuming loaded)');
+            finishSetup();
           }
         });
         
+        map.on('moveend', () => {
+          if (!mapLoaded) {
+            log('Map moveend event fired (assuming loaded)');
+            finishSetup();
+          }
+        });
+        
+        // Also try to finish setup after a short delay
+        setTimeout(() => {
+          if (!mapLoaded) {
+            log('Timeout fallback, finishing setup');
+            finishSetup();
+          }
+        }, 3000);
+        
         map.on('error', (err) => {
-          console.error('Map error:', err);
-          showError('Map failed to load. Please try again.');
+          log('Map error event: ' + (err.message || 'Unknown error'));
+          clearTimeout(mapLoadTimeout);
+          showError('Map error: ' + (err.message || 'Unknown error'));
         });
         
       } catch (err) {
-        console.error('Error setting up Windy:', err);
-        showError('Failed to initialize wind flow visualization.');
+        log('Error in windyAPIReady: ' + err.message);
+        showError('Failed to initialize wind flow visualization: ' + err.message);
       }
     }
     
-    // Start initialization
-    setTimeout(() => {
-      initWindy();
-    }, 100);
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {
+      log('Waiting for DOM...');
+      document.addEventListener('DOMContentLoaded', () => {
+        log('DOM ready');
+        setTimeout(initWindy, 500);
+      });
+    } else {
+      log('DOM already ready');
+      setTimeout(initWindy, 500);
+    }
     
     // Handle visibility change
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && windyAPI) {
-        console.log('Page visible again, refreshing map');
+        log('Page visible again, refreshing map');
         const { map } = windyAPI;
         if (map) {
           map.invalidateSize();
         }
+      }
+    });
+    
+    // Global error handler
+    window.addEventListener('error', (event) => {
+      log('Global error: ' + event.message);
+      if (event.message.includes('windyInit') || event.message.includes('Leaflet')) {
+        showError('Failed to load required libraries. Please check your internet connection.');
       }
     });
   </script>
@@ -349,6 +529,7 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
     setLoading(true);
     setError(null);
     setRetryCount(0);
+    setDebugInfo('');
   }, [zoom]);
 
   const handleLayerChange = useCallback((layer: 'wind' | 'gust' | 'temp') => {
@@ -361,10 +542,12 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
     console.log('WindyWindFlow: WebView load started');
     setLoading(true);
     setError(null);
+    setDebugInfo('Loading WebView...');
   }, []);
 
   const handleLoadEnd = useCallback(() => {
     console.log('WindyWindFlow: WebView load ended');
+    setDebugInfo('WebView loaded, initializing map...');
     // Don't set loading to false here - wait for message from WebView
   }, []);
 
@@ -373,6 +556,7 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
     console.error('WindyWindFlow: WebView error:', nativeEvent);
     setLoading(false);
     setError('Failed to load wind flow map. Please check your internet connection.');
+    setDebugInfo('WebView error: ' + JSON.stringify(nativeEvent));
   }, []);
 
   const handleHttpError = useCallback((syntheticEvent: any) => {
@@ -380,6 +564,7 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
     console.error('WindyWindFlow: HTTP error:', nativeEvent);
     setLoading(false);
     setError(`HTTP Error: ${nativeEvent.statusCode || 'Unknown'}`);
+    setDebugInfo('HTTP error: ' + nativeEvent.statusCode);
   }, []);
 
   const handleMessage = useCallback((event: any) => {
@@ -391,9 +576,14 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
         setLoading(false);
         setError(null);
         setRetryCount(0);
+        setDebugInfo('Map loaded successfully');
       } else if (data.type === 'error') {
         setLoading(false);
         setError(data.message || 'Failed to load wind flow map');
+        setDebugInfo('Error: ' + data.message);
+      } else if (data.type === 'debug') {
+        setDebugInfo(data.message);
+        console.log('WindyWindFlow debug:', data.message);
       }
     } catch (err) {
       console.error('WindyWindFlow: Error parsing message:', err);
@@ -404,6 +594,7 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
     setError(null);
     setLoading(true);
     setRetryCount(prev => prev + 1);
+    setDebugInfo('Retrying...');
     
     // Force reload WebView
     if (webViewRef.current) {
@@ -484,6 +675,14 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
       fontSize: 14,
       color: colors.text,
       fontFamily: 'Roboto_500Medium',
+    },
+    debugText: {
+      marginTop: 8,
+      fontSize: 11,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      textAlign: 'center',
+      paddingHorizontal: 20,
     },
     errorContainer: {
       position: 'absolute',
@@ -650,6 +849,9 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
             {retryCount > 0 && (
               <Text style={styles.retryInfo}>Retry attempt {retryCount}/2</Text>
             )}
+            {debugInfo && (
+              <Text style={styles.debugText}>{debugInfo}</Text>
+            )}
           </View>
         )}
 
@@ -657,6 +859,9 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
           <View style={styles.errorContainer}>
             <Icon name="alert-circle" size={48} color={colors.error} />
             <Text style={styles.errorText}>{error}</Text>
+            {debugInfo && (
+              <Text style={styles.debugText}>{debugInfo}</Text>
+            )}
             <TouchableOpacity 
               style={styles.retryButton}
               onPress={handleRetry}
