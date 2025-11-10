@@ -15,6 +15,7 @@ import WeatherTextForecast from '../../components/WeatherTextForecast';
 import WeatherAlerts from '../../components/WeatherAlerts';
 import TrackRainfallRadar from '../../components/TrackRainfallRadar';
 import WindyCloudRadar from '../../components/WindyCloudRadar';
+import WindyWindFlow from '../../components/WindyWindFlow';
 import WindParticleAnimation from '../../components/WindParticleAnimation';
 import BottomSheet, { BottomSheetView, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
@@ -839,6 +840,21 @@ function DetailScreen() {
                 zoom={8}
                 width={340}
                 height={340}
+                compact={false}
+              />
+            </SafeComponent>
+          )}
+
+          {/* Windy.com Wind Flow */}
+          {!loading && circuit && (
+            <SafeComponent componentName="WindyWindFlow">
+              <WindyWindFlow
+                latitude={circuit.latitude}
+                longitude={circuit.longitude}
+                circuitName={circuit.name}
+                zoom={8}
+                width={340}
+                height={400}
                 compact={false}
               />
             </SafeComponent>
