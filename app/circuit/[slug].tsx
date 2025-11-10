@@ -829,7 +829,7 @@ function DetailScreen() {
             </View>
           )}
 
-          {/* Animated Wind Visualization */}
+          {/* Animated Wind Visualization with Map Underlay */}
           {!loading && current && (
             <SafeComponent componentName="WindParticleAnimation">
               <View style={styles.windAnimationCard}>
@@ -840,7 +840,7 @@ function DetailScreen() {
                   </View>
                 </View>
                 <Text style={styles.windAnimationSubtitle}>
-                  Real-time wind visualization showing speed and direction
+                  Real-time wind visualization with map underlay showing speed and direction
                 </Text>
                 
                 <View style={styles.windAnimationContainer}>
@@ -852,6 +852,8 @@ function DetailScreen() {
                     particleCount={150}
                     showGrid={true}
                     unit={unit}
+                    latitude={circuit.latitude}
+                    longitude={circuit.longitude}
                   />
                 </View>
                 
@@ -1250,7 +1252,7 @@ function DetailScreen() {
             />
             <View style={{ height: 18 }} />
             <Text style={styles.muted}>
-              Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, written text summaries, animated wind visualization, and sunrise/sunset times for each track location.
+              Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, written text summaries, animated wind visualization with map underlay, and sunrise/sunset times for each track location.
               Data updates every 10 minutes for accuracy.
             </Text>
           </BottomSheetView>

@@ -1,7 +1,7 @@
 
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
-import Svg, { Circle, Line, Path } from 'react-native-svg';
+import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
+import Svg, { Circle, Line, Path, G, Text as SvgText, Defs, RadialGradient, Stop } from 'react-native-svg';
 import Animated, {
   useSharedValue,
   useAnimatedProps,
@@ -10,9 +10,13 @@ import Animated, {
   Easing,
   cancelAnimation,
   runOnJS,
+  useAnimatedStyle,
+  withSpring,
 } from 'react-native-reanimated';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { useTheme } from '../state/ThemeContext';
-import { getColors } from '../styles/commonStyles';
+import { getColors, borderRadius, getShadows } from '../styles/commonStyles';
+import Icon from './Icon';
 
 interface WindParticleAnimationProps {
   windSpeed: number; // in km/h or mph
@@ -23,6 +27,8 @@ interface WindParticleAnimationProps {
   particleColor?: string;
   showGrid?: boolean;
   unit?: 'metric' | 'imperial';
+  latitude?: number;
+  longitude?: number;
 }
 
 interface Particle {
@@ -39,6 +45,7 @@ interface Particle {
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const AnimatedLine = Animated.createAnimatedComponent(Line);
+const AnimatedView = Animated.createAnimatedComponent(View);
 
 const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
   windSpeed,
@@ -49,13 +56,29 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
   particleColor,
   showGrid = true,
   unit = 'metric',
+  latitude,
+  longitude,
 }) => {
   const { isDark } = useTheme();
   const colors = getColors(isDark);
+  const shadows = getShadows(isDark);
   const [particles, setParticles] = useState<Particle[]>([]);
   const animationFrameRef = useRef<number | null>(null);
   const particlesRef = useRef<Particle[]>([]);
   const lastUpdateRef = useRef<number>(Date.now());
+
+  // Zoom and pan values
+  const scale = useSharedValue(1);
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const savedScale = useSharedValue(1);
+  const savedTranslateX = useSharedValue(0);
+  const savedTranslateY = useSharedValue(0);
+  const focalX = useSharedValue(0);
+  const focalY = useSharedValue(0);
+
+  // Distance scale in kilometers for each ring
+  const distanceRings = [5, 10, 20, 30, 40, 50];
 
   // Calculate particle velocity based on wind speed and direction
   const calculateVelocity = useCallback((speed: number, direction: number) => {
@@ -214,50 +237,324 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     return lines;
   }, [windSpeed, windDirection, width, height, showGrid, calculateVelocity]);
 
+  // Reset zoom and pan
+  const handleResetZoom = useCallback(() => {
+    console.log('Resetting zoom and pan for wind animation');
+    scale.value = withSpring(1, { damping: 15, stiffness: 150 });
+    translateX.value = withSpring(0, { damping: 15, stiffness: 150 });
+    translateY.value = withSpring(0, { damping: 15, stiffness: 150 });
+    savedScale.value = 1;
+    savedTranslateX.value = 0;
+    savedTranslateY.value = 0;
+  }, [scale, translateX, translateY, savedScale, savedTranslateX, savedTranslateY]);
+
+  // Pinch gesture for zoom with focal point
+  const pinchGesture = Gesture.Pinch()
+    .onStart((event) => {
+      console.log('Wind animation: Pinch gesture started');
+      focalX.value = event.focalX;
+      focalY.value = event.focalY;
+    })
+    .onUpdate((event) => {
+      const newScale = savedScale.value * event.scale;
+      scale.value = Math.max(1, Math.min(5, newScale));
+      console.log('Wind animation: Pinch gesture update - scale:', scale.value);
+    })
+    .onEnd(() => {
+      console.log('Wind animation: Pinch gesture end - saving scale');
+      savedScale.value = scale.value;
+    });
+
+  // Pan gesture for dragging
+  const panGesture = Gesture.Pan()
+    .minDistance(5)
+    .onStart(() => {
+      console.log('Wind animation: Pan gesture started');
+    })
+    .onUpdate((event) => {
+      console.log('Wind animation: Pan gesture update - translationX:', event.translationX, 'translationY:', event.translationY);
+      translateX.value = savedTranslateX.value + event.translationX;
+      translateY.value = savedTranslateY.value + event.translationY;
+    })
+    .onEnd(() => {
+      console.log('Wind animation: Pan gesture end - saving position - translateX:', translateX.value, 'translateY:', translateY.value);
+      savedTranslateX.value = translateX.value;
+      savedTranslateY.value = translateY.value;
+    });
+
+  // Combine gestures - simultaneous allows both to work together
+  const composedGesture = Gesture.Simultaneous(pinchGesture, panGesture);
+
+  // Animated style for container with proper transform order
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { scale: scale.value },
+        { translateX: translateX.value },
+        { translateY: translateY.value },
+      ],
+    };
+  });
+
   const styles = useMemo(() => StyleSheet.create({
     container: {
       width,
       height,
-      backgroundColor: isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)',
-      borderRadius: 8,
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: borderRadius.md,
       overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: colors.divider,
     },
-  }), [width, height, isDark]);
+    mapWrapper: {
+      width,
+      height,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    zoomControls: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 8,
+      marginTop: 8,
+    },
+    zoomButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    zoomButtonText: {
+      fontSize: 11,
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+    },
+    infoText: {
+      fontSize: 11,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: 8,
+      fontStyle: 'italic',
+      textAlign: 'center',
+    },
+  }), [width, height, colors, isDark]);
+
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const maxRadius = Math.min(width, height) / 2 - 30;
 
   return (
-    <View style={styles.container}>
-      <Svg width={width} height={height}>
-        {/* Draw streamlines */}
-        {streamlines.map((line, index) => (
-          <Line
-            key={`streamline-${index}`}
-            x1={line.x1}
-            y1={line.y1}
-            x2={line.x2}
-            y2={line.y2}
-            stroke={isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}
-            strokeWidth="1"
-            strokeDasharray="2,2"
-          />
-        ))}
-        
-        {/* Draw particles */}
-        {particles.map((particle) => {
-          const opacity = getParticleOpacity(particle);
-          const radius = 1.5 + (windSpeed / 50) * 1.5; // Larger particles for stronger winds
-          
-          return (
-            <Circle
-              key={`particle-${particle.id}`}
-              cx={particle.x}
-              cy={particle.y}
-              r={radius}
-              fill={particleColorValue}
-              opacity={opacity}
-            />
-          );
-        })}
-      </Svg>
+    <View>
+      <View style={styles.container}>
+        <GestureDetector gesture={composedGesture}>
+          <AnimatedView style={[styles.mapWrapper, animatedStyle]}>
+            <Svg 
+              width={width} 
+              height={height}
+              viewBox={`0 0 ${width} ${height}`}
+              pointerEvents="box-none"
+            >
+              <Defs>
+                <RadialGradient id="windMapBg" cx="50%" cy="50%">
+                  <Stop offset="0%" stopColor={isDark ? '#1a1a1a' : '#f5f5f5'} stopOpacity="1" />
+                  <Stop offset="100%" stopColor={isDark ? '#0a0a0a' : '#e0e0e0'} stopOpacity="1" />
+                </RadialGradient>
+              </Defs>
+              
+              {/* Background circle */}
+              <Circle
+                cx={centerX}
+                cy={centerY}
+                r={maxRadius}
+                fill="url(#windMapBg)"
+                stroke={colors.divider}
+                strokeWidth="2"
+              />
+              
+              {/* Distance rings */}
+              {distanceRings.map((distance, i) => {
+                const ringScale = (i + 1) / distanceRings.length;
+                const ringRadius = maxRadius * ringScale;
+                const labelX = centerX + ringRadius * Math.cos(Math.PI / 4);
+                const labelY = centerY + ringRadius * Math.sin(Math.PI / 4);
+                
+                return (
+                  <G key={`ring-${i}`}>
+                    <Circle
+                      cx={centerX}
+                      cy={centerY}
+                      r={ringRadius}
+                      fill="none"
+                      stroke={colors.divider}
+                      strokeWidth="1"
+                      strokeDasharray="3,3"
+                      opacity={0.25}
+                    />
+                    <SvgText
+                      x={labelX}
+                      y={labelY}
+                      fontSize="8"
+                      fontWeight="500"
+                      fill={colors.text}
+                      textAnchor="middle"
+                      opacity={0.7}
+                    >
+                      {distance}km
+                    </SvgText>
+                  </G>
+                );
+              })}
+              
+              {/* Crosshairs */}
+              <Line 
+                x1={centerX} 
+                y1={30} 
+                x2={centerX} 
+                y2={height - 30} 
+                stroke={colors.divider} 
+                strokeWidth="1" 
+                opacity={0.2} 
+              />
+              <Line 
+                x1={30} 
+                y1={centerY} 
+                x2={width - 30} 
+                y2={centerY} 
+                stroke={colors.divider} 
+                strokeWidth="1" 
+                opacity={0.2} 
+              />
+              <Line 
+                x1={centerX - maxRadius * 0.7} 
+                y1={centerY - maxRadius * 0.7} 
+                x2={centerX + maxRadius * 0.7} 
+                y2={centerY + maxRadius * 0.7} 
+                stroke={colors.divider} 
+                strokeWidth="1" 
+                opacity={0.15} 
+              />
+              <Line 
+                x1={centerX - maxRadius * 0.7} 
+                y1={centerY + maxRadius * 0.7} 
+                x2={centerX + maxRadius * 0.7} 
+                y2={centerY - maxRadius * 0.7} 
+                stroke={colors.divider} 
+                strokeWidth="1" 
+                opacity={0.15} 
+              />
+              
+              {/* Draw streamlines */}
+              {streamlines.map((line, index) => (
+                <Line
+                  key={`streamline-${index}`}
+                  x1={line.x1}
+                  y1={line.y1}
+                  x2={line.x2}
+                  y2={line.y2}
+                  stroke={isDark ? 'rgba(100, 150, 255, 0.2)' : 'rgba(50, 100, 200, 0.2)'}
+                  strokeWidth="2"
+                  strokeDasharray="4,4"
+                />
+              ))}
+              
+              {/* Draw particles */}
+              {particles.map((particle) => {
+                const opacity = getParticleOpacity(particle);
+                const radius = 1.5 + (windSpeed / 50) * 1.5; // Larger particles for stronger winds
+                
+                return (
+                  <Circle
+                    key={`particle-${particle.id}`}
+                    cx={particle.x}
+                    cy={particle.y}
+                    r={radius}
+                    fill={particleColorValue}
+                    opacity={opacity}
+                  />
+                );
+              })}
+              
+              {/* Compass labels */}
+              <SvgText 
+                x={centerX} 
+                y={18} 
+                fontSize="12" 
+                fontWeight="600" 
+                fill={colors.text} 
+                textAnchor="middle"
+              >
+                N
+              </SvgText>
+              <SvgText 
+                x={width - 18} 
+                y={centerY + 5} 
+                fontSize="12" 
+                fontWeight="600" 
+                fill={colors.text} 
+                textAnchor="middle"
+              >
+                E
+              </SvgText>
+              <SvgText 
+                x={centerX} 
+                y={height - 8} 
+                fontSize="12" 
+                fontWeight="600" 
+                fill={colors.text} 
+                textAnchor="middle"
+              >
+                S
+              </SvgText>
+              <SvgText 
+                x={18} 
+                y={centerY + 5} 
+                fontSize="12" 
+                fontWeight="600" 
+                fill={colors.text} 
+                textAnchor="middle"
+              >
+                W
+              </SvgText>
+              
+              {/* Center marker */}
+              <Circle
+                cx={centerX}
+                cy={centerY}
+                r={4}
+                fill={colors.primary}
+                stroke="#fff"
+                strokeWidth="2"
+              />
+            </Svg>
+          </AnimatedView>
+        </GestureDetector>
+      </View>
+      
+      {/* Zoom controls */}
+      <View style={styles.zoomControls}>
+        <TouchableOpacity
+          style={styles.zoomButton}
+          onPress={handleResetZoom}
+          activeOpacity={0.7}
+        >
+          <Icon name="contract" size={16} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={styles.zoomButtonText}>
+          Pinch to zoom • Drag to pan
+        </Text>
+      </View>
+      
+      <Text style={styles.infoText}>
+        {latitude && longitude 
+          ? `Wind flow visualization at Lat: ${latitude.toFixed(4)}°, Lon: ${longitude.toFixed(4)}° • Distance rings: ${distanceRings.join('km, ')}km`
+          : `Wind flow visualization • Distance rings: ${distanceRings.join('km, ')}km`
+        }
+      </Text>
     </View>
   );
 };
