@@ -17,6 +17,7 @@ import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { useTheme } from '../state/ThemeContext';
 import { getColors, borderRadius, getShadows } from '../styles/commonStyles';
 import Icon from './Icon';
+import { Image } from 'expo-image';
 
 interface WindParticleAnimationProps {
   windSpeed: number; // in km/h or mph
@@ -66,6 +67,8 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
   const animationFrameRef = useRef<number | null>(null);
   const particlesRef = useRef<Particle[]>([]);
   const lastUpdateRef = useRef<number>(Date.now());
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapError, setMapError] = useState(false);
 
   // Zoom and pan values
   const scale = useSharedValue(1);
@@ -76,6 +79,10 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
   const savedTranslateY = useSharedValue(0);
   const focalX = useSharedValue(0);
   const focalY = useSharedValue(0);
+
+  // Map tile configuration
+  const [mapZoom, setMapZoom] = useState(10);
+  const mapTileSize = 256;
 
   // Distance scale in kilometers for each ring
   const distanceRings = [5, 10, 20, 30, 40, 50];
@@ -188,19 +195,61 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     setParticles(newParticles);
   }, [initializeParticles]);
 
+  // Calculate map tile coordinates from lat/lon
+  const getTileCoordinates = useCallback((lat: number, lon: number, zoom: number) => {
+    const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
+    const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
+    return { x, y };
+  }, []);
+
+  // Generate map tile URL (using OpenStreetMap)
+  const getMapTileUrl = useCallback((lat: number, lon: number, zoom: number) => {
+    const { x, y } = getTileCoordinates(lat, lon, zoom);
+    // Using CartoDB Positron (light) or Dark Matter (dark) tiles for better visibility
+    const style = isDark ? 'dark_all' : 'light_all';
+    return `https://cartodb-basemaps-a.global.ssl.fastly.net/${style}/${zoom}/${x}/${y}.png`;
+  }, [getTileCoordinates, isDark]);
+
+  // Calculate pixel offset within tile
+  const getPixelOffset = useCallback((lat: number, lon: number, zoom: number) => {
+    const scale = Math.pow(2, zoom);
+    const worldCoordX = (lon + 180) / 360 * scale;
+    const worldCoordY = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * scale;
+    
+    const tileX = Math.floor(worldCoordX);
+    const tileY = Math.floor(worldCoordY);
+    
+    const pixelX = (worldCoordX - tileX) * mapTileSize;
+    const pixelY = (worldCoordY - tileY) * mapTileSize;
+    
+    return { pixelX, pixelY };
+  }, [mapTileSize]);
+
   // Calculate particle color based on wind speed
   const getParticleColor = useCallback((speed: number): string => {
     if (particleColor) return particleColor;
     
-    // Color gradient based on wind speed
-    if (speed < 10) return isDark ? 'rgba(100, 200, 255, 0.6)' : 'rgba(50, 150, 255, 0.6)';
-    if (speed < 20) return isDark ? 'rgba(100, 255, 200, 0.6)' : 'rgba(50, 200, 150, 0.6)';
-    if (speed < 30) return isDark ? 'rgba(255, 255, 100, 0.6)' : 'rgba(200, 200, 50, 0.6)';
-    if (speed < 40) return isDark ? 'rgba(255, 200, 100, 0.6)' : 'rgba(255, 150, 50, 0.6)';
-    return isDark ? 'rgba(255, 100, 100, 0.6)' : 'rgba(255, 50, 50, 0.6)';
-  }, [particleColor, isDark]);
+    // Color gradient based on wind speed - more vibrant for better visibility on map
+    if (speed < 10) return 'rgba(100, 200, 255, 0.8)';
+    if (speed < 20) return 'rgba(100, 255, 200, 0.8)';
+    if (speed < 30) return 'rgba(255, 255, 100, 0.8)';
+    if (speed < 40) return 'rgba(255, 200, 100, 0.8)';
+    return 'rgba(255, 100, 100, 0.8)';
+  }, [particleColor]);
 
   const particleColorValue = getParticleColor(windSpeed);
+
+  // Map tile URL for the center location
+  const mapTileUrl = useMemo(() => {
+    if (!latitude || !longitude) return null;
+    return getMapTileUrl(latitude, longitude, mapZoom);
+  }, [latitude, longitude, mapZoom, getMapTileUrl]);
+
+  // Calculate the pixel offset for centering
+  const mapOffset = useMemo(() => {
+    if (!latitude || !longitude) return { pixelX: 0, pixelY: 0 };
+    return getPixelOffset(latitude, longitude, mapZoom);
+  }, [latitude, longitude, mapZoom, getPixelOffset]);
 
   // Calculate opacity based on particle life
   const getParticleOpacity = useCallback((particle: Particle): number => {
@@ -246,6 +295,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     savedScale.value = 1;
     savedTranslateX.value = 0;
     savedTranslateY.value = 0;
+    setMapZoom(10); // Reset map zoom too
   }, [scale, translateX, translateY, savedScale, savedTranslateX, savedTranslateY]);
 
   // Pinch gesture for zoom with focal point
@@ -311,6 +361,45 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       height,
       alignItems: 'center',
       justifyContent: 'center',
+      position: 'relative',
+    },
+    mapTileContainer: {
+      position: 'absolute',
+      width: mapTileSize * 3,
+      height: mapTileSize * 3,
+      top: '50%',
+      left: '50%',
+      marginLeft: -(mapTileSize * 1.5),
+      marginTop: -(mapTileSize * 1.5),
+    },
+    mapTile: {
+      width: mapTileSize,
+      height: mapTileSize,
+      position: 'absolute',
+    },
+    svgOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width,
+      height,
+    },
+    loadingOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: borderRadius.md,
+    },
+    loadingText: {
+      marginTop: 8,
+      fontSize: 12,
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
     },
     zoomControls: {
       flexDirection: 'row',
@@ -342,44 +431,88 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       fontStyle: 'italic',
       textAlign: 'center',
     },
-  }), [width, height, colors, isDark]);
+  }), [width, height, colors, isDark, mapTileSize]);
 
   const centerX = width / 2;
   const centerY = height / 2;
-  const maxRadius = Math.min(width, height) / 2 - 30;
+
+  // Generate surrounding tiles for seamless panning
+  const mapTiles = useMemo(() => {
+    if (!latitude || !longitude || !mapTileUrl) return [];
+    
+    const { x: centerTileX, y: centerTileY } = getTileCoordinates(latitude, longitude, mapZoom);
+    const tiles = [];
+    
+    // Generate 3x3 grid of tiles centered on location
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const tileX = centerTileX + dx;
+        const tileY = centerTileY + dy;
+        const style = isDark ? 'dark_all' : 'light_all';
+        const url = `https://cartodb-basemaps-a.global.ssl.fastly.net/${style}/${mapZoom}/${tileX}/${tileY}.png`;
+        
+        tiles.push({
+          url,
+          x: dx,
+          y: dy,
+          key: `${tileX}-${tileY}`,
+        });
+      }
+    }
+    
+    return tiles;
+  }, [latitude, longitude, mapZoom, mapTileUrl, getTileCoordinates, isDark]);
 
   return (
     <View>
       <View style={styles.container}>
         <GestureDetector gesture={composedGesture}>
           <AnimatedView style={[styles.mapWrapper, animatedStyle]}>
+            {/* Map tiles background */}
+            {latitude && longitude && mapTiles.length > 0 && (
+              <View style={styles.mapTileContainer}>
+                {mapTiles.map((tile) => (
+                  <Image
+                    key={tile.key}
+                    source={{ uri: tile.url }}
+                    style={[
+                      styles.mapTile,
+                      {
+                        left: (tile.x + 1) * mapTileSize - mapOffset.pixelX,
+                        top: (tile.y + 1) * mapTileSize - mapOffset.pixelY,
+                      },
+                    ]}
+                    contentFit="cover"
+                    onLoad={() => setMapLoaded(true)}
+                    onError={() => {
+                      console.log('Map tile failed to load:', tile.url);
+                      setMapError(true);
+                    }}
+                  />
+                ))}
+              </View>
+            )}
+            
+            {/* SVG overlay for wind visualization */}
             <Svg 
               width={width} 
               height={height}
               viewBox={`0 0 ${width} ${height}`}
+              style={styles.svgOverlay}
               pointerEvents="box-none"
             >
-              <Defs>
-                <RadialGradient id="windMapBg" cx="50%" cy="50%">
-                  <Stop offset="0%" stopColor={isDark ? '#1a1a1a' : '#f5f5f5'} stopOpacity="1" />
-                  <Stop offset="100%" stopColor={isDark ? '#0a0a0a' : '#e0e0e0'} stopOpacity="1" />
-                </RadialGradient>
-              </Defs>
-              
-              {/* Background circle */}
+              {/* Semi-transparent overlay for better particle visibility */}
               <Circle
                 cx={centerX}
                 cy={centerY}
-                r={maxRadius}
-                fill="url(#windMapBg)"
-                stroke={colors.divider}
-                strokeWidth="2"
+                r={Math.min(width, height) / 2}
+                fill={isDark ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'}
               />
               
               {/* Distance rings */}
               {distanceRings.map((distance, i) => {
                 const ringScale = (i + 1) / distanceRings.length;
-                const ringRadius = maxRadius * ringScale;
+                const ringRadius = (Math.min(width, height) / 2 - 30) * ringScale;
                 const labelX = centerX + ringRadius * Math.cos(Math.PI / 4);
                 const labelY = centerY + ringRadius * Math.sin(Math.PI / 4);
                 
@@ -390,63 +523,28 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                       cy={centerY}
                       r={ringRadius}
                       fill="none"
-                      stroke={colors.divider}
+                      stroke={isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)'}
                       strokeWidth="1"
                       strokeDasharray="3,3"
-                      opacity={0.25}
+                      opacity={0.5}
                     />
                     <SvgText
                       x={labelX}
                       y={labelY}
-                      fontSize="8"
-                      fontWeight="500"
-                      fill={colors.text}
+                      fontSize="9"
+                      fontWeight="600"
+                      fill={isDark ? '#fff' : '#000'}
                       textAnchor="middle"
-                      opacity={0.7}
+                      opacity={0.9}
+                      stroke={isDark ? '#000' : '#fff'}
+                      strokeWidth="2"
+                      paintOrder="stroke"
                     >
                       {distance}km
                     </SvgText>
                   </G>
                 );
               })}
-              
-              {/* Crosshairs */}
-              <Line 
-                x1={centerX} 
-                y1={30} 
-                x2={centerX} 
-                y2={height - 30} 
-                stroke={colors.divider} 
-                strokeWidth="1" 
-                opacity={0.2} 
-              />
-              <Line 
-                x1={30} 
-                y1={centerY} 
-                x2={width - 30} 
-                y2={centerY} 
-                stroke={colors.divider} 
-                strokeWidth="1" 
-                opacity={0.2} 
-              />
-              <Line 
-                x1={centerX - maxRadius * 0.7} 
-                y1={centerY - maxRadius * 0.7} 
-                x2={centerX + maxRadius * 0.7} 
-                y2={centerY + maxRadius * 0.7} 
-                stroke={colors.divider} 
-                strokeWidth="1" 
-                opacity={0.15} 
-              />
-              <Line 
-                x1={centerX - maxRadius * 0.7} 
-                y1={centerY + maxRadius * 0.7} 
-                x2={centerX + maxRadius * 0.7} 
-                y2={centerY - maxRadius * 0.7} 
-                stroke={colors.divider} 
-                strokeWidth="1" 
-                opacity={0.15} 
-              />
               
               {/* Draw streamlines */}
               {streamlines.map((line, index) => (
@@ -456,7 +554,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                   y1={line.y1}
                   x2={line.x2}
                   y2={line.y2}
-                  stroke={isDark ? 'rgba(100, 150, 255, 0.2)' : 'rgba(50, 100, 200, 0.2)'}
+                  stroke={isDark ? 'rgba(100, 200, 255, 0.4)' : 'rgba(50, 100, 200, 0.4)'}
                   strokeWidth="2"
                   strokeDasharray="4,4"
                 />
@@ -465,7 +563,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
               {/* Draw particles */}
               {particles.map((particle) => {
                 const opacity = getParticleOpacity(particle);
-                const radius = 1.5 + (windSpeed / 50) * 1.5; // Larger particles for stronger winds
+                const radius = 2 + (windSpeed / 50) * 1.5; // Larger particles for stronger winds
                 
                 return (
                   <Circle
@@ -475,6 +573,8 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                     r={radius}
                     fill={particleColorValue}
                     opacity={opacity}
+                    stroke={isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'}
+                    strokeWidth="0.5"
                   />
                 );
               })}
@@ -482,55 +582,81 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
               {/* Compass labels */}
               <SvgText 
                 x={centerX} 
-                y={18} 
-                fontSize="12" 
-                fontWeight="600" 
-                fill={colors.text} 
+                y={20} 
+                fontSize="14" 
+                fontWeight="700" 
+                fill={isDark ? '#fff' : '#000'}
                 textAnchor="middle"
+                stroke={isDark ? '#000' : '#fff'}
+                strokeWidth="3"
+                paintOrder="stroke"
               >
                 N
               </SvgText>
               <SvgText 
-                x={width - 18} 
+                x={width - 20} 
                 y={centerY + 5} 
-                fontSize="12" 
-                fontWeight="600" 
-                fill={colors.text} 
+                fontSize="14" 
+                fontWeight="700" 
+                fill={isDark ? '#fff' : '#000'}
                 textAnchor="middle"
+                stroke={isDark ? '#000' : '#fff'}
+                strokeWidth="3"
+                paintOrder="stroke"
               >
                 E
               </SvgText>
               <SvgText 
                 x={centerX} 
-                y={height - 8} 
-                fontSize="12" 
-                fontWeight="600" 
-                fill={colors.text} 
+                y={height - 10} 
+                fontSize="14" 
+                fontWeight="700" 
+                fill={isDark ? '#fff' : '#000'}
                 textAnchor="middle"
+                stroke={isDark ? '#000' : '#fff'}
+                strokeWidth="3"
+                paintOrder="stroke"
               >
                 S
               </SvgText>
               <SvgText 
-                x={18} 
+                x={20} 
                 y={centerY + 5} 
-                fontSize="12" 
-                fontWeight="600" 
-                fill={colors.text} 
+                fontSize="14" 
+                fontWeight="700" 
+                fill={isDark ? '#fff' : '#000'}
                 textAnchor="middle"
+                stroke={isDark ? '#000' : '#fff'}
+                strokeWidth="3"
+                paintOrder="stroke"
               >
                 W
               </SvgText>
               
-              {/* Center marker */}
+              {/* Center marker (circuit location) */}
               <Circle
                 cx={centerX}
                 cy={centerY}
-                r={4}
+                r={6}
                 fill={colors.primary}
                 stroke="#fff"
-                strokeWidth="2"
+                strokeWidth="3"
+              />
+              <Circle
+                cx={centerX}
+                cy={centerY}
+                r={3}
+                fill="#fff"
               />
             </Svg>
+            
+            {/* Loading overlay */}
+            {!mapLoaded && !mapError && latitude && longitude && (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={styles.loadingText}>Loading map...</Text>
+              </View>
+            )}
           </AnimatedView>
         </GestureDetector>
       </View>
@@ -539,10 +665,24 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       <View style={styles.zoomControls}>
         <TouchableOpacity
           style={styles.zoomButton}
+          onPress={() => setMapZoom(prev => Math.max(8, prev - 1))}
+          activeOpacity={0.7}
+        >
+          <Icon name="remove" size={16} color={colors.text} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.zoomButton}
           onPress={handleResetZoom}
           activeOpacity={0.7}
         >
           <Icon name="contract" size={16} color={colors.text} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.zoomButton}
+          onPress={() => setMapZoom(prev => Math.min(14, prev + 1))}
+          activeOpacity={0.7}
+        >
+          <Icon name="add" size={16} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.zoomButtonText}>
           Pinch to zoom • Drag to pan
@@ -551,10 +691,16 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       
       <Text style={styles.infoText}>
         {latitude && longitude 
-          ? `Wind flow visualization at Lat: ${latitude.toFixed(4)}°, Lon: ${longitude.toFixed(4)}° • Distance rings: ${distanceRings.join('km, ')}km`
+          ? `Wind flow visualization with map underlay • Lat: ${latitude.toFixed(4)}°, Lon: ${longitude.toFixed(4)}° • Distance rings: ${distanceRings.join('km, ')}km • Map zoom: ${mapZoom}`
           : `Wind flow visualization • Distance rings: ${distanceRings.join('km, ')}km`
         }
       </Text>
+      
+      {mapError && (
+        <Text style={[styles.infoText, { color: colors.error, marginTop: 4 }]}>
+          Map tiles failed to load. Showing visualization only.
+        </Text>
+      )}
     </View>
   );
 };
