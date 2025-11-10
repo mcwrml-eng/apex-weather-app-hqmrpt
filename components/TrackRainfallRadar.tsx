@@ -19,7 +19,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 
 interface TrackRainfallRadarProps {
   latitude: number;
@@ -499,6 +499,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
 
   // Reset zoom and pan
   const handleResetZoom = useCallback(() => {
+    console.log('Resetting zoom and pan');
     scale.value = withSpring(1, { damping: 15, stiffness: 150 });
     translateX.value = withSpring(0, { damping: 15, stiffness: 150 });
     translateY.value = withSpring(0, { damping: 15, stiffness: 150 });
@@ -1411,27 +1412,33 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   // Pinch gesture for zoom with focal point
   const pinchGesture = Gesture.Pinch()
     .onStart((event) => {
+      console.log('Pinch gesture started');
       focalX.value = event.focalX;
       focalY.value = event.focalY;
     })
     .onUpdate((event) => {
       const newScale = savedScale.value * event.scale;
       scale.value = Math.max(1, Math.min(5, newScale));
+      console.log('Pinch gesture update - scale:', scale.value);
     })
     .onEnd(() => {
+      console.log('Pinch gesture end - saving scale');
       savedScale.value = scale.value;
     });
 
   // Pan gesture for dragging - improved with better constraints
   const panGesture = Gesture.Pan()
-    .minDistance(10)
+    .minDistance(5)
+    .onStart(() => {
+      console.log('Pan gesture started');
+    })
     .onUpdate((event) => {
-      console.log('Pan gesture update:', event.translationX, event.translationY);
+      console.log('Pan gesture update - translationX:', event.translationX, 'translationY:', event.translationY);
       translateX.value = savedTranslateX.value + event.translationX;
       translateY.value = savedTranslateY.value + event.translationY;
     })
     .onEnd(() => {
-      console.log('Pan gesture end - saving position');
+      console.log('Pan gesture end - saving position - translateX:', translateX.value, 'translateY:', translateY.value);
       savedTranslateX.value = translateX.value;
       savedTranslateY.value = translateY.value;
     });
@@ -1625,10 +1632,15 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       )}
 
       <View style={styles.radarContainer}>
-        <GestureHandlerRootView style={styles.radarWrapper}>
+        <View style={styles.radarWrapper}>
           <GestureDetector gesture={composedGesture}>
             <AnimatedView style={[styles.radarDisplay, radarAnimatedStyle]}>
-              <Svg width={radarSize} height={radarSize} viewBox={`0 0 ${radarSize} ${radarSize}`}>
+              <Svg 
+                width={radarSize} 
+                height={radarSize} 
+                viewBox={`0 0 ${radarSize} ${radarSize}`}
+                pointerEvents="box-none"
+              >
                 <Defs>
                   <RadialGradient id="radarBg" cx="50%" cy="50%">
                     <Stop offset="0%" stopColor={isDark ? '#1a1a1a' : '#f5f5f5'} stopOpacity="1" />
@@ -1711,7 +1723,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
               )}
             </AnimatedView>
           </GestureDetector>
-        </GestureHandlerRootView>
+        </View>
         
         {/* Zoom controls */}
         <View style={styles.zoomControls}>
