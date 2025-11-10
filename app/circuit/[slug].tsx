@@ -292,124 +292,7 @@ function DetailScreen() {
       color: colors.textMuted,
       fontFamily: 'Roboto_400Regular',
     },
-    sunTimesCard: {
-      backgroundColor: colors.card,
-      borderRadius: 14,
-      padding: 16,
-      borderWidth: 1,
-      borderColor: colors.divider,
-      boxShadow: shadows.md,
-      marginBottom: 16,
-    },
-    sunTimesHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: 16,
-    },
-    sunTimesTitle: {
-      fontSize: 18,
-      fontWeight: '700',
-      color: colors.text,
-      fontFamily: 'Roboto_700Bold',
-      marginLeft: 8,
-      flex: 1,
-    },
-    timeStatusBadge: {
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      borderRadius: 12,
-    },
-    timeStatusText: {
-      fontSize: 12,
-      fontWeight: '600',
-      fontFamily: 'Roboto_500Medium',
-    },
-    sunTimesGrid: {
-      flexDirection: 'row',
-      gap: 12,
-      marginBottom: 20,
-    },
-    sunTimeItem: {
-      flex: 1,
-      backgroundColor: colors.backgroundAlt,
-      borderRadius: 12,
-      padding: 14,
-      alignItems: 'center',
-      borderWidth: 1,
-      borderColor: colors.divider,
-    },
-    sunTimeIconContainer: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: colors.background,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 8,
-    },
-    sunTimeLabel: {
-      fontSize: 12,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      marginBottom: 4,
-    },
-    sunTimeValue: {
-      fontSize: 16,
-      fontWeight: '700',
-      color: colors.text,
-      fontFamily: 'Roboto_700Bold',
-    },
-    weeklySunTimes: {
-      marginTop: 4,
-    },
-    weeklySunTimesTitle: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: colors.text,
-      fontFamily: 'Roboto_500Medium',
-      marginBottom: 12,
-    },
-    weeklySunTimesScroll: {
-      paddingHorizontal: 4,
-      gap: 8,
-    },
-    weeklySunTimeCard: {
-      backgroundColor: colors.backgroundAlt,
-      borderRadius: 10,
-      padding: 10,
-      minWidth: 80,
-      borderWidth: 1,
-      borderColor: colors.divider,
-    },
-    weeklySunTimeCardToday: {
-      backgroundColor: colors.primary + '15',
-      borderColor: colors.primary + '30',
-    },
-    weeklySunTimeDay: {
-      fontSize: 11,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_500Medium',
-      textAlign: 'center',
-      marginBottom: 8,
-    },
-    weeklySunTimeDayToday: {
-      color: colors.primary,
-      fontWeight: '700',
-    },
-    weeklySunTimeValues: {
-      gap: 4,
-    },
-    weeklySunTimeRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-    },
-    weeklySunTimeText: {
-      fontSize: 10,
-      color: colors.text,
-      fontFamily: 'Roboto_400Regular',
-    },
+
     next12HoursCard: {
       backgroundColor: colors.card,
       borderRadius: 14,
@@ -704,16 +587,6 @@ function DetailScreen() {
       color: colors.textMuted,
       fontFamily: 'Roboto_400Regular',
       fontSize: 10,
-      marginBottom: 4,
-    },
-    daySunTimes: {
-      marginTop: 2,
-    },
-    daySunTime: {
-      fontSize: 9,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      textAlign: 'center',
     },
     muted: { color: colors.textMuted, fontFamily: 'Roboto_400Regular' },
     error: { color: colors.error, fontWeight: '600', fontFamily: 'Roboto_500Medium' },
@@ -834,76 +707,7 @@ function DetailScreen() {
             </SafeComponent>
           )}
 
-          {/* SUNRISE & SUNSET TIMES */}
-          {!loading && todaySunTimes && (
-            <SafeComponent componentName="SunTimes">
-              <View style={styles.sunTimesCard}>
-                <View style={styles.sunTimesHeader}>
-                  <Icon name="sunny" size={20} color={colors.warning} />
-                  <Text style={styles.sunTimesTitle}>Sunrise & Sunset</Text>
-                  <View style={[styles.timeStatusBadge, { 
-                    backgroundColor: currentTimeStatus === 'day' ? colors.warning + '20' : colors.primary + '20' 
-                  }]}>
-                    <Text style={[styles.timeStatusText, { 
-                      color: currentTimeStatus === 'day' ? colors.warning : colors.primary 
-                    }]}>
-                      {currentTimeStatus === 'day' ? 'Daylight' : currentTimeStatus === 'night' ? 'Night' : 'Unknown'}
-                    </Text>
-                  </View>
-                </View>
-                
-                <View style={styles.sunTimesGrid}>
-                  <View style={styles.sunTimeItem}>
-                    <View style={styles.sunTimeIconContainer}>
-                      <Icon name="arrow-up" size={16} color={colors.warning} />
-                    </View>
-                    <Text style={styles.sunTimeLabel}>Sunrise</Text>
-                    <Text style={styles.sunTimeValue}>{formatTimeForDisplay(todaySunTimes.sunrise)}</Text>
-                  </View>
-                  
-                  <View style={styles.sunTimeItem}>
-                    <View style={styles.sunTimeIconContainer}>
-                      <Icon name="arrow-down" size={16} color={colors.primary} />
-                    </View>
-                    <Text style={styles.sunTimeLabel}>Sunset</Text>
-                    <Text style={styles.sunTimeValue}>{formatTimeForDisplay(todaySunTimes.sunset)}</Text>
-                  </View>
-                  
-                  <View style={styles.sunTimeItem}>
-                    <View style={styles.sunTimeIconContainer}>
-                      <Icon name="time" size={16} color={colors.text} />
-                    </View>
-                    <Text style={styles.sunTimeLabel}>Daylight</Text>
-                    <Text style={styles.sunTimeValue}>{daylightDuration || '--h --m'}</Text>
-                  </View>
-                </View>
 
-                {/* Weekly Sunrise/Sunset Preview */}
-                <View style={styles.weeklySunTimes}>
-                  <Text style={styles.weeklySunTimesTitle}>This Week</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weeklySunTimesScroll}>
-                    {daily?.days.slice(0, 7).map((day, index) => (
-                      <View key={day.date} style={[styles.weeklySunTimeCard, index === 0 && styles.weeklySunTimeCardToday]}>
-                        <Text style={[styles.weeklySunTimeDay, index === 0 && styles.weeklySunTimeDayToday]}>
-                          {index === 0 ? 'Today' : day.weekday}
-                        </Text>
-                        <View style={styles.weeklySunTimeValues}>
-                          <View style={styles.weeklySunTimeRow}>
-                            <Icon name="arrow-up" size={12} color={colors.warning} />
-                            <Text style={styles.weeklySunTimeText}>{formatTimeForDisplay(day.sunrise)}</Text>
-                          </View>
-                          <View style={styles.weeklySunTimeRow}>
-                            <Icon name="arrow-down" size={12} color={colors.primary} />
-                            <Text style={styles.weeklySunTimeText}>{formatTimeForDisplay(day.sunset)}</Text>
-                          </View>
-                        </View>
-                      </View>
-                    ))}
-                  </ScrollView>
-                </View>
-              </View>
-            </SafeComponent>
-          )}
 
           {/* Next 12 Hours Forecast */}
           {!loading && forecast72Hours.length > 0 && (
@@ -1124,11 +928,6 @@ function DetailScreen() {
                             {d.precipitation_probability}%
                           </Text>
                         )}
-                        <View style={styles.daySunTimes}>
-                          <Text style={styles.daySunTime}>
-                            ↑{formatTimeForDisplay(d.sunrise)} ↓{formatTimeForDisplay(d.sunset)}
-                          </Text>
-                        </View>
                       </View>
                     ))}
                   </ScrollView>

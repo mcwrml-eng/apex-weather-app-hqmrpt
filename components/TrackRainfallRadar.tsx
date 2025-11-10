@@ -589,6 +589,33 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       fontFamily: 'Roboto_400Regular',
       marginBottom: 16,
     },
+    sunTimesBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: borderRadius.md,
+      padding: 12,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    sunTimeItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    sunTimeText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.text,
+      fontFamily: 'Roboto_600SemiBold',
+    },
+    sunTimeLabel: {
+      fontSize: 11,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+    },
     loadingContainer: {
       height: compact ? 250 : 350,
       justifyContent: 'center',
@@ -1267,6 +1294,25 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       <Text style={styles.subtitle}>
         High-resolution precipitation forecast for {circuitName} (Circuit Local Time)
       </Text>
+
+      {/* Simplified Sunrise/Sunset Bar */}
+      <View style={styles.sunTimesBar}>
+        <View style={styles.sunTimeItem}>
+          <Icon name="arrow-up" size={16} color={colors.warning} />
+          <View>
+            <Text style={styles.sunTimeLabel}>Sunrise</Text>
+            <Text style={styles.sunTimeText}>{formatTime(radarData.sunrise)}</Text>
+          </View>
+        </View>
+        
+        <View style={styles.sunTimeItem}>
+          <Icon name="arrow-down" size={16} color={colors.primary} />
+          <View>
+            <Text style={styles.sunTimeLabel}>Sunset</Text>
+            <Text style={styles.sunTimeText}>{formatTime(radarData.sunset)}</Text>
+          </View>
+        </View>
+      </View>
 
       {!radarData.hasRain && (
         <View style={styles.noRainBanner}>
