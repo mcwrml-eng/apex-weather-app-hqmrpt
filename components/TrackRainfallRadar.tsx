@@ -5,7 +5,7 @@ import { useTheme } from '../state/ThemeContext';
 import { getColors, borderRadius, getShadows } from '../styles/commonStyles';
 import Icon from './Icon';
 import WeatherSymbol from './WeatherSymbol';
-import Svg, { Circle, Line, Text as SvgText, Defs, RadialGradient, Stop, G, Path, Polygon } from 'react-native-svg';
+import Svg, { Circle, Line, Text as SvgText, Defs, RadialGradient, Stop, G, Path, Polygon, Rect } from 'react-native-svg';
 import Animated, {
   useSharedValue,
   useAnimatedProps,
@@ -73,6 +73,7 @@ const AnimatedPolygon = Animated.createAnimatedComponent(Polygon);
 const AnimatedLine = Animated.createAnimatedComponent(Line);
 const AnimatedView = Animated.createAnimatedComponent(View);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   latitude,
@@ -1091,6 +1092,12 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       color: colors.text,
       fontFamily: 'Roboto_500Medium',
     },
+    circuitLabel: {
+      fontSize: 10,
+      fontWeight: '700',
+      fontFamily: 'Roboto_700Bold',
+      textAlign: 'center',
+    },
   }), [colors, shadows, compact, isDark]);
 
   const radarSize = compact ? 280 : 320;
@@ -1246,34 +1253,53 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     );
   };
 
-  // Animated track marker component
+  // Enhanced animated track marker component with better visibility
   const AnimatedTrackMarker = () => {
     const markerAnimatedProps = useAnimatedProps(() => {
       const markerScale = markerPulse.value;
       return {
-        r: 9 * markerScale,
+        r: 10 * markerScale,
       };
     });
 
     const outerRingAnimatedProps = useAnimatedProps(() => {
       const markerScale = markerPulse.value;
-      const opacity = interpolate(markerScale, [1, 1.3], [0.6, 0.2]);
+      const opacity = interpolate(markerScale, [1, 1.3], [0.7, 0.3]);
       return {
-        r: 15 * markerScale,
+        r: 18 * markerScale,
         strokeOpacity: opacity,
+      };
+    });
+
+    const labelBgAnimatedProps = useAnimatedProps(() => {
+      const markerScale = markerPulse.value;
+      const opacity = interpolate(markerScale, [1, 1.3], [0.95, 0.85]);
+      return {
+        opacity: opacity,
       };
     });
 
     return (
       <G>
-        {/* Outer pulsing ring */}
+        {/* Outer pulsing ring - larger and more visible */}
         <AnimatedCircle
           cx={centerX}
           cy={centerY}
           animatedProps={outerRingAnimatedProps}
           fill="none"
           stroke={colors.primary}
+          strokeWidth="3"
+        />
+        
+        {/* Middle ring for depth */}
+        <Circle
+          cx={centerX}
+          cy={centerY}
+          r={13}
+          fill="none"
+          stroke="#fff"
           strokeWidth="2"
+          opacity={0.8}
         />
         
         {/* Main marker circle with white border */}
@@ -1292,7 +1318,72 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
           cy={centerY}
           r={3}
           fill="#fff"
-          opacity={0.9}
+          opacity={1}
+        />
+        
+        {/* Circuit label background */}
+        <AnimatedRect
+          x={centerX - 35}
+          y={centerY + 25}
+          width={70}
+          height={20}
+          rx={10}
+          ry={10}
+          fill={isDark ? 'rgba(0, 0, 0, 0.85)' : 'rgba(255, 255, 255, 0.95)'}
+          stroke={colors.primary}
+          strokeWidth="2"
+          animatedProps={labelBgAnimatedProps}
+        />
+        
+        {/* Circuit label text */}
+        <SvgText
+          x={centerX}
+          y={centerY + 38}
+          fontSize="10"
+          fontWeight="700"
+          fill={colors.primary}
+          textAnchor="middle"
+          fontFamily="Roboto_700Bold"
+        >
+          CIRCUIT
+        </SvgText>
+        
+        {/* Crosshair lines for precision */}
+        <Line
+          x1={centerX - 25}
+          y1={centerY}
+          x2={centerX - 15}
+          y2={centerY}
+          stroke={colors.primary}
+          strokeWidth="2"
+          opacity={0.7}
+        />
+        <Line
+          x1={centerX + 15}
+          y1={centerY}
+          x2={centerX + 25}
+          y2={centerY}
+          stroke={colors.primary}
+          strokeWidth="2"
+          opacity={0.7}
+        />
+        <Line
+          x1={centerX}
+          y1={centerY - 25}
+          x2={centerX}
+          y2={centerY - 15}
+          stroke={colors.primary}
+          strokeWidth="2"
+          opacity={0.7}
+        />
+        <Line
+          x1={centerX}
+          y1={centerY + 15}
+          x2={centerX}
+          y2={centerY + 20}
+          stroke={colors.primary}
+          strokeWidth="2"
+          opacity={0.7}
         />
       </G>
     );
@@ -1587,7 +1678,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
                 
                 {radarData.hasRain && radarData.rainSpeed > 2 && <AnimatedRainDirectionArrow />}
                 
-                {/* Enhanced animated track marker */}
+                {/* Enhanced animated track marker with label */}
                 <AnimatedTrackMarker />
                 
                 <SvgText x={centerX} y={18} fontSize="12" fontWeight="600" fill={colors.text} textAnchor="middle">N</SvgText>
@@ -1626,7 +1717,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         </View>
         
         <Text style={styles.infoText}>
-          Pulsing marker indicates exact circuit location • Distance rings: {distanceRings.join('km, ')}km
+          Center marker shows exact circuit location at Lat: {latitude.toFixed(4)}°, Lon: {longitude.toFixed(4)}° • Distance rings: {distanceRings.join('km, ')}km
           {radarData.hasRain && ` • Frame ${currentFrame + 1}/${radarData.gridData.length}`}
         </Text>
       </View>
