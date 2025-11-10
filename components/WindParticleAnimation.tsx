@@ -92,6 +92,82 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
   // Distance scale in kilometers for each ring
   const distanceRings = [5, 10, 20, 30, 40, 50];
 
+  // Calculate pixel offset within tile for precise positioning
+  const getPixelOffset = useCallback((lat: number, lon: number, zoom: number) => {
+    const scale = Math.pow(2, zoom);
+    const worldCoordX = (lon + 180) / 360 * scale;
+    const worldCoordY = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * scale;
+    
+    const tileX = Math.floor(worldCoordX);
+    const tileY = Math.floor(worldCoordY);
+    
+    const pixelX = (worldCoordX - tileX) * mapTileSize;
+    const pixelY = (worldCoordY - tileY) * mapTileSize;
+    
+    return { pixelX, pixelY };
+  }, [mapTileSize]);
+
+  // Calculate the pixel offset for centering
+  const mapOffset = useMemo(() => {
+    if (!latitude || !longitude) return { pixelX: 0, pixelY: 0 };
+    return getPixelOffset(latitude, longitude, mapZoom);
+  }, [latitude, longitude, mapZoom, getPixelOffset]);
+
+  // Calculate the precise marker position on the canvas (this is where the track should be)
+  const markerPosition = useMemo(() => {
+    if (!latitude || !longitude) {
+      return { x: width / 2, y: height / 2 };
+    }
+
+    // The marker should always be at the center of the visible area
+    // We calculate the offset needed to position the track location at the center
+    const centerX = width / 2;
+    const centerY = height / 2;
+    
+    console.log('Marker position calculation:', {
+      latitude,
+      longitude,
+      mapZoom,
+      mapOffset,
+      centerX,
+      centerY,
+    });
+    
+    return { x: centerX, y: centerY };
+  }, [latitude, longitude, mapZoom, mapOffset, width, height]);
+
+  // Calculate initial translation to center the map on the track location
+  const initialMapTranslation = useMemo(() => {
+    if (!latitude || !longitude) {
+      return { x: 0, y: 0 };
+    }
+
+    // Calculate the offset from the center tile to the exact track position
+    const offsetX = mapOffset.pixelX - mapTileSize / 2;
+    const offsetY = mapOffset.pixelY - mapTileSize / 2;
+    
+    console.log('Initial map translation:', {
+      offsetX,
+      offsetY,
+      mapOffset,
+    });
+    
+    return { x: -offsetX, y: -offsetY };
+  }, [latitude, longitude, mapOffset, mapTileSize]);
+
+  // Initialize translation values when component mounts or location changes
+  useEffect(() => {
+    if (latitude && longitude) {
+      console.log('Setting initial translation for track location:', initialMapTranslation);
+      translateX.value = initialMapTranslation.x;
+      translateY.value = initialMapTranslation.y;
+      savedTranslateX.value = initialMapTranslation.x;
+      savedTranslateY.value = initialMapTranslation.y;
+      setCurrentTranslateX(initialMapTranslation.x);
+      setCurrentTranslateY(initialMapTranslation.y);
+    }
+  }, [latitude, longitude, initialMapTranslation.x, initialMapTranslation.y]);
+
   // Calculate visible bounds based on current transform with extended coverage
   const getVisibleBounds = useCallback(() => {
     // Calculate the inverse transform to get world coordinates from screen coordinates
@@ -313,59 +389,11 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     return `https://cartodb-basemaps-a.global.ssl.fastly.net/${style}/${zoom}/${x}/${y}.png`;
   }, [getTileCoordinates, isDark]);
 
-  // Calculate pixel offset within tile for precise positioning
-  const getPixelOffset = useCallback((lat: number, lon: number, zoom: number) => {
-    const scale = Math.pow(2, zoom);
-    const worldCoordX = (lon + 180) / 360 * scale;
-    const worldCoordY = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * scale;
-    
-    const tileX = Math.floor(worldCoordX);
-    const tileY = Math.floor(worldCoordY);
-    
-    const pixelX = (worldCoordX - tileX) * mapTileSize;
-    const pixelY = (worldCoordY - tileY) * mapTileSize;
-    
-    return { pixelX, pixelY };
-  }, [mapTileSize]);
-
   // Map tile URL for the center location
   const mapTileUrl = useMemo(() => {
     if (!latitude || !longitude) return null;
     return getMapTileUrl(latitude, longitude, mapZoom);
   }, [latitude, longitude, mapZoom, getMapTileUrl]);
-
-  // Calculate the pixel offset for centering
-  const mapOffset = useMemo(() => {
-    if (!latitude || !longitude) return { pixelX: 0, pixelY: 0 };
-    return getPixelOffset(latitude, longitude, mapZoom);
-  }, [latitude, longitude, mapZoom, getPixelOffset]);
-
-  // Calculate the precise marker position on the canvas
-  const markerPosition = useMemo(() => {
-    if (!latitude || !longitude) {
-      return { x: width / 2, y: height / 2 };
-    }
-
-    const gridLeft = width / 2 - (mapTileSize * 1.5);
-    const gridTop = height / 2 - (mapTileSize * 1.5);
-    
-    const centerTileLeft = gridLeft + mapTileSize;
-    const centerTileTop = gridTop + mapTileSize;
-    
-    const markerX = centerTileLeft + mapOffset.pixelX;
-    const markerY = centerTileTop + mapOffset.pixelY;
-    
-    console.log('Marker position calculation:', {
-      latitude,
-      longitude,
-      mapZoom,
-      mapOffset,
-      markerX,
-      markerY,
-    });
-    
-    return { x: markerX, y: markerY };
-  }, [latitude, longitude, mapZoom, mapOffset, width, height, mapTileSize]);
 
   // Calculate opacity based on particle life with smooth fade
   const getParticleOpacity = useCallback((particle: Particle): number => {
@@ -411,17 +439,17 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
   const handleResetZoom = useCallback(() => {
     console.log('Resetting zoom and pan for wind animation');
     scale.value = withSpring(1, { damping: 15, stiffness: 150 });
-    translateX.value = withSpring(0, { damping: 15, stiffness: 150 });
-    translateY.value = withSpring(0, { damping: 15, stiffness: 150 });
+    translateX.value = withSpring(initialMapTranslation.x, { damping: 15, stiffness: 150 });
+    translateY.value = withSpring(initialMapTranslation.y, { damping: 15, stiffness: 150 });
     savedScale.value = 1;
-    savedTranslateX.value = 0;
-    savedTranslateY.value = 0;
+    savedTranslateX.value = initialMapTranslation.x;
+    savedTranslateY.value = initialMapTranslation.y;
     setMapZoom(10);
     
     setCurrentScale(1);
-    setCurrentTranslateX(0);
-    setCurrentTranslateY(0);
-  }, [scale, translateX, translateY, savedScale, savedTranslateX, savedTranslateY]);
+    setCurrentTranslateX(initialMapTranslation.x);
+    setCurrentTranslateY(initialMapTranslation.y);
+  }, [scale, translateX, translateY, savedScale, savedTranslateX, savedTranslateY, initialMapTranslation]);
 
   // Pinch gesture for zoom with focal point
   const pinchGesture = Gesture.Pinch()
@@ -637,8 +665,8 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                     style={[
                       styles.mapTile,
                       {
-                        left: (tile.x + 1) * mapTileSize - mapOffset.pixelX,
-                        top: (tile.y + 1) * mapTileSize - mapOffset.pixelY,
+                        left: (tile.x + 1) * mapTileSize,
+                        top: (tile.y + 1) * mapTileSize,
                       },
                     ]}
                     contentFit="cover"
@@ -821,7 +849,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                 W
               </SvgText>
               
-              {/* Center marker (circuit location) */}
+              {/* Center marker (circuit location) - Always at screen center */}
               <Circle
                 cx={markerPosition.x}
                 cy={markerPosition.y}
@@ -924,7 +952,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       
       <Text style={styles.infoText}>
         {latitude && longitude 
-          ? `Global wind flow visualization • ${windSpeed.toFixed(1)} ${unit === 'metric' ? 'km/h' : 'mph'} from ${windDirection}° • Particles: ${particleCount} • Scale: ${currentScale.toFixed(2)}x`
+          ? `Centered on track location • ${windSpeed.toFixed(1)} ${unit === 'metric' ? 'km/h' : 'mph'} from ${windDirection}° • Particles: ${particleCount} • Scale: ${currentScale.toFixed(2)}x`
           : `Global wind flow visualization • ${windSpeed.toFixed(1)} ${unit === 'metric' ? 'km/h' : 'mph'} from ${windDirection}°`
         }
       </Text>
