@@ -292,6 +292,54 @@ function DetailScreen() {
       color: colors.textMuted,
       fontFamily: 'Roboto_400Regular',
     },
+    sunTimesBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.card,
+      borderRadius: 14,
+      padding: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      boxShadow: shadows.md,
+    },
+    sunTimeItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    sunTimeText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+    },
+    sunTimeLabel: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+    },
+    sunTimeDivider: {
+      width: 1,
+      height: 40,
+      backgroundColor: colors.divider,
+    },
+    daylightInfo: {
+      alignItems: 'center',
+    },
+    daylightDuration: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+      fontFamily: 'Roboto_600SemiBold',
+    },
+    daylightLabel: {
+      fontSize: 11,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: 2,
+    },
 
     next12HoursCard: {
       backgroundColor: colors.card,
@@ -657,6 +705,40 @@ function DetailScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           {loading && <Text style={styles.muted}>Loading enhanced weather data…</Text>}
           {error && <Text style={styles.error}>Failed to load weather data. Please try again.</Text>}
+
+          {/* Simplified Sunrise/Sunset Bar - Now at the top */}
+          {!loading && todaySunTimes && (
+            <SafeComponent componentName="SunriseSunsetBar">
+              <View style={styles.sunTimesBar}>
+                <View style={styles.sunTimeItem}>
+                  <Icon name="arrow-up" size={20} color={colors.warning} />
+                  <View>
+                    <Text style={styles.sunTimeLabel}>Sunrise</Text>
+                    <Text style={styles.sunTimeText}>{formatTimeForDisplay(todaySunTimes.sunrise)}</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.sunTimeDivider} />
+                
+                {daylightDuration && (
+                  <View style={styles.daylightInfo}>
+                    <Text style={styles.daylightDuration}>{daylightDuration}</Text>
+                    <Text style={styles.daylightLabel}>Daylight</Text>
+                  </View>
+                )}
+                
+                <View style={styles.sunTimeDivider} />
+                
+                <View style={styles.sunTimeItem}>
+                  <Icon name="arrow-down" size={20} color={colors.primary} />
+                  <View>
+                    <Text style={styles.sunTimeLabel}>Sunset</Text>
+                    <Text style={styles.sunTimeText}>{formatTimeForDisplay(todaySunTimes.sunset)}</Text>
+                  </View>
+                </View>
+              </View>
+            </SafeComponent>
+          )}
 
           {/* Weather Alerts */}
           {!loading && alerts && alerts.length > 0 && (
