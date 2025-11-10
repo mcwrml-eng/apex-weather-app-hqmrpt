@@ -53,7 +53,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
   windDirection,
   width = 320,
   height = 320,
-  particleCount = 200, // Increased for better coverage
+  particleCount = 800, // SIGNIFICANTLY INCREASED from 200 to 800
   particleColor,
   showGrid = true,
   unit = 'metric',
@@ -221,26 +221,26 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     };
   }, []);
 
-  // Get color based on wind speed with smooth gradient transitions
+  // ENHANCED: Get color based on wind speed with MORE VIBRANT and PROMINENT gradient transitions
   const getWindSpeedColor = useCallback((speed: number): string => {
     if (particleColor) return particleColor;
     
-    // Enhanced color gradient for wind speed visualization
-    // Using HSL color space for smooth transitions
-    if (speed < 5) return 'rgba(150, 220, 255, 0.9)'; // Very light blue - calm
-    if (speed < 10) return 'rgba(100, 200, 255, 0.9)'; // Light blue - gentle breeze
-    if (speed < 15) return 'rgba(80, 255, 200, 0.9)'; // Cyan - light wind
-    if (speed < 20) return 'rgba(100, 255, 150, 0.9)'; // Green-cyan - moderate wind
-    if (speed < 25) return 'rgba(180, 255, 100, 0.9)'; // Yellow-green - fresh wind
-    if (speed < 30) return 'rgba(255, 255, 100, 0.9)'; // Yellow - strong wind
-    if (speed < 35) return 'rgba(255, 220, 80, 0.9)'; // Orange-yellow - near gale
-    if (speed < 40) return 'rgba(255, 180, 80, 0.9)'; // Orange - gale
-    if (speed < 50) return 'rgba(255, 140, 80, 0.9)'; // Red-orange - strong gale
-    if (speed < 60) return 'rgba(255, 100, 100, 0.9)'; // Red - storm
-    return 'rgba(255, 60, 120, 0.9)'; // Pink-red - violent storm
+    // ENHANCED color gradient with MORE SATURATED and VIBRANT colors
+    // Increased opacity from 0.9 to 1.0 for maximum prominence
+    if (speed < 5) return 'rgba(100, 200, 255, 1.0)'; // Bright cyan-blue - calm
+    if (speed < 10) return 'rgba(50, 180, 255, 1.0)'; // Vivid blue - gentle breeze
+    if (speed < 15) return 'rgba(0, 220, 255, 1.0)'; // Electric cyan - light wind
+    if (speed < 20) return 'rgba(0, 255, 200, 1.0)'; // Bright turquoise - moderate wind
+    if (speed < 25) return 'rgba(100, 255, 100, 1.0)'; // Vivid green - fresh wind
+    if (speed < 30) return 'rgba(200, 255, 0, 1.0)'; // Bright yellow-green - strong wind
+    if (speed < 35) return 'rgba(255, 240, 0, 1.0)'; // Pure yellow - near gale
+    if (speed < 40) return 'rgba(255, 200, 0, 1.0)'; // Bright orange - gale
+    if (speed < 50) return 'rgba(255, 150, 0, 1.0)'; // Vivid orange - strong gale
+    if (speed < 60) return 'rgba(255, 80, 80, 1.0)'; // Bright red - storm
+    return 'rgba(255, 0, 150, 1.0)'; // Hot pink - violent storm
   }, [particleColor]);
 
-  // Get gradient color stops for streamlines
+  // Get gradient color stops for streamlines with enhanced visibility
   const getStreamlineGradient = useCallback((speed: number) => {
     const baseColor = getWindSpeedColor(speed);
     // Extract RGB values from rgba string
@@ -248,8 +248,8 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     if (!match) return { start: baseColor, end: baseColor };
     
     const [_, r, g, b] = match;
-    const startOpacity = 0.6;
-    const endOpacity = 0.1;
+    const startOpacity = 0.8; // Increased from 0.6 for more prominence
+    const endOpacity = 0.2; // Increased from 0.1 for better visibility
     
     return {
       start: `rgba(${r}, ${g}, ${b}, ${startOpacity})`,
@@ -263,7 +263,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     const newParticles: Particle[] = [];
     const { vx, vy } = calculateVelocity(windSpeed, windDirection);
     
-    console.log('Initializing particles with extended bounds:', bounds);
+    console.log('Initializing particles with extended bounds:', bounds, 'Particle count:', particleCount);
     
     for (let i = 0; i < particleCount; i++) {
       const maxLife = 120 + Math.random() * 180; // Longer life for smoother flow
@@ -277,7 +277,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
         vy: vy * speedVariation,
         life: Math.random() * maxLife,
         maxLife: maxLife,
-        opacity: 0.4 + Math.random() * 0.5,
+        opacity: 0.6 + Math.random() * 0.4, // Increased base opacity from 0.4 to 0.6
         speed: windSpeed * speedVariation,
       });
     }
@@ -314,7 +314,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
           vy: vy * speedVariation,
           life: maxLife,
           maxLife: maxLife,
-          opacity: 0.4 + Math.random() * 0.5,
+          opacity: 0.6 + Math.random() * 0.4, // Increased base opacity
           speed: windSpeed * speedVariation,
         };
       }
@@ -599,14 +599,17 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       gap: 4,
     },
     legendDot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
+      width: 10, // Increased from 8 to 10 for better visibility
+      height: 10,
+      borderRadius: 5,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)',
     },
     legendText: {
       fontSize: 10,
       color: colors.textMuted,
       fontFamily: 'Roboto_400Regular',
+      fontWeight: '600', // Made text bolder
     },
   }), [width, height, colors, isDark, mapTileSize]);
 
@@ -640,7 +643,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     return tiles;
   }, [latitude, longitude, mapZoom, mapTileUrl, getTileCoordinates, isDark]);
 
-  // Wind speed legend data
+  // Wind speed legend data with enhanced colors
   const windSpeedLegend = [
     { speed: 5, label: 'Calm', color: getWindSpeedColor(5) },
     { speed: 15, label: 'Light', color: getWindSpeedColor(15) },
@@ -710,7 +713,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                 cx={centerX}
                 cy={centerY}
                 r={Math.min(width, height) / 2}
-                fill={isDark ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)'}
+                fill={isDark ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'}
               />
               
               {/* Distance rings */}
@@ -750,7 +753,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                 );
               })}
               
-              {/* Draw streamlines with gradient colors */}
+              {/* Draw streamlines with gradient colors - ENHANCED VISIBILITY */}
               {streamlines.map((line, index) => (
                 <Line
                   key={`streamline-${index}`}
@@ -759,37 +762,45 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                   x2={line.x2}
                   y2={line.y2}
                   stroke={line.gradient.start}
-                  strokeWidth={2 / currentScale}
+                  strokeWidth={2.5 / currentScale} // Increased from 2 to 2.5
                   strokeLinecap="round"
-                  opacity={0.6}
+                  opacity={0.75} // Increased from 0.6 to 0.75
                 />
               ))}
               
-              {/* Draw particles with color based on speed */}
+              {/* Draw particles with ENHANCED color, size, and glow effects */}
               {particles.map((particle) => {
                 const opacity = getParticleOpacity(particle);
-                const radius = (2.5 + (particle.speed / 60) * 2) / currentScale;
+                const baseRadius = (3.5 + (particle.speed / 60) * 3) / currentScale; // INCREASED from 2.5 to 3.5
                 const particleColor = getWindSpeedColor(particle.speed);
                 
                 return (
                   <G key={`particle-${particle.id}`}>
-                    {/* Glow effect */}
+                    {/* ENHANCED outer glow effect - larger and more visible */}
                     <Circle
                       cx={particle.x}
                       cy={particle.y}
-                      r={radius * 2}
+                      r={baseRadius * 3.5} // Increased from 2 to 3.5
                       fill={particleColor}
-                      opacity={opacity * 0.2}
+                      opacity={opacity * 0.35} // Increased from 0.2 to 0.35
                     />
-                    {/* Main particle */}
+                    {/* ENHANCED middle glow layer */}
                     <Circle
                       cx={particle.x}
                       cy={particle.y}
-                      r={radius}
+                      r={baseRadius * 2}
+                      fill={particleColor}
+                      opacity={opacity * 0.5}
+                    />
+                    {/* Main particle - LARGER and MORE PROMINENT */}
+                    <Circle
+                      cx={particle.x}
+                      cy={particle.y}
+                      r={baseRadius}
                       fill={particleColor}
                       opacity={opacity}
-                      stroke={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'}
-                      strokeWidth={0.5 / currentScale}
+                      stroke={isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.3)'}
+                      strokeWidth={0.8 / currentScale} // Increased from 0.5 to 0.8
                     />
                   </G>
                 );
@@ -912,7 +923,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
         </GestureDetector>
       </View>
       
-      {/* Wind speed color legend */}
+      {/* Wind speed color legend - ENHANCED with better visibility */}
       <View style={styles.legendContainer}>
         {windSpeedLegend.map((item, index) => (
           <View key={index} style={styles.legendItem}>
