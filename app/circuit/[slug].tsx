@@ -829,57 +829,6 @@ function DetailScreen() {
             </View>
           )}
 
-          {/* Animated Wind Visualization with Map Underlay */}
-          {!loading && current && (
-            <SafeComponent componentName="WindParticleAnimation">
-              <View style={styles.windAnimationCard}>
-                <View style={styles.windAnimationHeader}>
-                  <View style={styles.windAnimationTitleContainer}>
-                    <Icon name="flag" size={20} color={colors.wind} />
-                    <Text style={styles.windAnimationTitle}>Live Wind Flow</Text>
-                  </View>
-                </View>
-                <Text style={styles.windAnimationSubtitle}>
-                  Real-time wind visualization with map underlay showing speed and direction
-                </Text>
-                
-                <View style={styles.windAnimationContainer}>
-                  <WindParticleAnimation
-                    windSpeed={current.wind_speed}
-                    windDirection={current.wind_direction}
-                    width={320}
-                    height={280}
-                    particleCount={150}
-                    showGrid={true}
-                    unit={unit}
-                    latitude={circuit.latitude}
-                    longitude={circuit.longitude}
-                  />
-                </View>
-                
-                <View style={styles.windStatsContainer}>
-                  <View style={styles.windStatItem}>
-                    <Text style={styles.windStatLabel}>Speed</Text>
-                    <Text style={styles.windStatValue}>{Math.round(current.wind_speed)}</Text>
-                    <Text style={styles.windStatUnit}>{unit === 'metric' ? 'km/h' : 'mph'}</Text>
-                  </View>
-                  
-                  <View style={styles.windStatItem}>
-                    <Text style={styles.windStatLabel}>Direction</Text>
-                    <Text style={styles.windStatValue}>{getWindDirectionLabel(current.wind_direction)}</Text>
-                    <Text style={styles.windStatUnit}>{Math.round(current.wind_direction)}°</Text>
-                  </View>
-                  
-                  <View style={styles.windStatItem}>
-                    <Text style={styles.windStatLabel}>Gusts</Text>
-                    <Text style={styles.windStatValue}>{Math.round(current.wind_gusts)}</Text>
-                    <Text style={styles.windStatUnit}>{unit === 'metric' ? 'km/h' : 'mph'}</Text>
-                  </View>
-                </View>
-              </View>
-            </SafeComponent>
-          )}
-
           {/* Windy Cloud & Radar Imagery */}
           {!loading && circuit && (
             <SafeComponent componentName="WindyCloudRadar">
@@ -1219,6 +1168,57 @@ function DetailScreen() {
                   unit={unit}
                 />
               </SafeComponent>
+
+              {/* Animated Wind Visualization with Map Underlay - MOVED HERE */}
+              {current && (
+                <SafeComponent componentName="WindParticleAnimation">
+                  <View style={styles.windAnimationCard}>
+                    <View style={styles.windAnimationHeader}>
+                      <View style={styles.windAnimationTitleContainer}>
+                        <Icon name="flag" size={20} color={colors.wind} />
+                        <Text style={styles.windAnimationTitle}>Live Wind Flow</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.windAnimationSubtitle}>
+                      Real-time wind visualization with map underlay showing speed and direction
+                    </Text>
+                    
+                    <View style={styles.windAnimationContainer}>
+                      <WindParticleAnimation
+                        windSpeed={current.wind_speed}
+                        windDirection={current.wind_direction}
+                        width={320}
+                        height={280}
+                        particleCount={150}
+                        showGrid={true}
+                        unit={unit}
+                        latitude={circuit.latitude}
+                        longitude={circuit.longitude}
+                      />
+                    </View>
+                    
+                    <View style={styles.windStatsContainer}>
+                      <View style={styles.windStatItem}>
+                        <Text style={styles.windStatLabel}>Speed</Text>
+                        <Text style={styles.windStatValue}>{Math.round(current.wind_speed)}</Text>
+                        <Text style={styles.windStatUnit}>{unit === 'metric' ? 'km/h' : 'mph'}</Text>
+                      </View>
+                      
+                      <View style={styles.windStatItem}>
+                        <Text style={styles.windStatLabel}>Direction</Text>
+                        <Text style={styles.windStatValue}>{getWindDirectionLabel(current.wind_direction)}</Text>
+                        <Text style={styles.windStatUnit}>{Math.round(current.wind_direction)}°</Text>
+                      </View>
+                      
+                      <View style={styles.windStatItem}>
+                        <Text style={styles.windStatLabel}>Gusts</Text>
+                        <Text style={styles.windStatValue}>{Math.round(current.wind_gusts)}</Text>
+                        <Text style={styles.windStatUnit}>{unit === 'metric' ? 'km/h' : 'mph'}</Text>
+                      </View>
+                    </View>
+                  </View>
+                </SafeComponent>
+              )}
 
               <SafeComponent componentName="WindRadarGraph">
                 <WindRadarGraph
