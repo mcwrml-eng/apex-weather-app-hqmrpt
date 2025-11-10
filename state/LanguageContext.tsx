@@ -2,16 +2,6 @@
 import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocales } from 'expo-localization';
-import en from '../translations/en.json';
-import es from '../translations/es.json';
-import fr from '../translations/fr.json';
-import de from '../translations/de.json';
-import it from '../translations/it.json';
-import pt from '../translations/pt.json';
-import ja from '../translations/ja.json';
-import zh from '../translations/zh.json';
-import ar from '../translations/ar.json';
-import ru from '../translations/ru.json';
 
 export type Language = 'en' | 'es' | 'fr' | 'de' | 'it' | 'pt' | 'ja' | 'zh' | 'ar' | 'ru';
 
@@ -24,6 +14,18 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
 const STORAGE_KEY = 'app_language';
+
+// Import translations
+import en from '../translations/en.json';
+import es from '../translations/es.json';
+import fr from '../translations/fr.json';
+import de from '../translations/de.json';
+import it from '../translations/it.json';
+import pt from '../translations/pt.json';
+import ja from '../translations/ja.json';
+import zh from '../translations/zh.json';
+import ar from '../translations/ar.json';
+import ru from '../translations/ru.json';
 
 const translations: Record<Language, Record<string, string>> = {
   en,
@@ -118,7 +120,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       setLanguage,
       t,
     }),
-    [language, t]
+    [language]
   );
 
   if (isLoading) {
@@ -140,9 +142,7 @@ export function useLanguage() {
     console.log('useLanguage: Context not found, using default English');
     return { 
       language: 'en' as Language, 
-      setLanguage: async () => {
-        console.log('useLanguage: setLanguage called but context not available');
-      },
+      setLanguage: async () => {},
       t: (key: string) => key,
     };
   }

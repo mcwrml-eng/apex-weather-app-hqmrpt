@@ -29,7 +29,7 @@ interface RaceDayWeatherSummaryProps {
   unit: 'metric' | 'imperial';
   circuitName: string;
   raceStartTime?: string;
-  sessionDuration?: number;
+  sessionDuration?: number; // in hours
 }
 
 const RaceDayWeatherSummary: React.FC<RaceDayWeatherSummaryProps> = ({
@@ -45,7 +45,7 @@ const RaceDayWeatherSummary: React.FC<RaceDayWeatherSummaryProps> = ({
 
   // Find optimal time windows for track sessions
   const optimalWindows = useMemo(() => {
-    const windows: {
+    const windows: Array<{
       startTime: string;
       endTime: string;
       score: number;
@@ -53,7 +53,7 @@ const RaceDayWeatherSummary: React.FC<RaceDayWeatherSummaryProps> = ({
       avgTemp: number;
       avgWind: number;
       rainChance: number;
-    }[] = [];
+    }> = [];
 
     // Analyze 3-hour windows
     for (let i = 0; i < hourlyData.length - 3; i++) {

@@ -1,168 +1,201 @@
 
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { router } from 'expo-router';
+import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout } from '../../styles/commonStyles';
 import { useTheme } from '../../state/ThemeContext';
-import { getColors, spacing, borderRadius, getShadows } from '../../styles/commonStyles';
-import { indycarCircuits } from '../../data/circuits';
 import CircuitCard from '../../components/CircuitCard';
-import SearchBar from '../../components/SearchBar';
-import Icon from '../../components/Icon';
-import InteractiveGlobe from '../../components/InteractiveGlobe';
+import FeaturedTrackCard from '../../components/FeaturedTrackCard';
+import AppHeader from '../../components/AppHeader';
+import IndyCarIcon from '../../components/IndyCarIcon';
+import { indycarCircuits } from '../../data/circuits';
 
 export default function IndyCarScreen() {
-  const { isDark } = useTheme();
-  const colors = getColors(isDark);
-  const shadows = getShadows(isDark);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showGlobe, setShowGlobe] = useState(false);
-
-  const filteredCircuits = useMemo(() => {
-    if (!searchQuery.trim()) return indycarCircuits;
-    const query = searchQuery.toLowerCase();
-    return indycarCircuits.filter(
-      (c) =>
-        c.name.toLowerCase().includes(query) ||
-        c.country.toLowerCase().includes(query)
-    );
-  }, [searchQuery]);
-
-  const handleTrackSelect = (slug: string) => {
-    router.push({
-      pathname: '/circuit/[slug]',
-      params: { slug, category: 'indycar' },
-    });
-  };
+  const { isDark } = useTheme();
+  
+  const colors = getColors(isDark);
+  const commonStyles = getCommonStyles(isDark);
+  const shadows = getShadows(isDark);
 
   const styles = StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background,
     },
-    header: {
-      paddingHorizontal: spacing.md,
-      paddingTop: spacing.lg,
-      paddingBottom: spacing.md,
+    searchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: borderRadius.lg,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginHorizontal: layout.screenPadding,
+      marginBottom: spacing.lg,
     },
-    title: {
-      fontSize: 32,
-      fontWeight: '700',
+    searchIcon: {
+      marginRight: spacing.md,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 16,
       color: colors.text,
-      fontFamily: 'Roboto_700Bold',
-      marginBottom: 8,
+      fontFamily: 'Roboto_400Regular',
     },
-    subtitle: {
+    content: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: layout.screenPadding,
+    },
+    sectionTitle: {
+      fontSize: 20,
+      fontWeight: '600',
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+      marginBottom: spacing.lg,
+      marginTop: spacing.md,
+    },
+    circuitsGrid: {
+      gap: spacing.md,
+    },
+    statsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: spacing.xl,
+      paddingHorizontal: spacing.md,
+    },
+    statItem: {
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      padding: spacing.lg,
+      borderRadius: borderRadius.lg,
+      flex: 1,
+      marginHorizontal: spacing.xs,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+      boxShadow: shadows.sm,
+    },
+    statNumber: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: colors.indycarBlue,
+      fontFamily: 'Roboto_700Bold',
+    },
+    statLabel: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginTop: spacing.xs,
+    },
+    emptyState: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing.massive,
+    },
+    emptyText: {
       fontSize: 16,
       color: colors.textMuted,
       fontFamily: 'Roboto_400Regular',
-    },
-    toggleContainer: {
-      flexDirection: 'row',
-      gap: 8,
-      marginTop: 12,
-    },
-    toggleButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      backgroundColor: colors.backgroundAlt,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: borderRadius.md,
-      borderWidth: 1,
-      borderColor: colors.divider,
-    },
-    toggleButtonActive: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
-    },
-    toggleButtonText: {
-      fontSize: 13,
-      fontWeight: '600',
-      color: colors.text,
-      fontFamily: 'Roboto_600SemiBold',
-    },
-    toggleButtonTextActive: {
-      color: '#fff',
-    },
-    content: {
-      paddingHorizontal: spacing.md,
-      paddingBottom: 100,
-    },
-    searchContainer: {
-      marginBottom: spacing.md,
-    },
-    resultsText: {
-      fontSize: 14,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      marginBottom: spacing.sm,
+      textAlign: 'center',
+      marginTop: spacing.lg,
     },
   });
 
+  const filteredCircuits = useMemo(() => {
+    if (!searchQuery.trim()) return indycarCircuits;
+    
+    const query = searchQuery.toLowerCase().trim();
+    return indycarCircuits.filter(circuit => 
+      circuit.name.toLowerCase().includes(query) ||
+      circuit.country.toLowerCase().includes(query)
+    );
+  }, [searchQuery]);
+
+  console.log('IndyCarScreen: Rendering with', filteredCircuits.length, 'circuits, theme:', isDark ? 'dark' : 'light');
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>IndyCar</Text>
-        <Text style={styles.subtitle}>
-          {indycarCircuits.length} circuits • 2025/2026 season
-        </Text>
-        <View style={styles.toggleContainer}>
-          <TouchableOpacity
-            style={[styles.toggleButton, !showGlobe && styles.toggleButtonActive]}
-            onPress={() => setShowGlobe(false)}
-            activeOpacity={0.7}
-          >
-            <Icon name="list" size={16} color={!showGlobe ? '#fff' : colors.text} />
-            <Text style={[styles.toggleButtonText, !showGlobe && styles.toggleButtonTextActive]}>
-              List View
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.toggleButton, showGlobe && styles.toggleButtonActive]}
-            onPress={() => setShowGlobe(true)}
-            activeOpacity={0.7}
-          >
-            <Icon name="globe-outline" size={16} color={showGlobe ? '#fff' : colors.text} />
-            <Text style={[styles.toggleButtonText, showGlobe && styles.toggleButtonTextActive]}>
-              Globe View
-            </Text>
-          </TouchableOpacity>
-        </View>
+      <AppHeader
+        title="IndyCar"
+        subtitle="2026 Championship Calendar • 16 Circuits"
+        icon={<IndyCarIcon size={32} color={colors.indycarBlue} />}
+      />
+
+      <View style={styles.searchContainer}>
+        <Ionicons 
+          name="search" 
+          size={20} 
+          color={colors.textMuted} 
+          style={styles.searchIcon}
+        />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search circuits or countries..."
+          placeholderTextColor={colors.textMuted}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery.length > 0 && (
+          <Ionicons 
+            name="close-circle" 
+            size={20} 
+            color={colors.textMuted}
+            onPress={() => setSearchQuery('')}
+          />
+        )}
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {showGlobe ? (
-          <InteractiveGlobe
-            category="indycar"
-            onTrackSelect={handleTrackSelect}
-          />
-        ) : (
-          <>
-            <View style={styles.searchContainer}>
-              <SearchBar
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholder="Search IndyCar circuits..."
-              />
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.scrollContent}>
+          <FeaturedTrackCard category="indycar" />
+
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>16</Text>
+              <Text style={styles.statLabel}>Circuits</Text>
             </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>17</Text>
+              <Text style={styles.statLabel}>Races</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>12</Text>
+              <Text style={styles.statLabel}>Teams</Text>
+            </View>
+          </View>
 
-            {searchQuery.trim() !== '' && (
-              <Text style={styles.resultsText}>
-                {filteredCircuits.length} result{filteredCircuits.length !== 1 ? 's' : ''} found
-              </Text>
-            )}
+          <Text style={styles.sectionTitle}>
+            All Circuits ({filteredCircuits.length})
+          </Text>
 
-            {filteredCircuits.map((circuit) => (
-              <CircuitCard
-                key={circuit.slug}
-                circuit={circuit}
-                category="indycar"
-                onPress={() => handleTrackSelect(circuit.slug)}
+          {filteredCircuits.length > 0 ? (
+            <View style={styles.circuitsGrid}>
+              {filteredCircuits.map((circuit) => (
+                <CircuitCard
+                  key={circuit.slug}
+                  circuit={circuit}
+                  category="indycar"
+                />
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons 
+                name="search" 
+                size={48} 
+                color={colors.textMuted} 
               />
-            ))}
-          </>
-        )}
+              <Text style={styles.emptyText}>
+                No circuits found matching "{searchQuery}"
+              </Text>
+            </View>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
