@@ -116,6 +116,17 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     };
   }, [currentScale, currentTranslateX, currentTranslateY, width, height]);
 
+  // Calculate the SVG viewBox based on current transform
+  const svgViewBox = useMemo(() => {
+    const invScale = 1 / currentScale;
+    const viewBoxX = -currentTranslateX * invScale;
+    const viewBoxY = -currentTranslateY * invScale;
+    const viewBoxWidth = width * invScale;
+    const viewBoxHeight = height * invScale;
+    
+    return `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`;
+  }, [currentScale, currentTranslateX, currentTranslateY, width, height]);
+
   // Calculate particle velocity based on wind speed and direction
   const calculateVelocity = useCallback((speed: number, direction: number) => {
     // Convert wind direction to radians (wind direction is where wind is coming FROM)
@@ -595,11 +606,11 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
               </View>
             )}
             
-            {/* SVG overlay for wind visualization */}
+            {/* SVG overlay for wind visualization - now with dynamic viewBox */}
             <Svg 
               width={width} 
               height={height}
-              viewBox={`0 0 ${width} ${height}`}
+              viewBox={svgViewBox}
               style={styles.svgOverlay}
               pointerEvents="box-none"
             >
@@ -626,20 +637,20 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                       r={ringRadius}
                       fill="none"
                       stroke={isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)'}
-                      strokeWidth="1"
-                      strokeDasharray="3,3"
+                      strokeWidth={1 / currentScale}
+                      strokeDasharray={`${3 / currentScale},${3 / currentScale}`}
                       opacity={0.5}
                     />
                     <SvgText
                       x={labelX}
                       y={labelY}
-                      fontSize="9"
+                      fontSize={9 / currentScale}
                       fontWeight="600"
                       fill={isDark ? '#fff' : '#000'}
                       textAnchor="middle"
                       opacity={0.9}
                       stroke={isDark ? '#000' : '#fff'}
-                      strokeWidth="2"
+                      strokeWidth={2 / currentScale}
                       paintOrder="stroke"
                     >
                       {distance}km
@@ -657,15 +668,15 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                   x2={line.x2}
                   y2={line.y2}
                   stroke={isDark ? 'rgba(100, 200, 255, 0.4)' : 'rgba(50, 100, 200, 0.4)'}
-                  strokeWidth="2"
-                  strokeDasharray="4,4"
+                  strokeWidth={2 / currentScale}
+                  strokeDasharray={`${4 / currentScale},${4 / currentScale}`}
                 />
               ))}
               
               {/* Draw particles */}
               {particles.map((particle) => {
                 const opacity = getParticleOpacity(particle);
-                const radius = 2 + (windSpeed / 50) * 1.5; // Larger particles for stronger winds
+                const radius = (2 + (windSpeed / 50) * 1.5) / currentScale; // Larger particles for stronger winds, scaled
                 
                 return (
                   <Circle
@@ -676,7 +687,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                     fill={particleColorValue}
                     opacity={opacity}
                     stroke={isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'}
-                    strokeWidth="0.5"
+                    strokeWidth={0.5 / currentScale}
                   />
                 );
               })}
@@ -684,52 +695,52 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
               {/* Compass labels - positioned relative to canvas center */}
               <SvgText 
                 x={centerX} 
-                y={20} 
-                fontSize="14" 
+                y={20 / currentScale} 
+                fontSize={14 / currentScale} 
                 fontWeight="700" 
                 fill={isDark ? '#fff' : '#000'}
                 textAnchor="middle"
                 stroke={isDark ? '#000' : '#fff'}
-                strokeWidth="3"
+                strokeWidth={3 / currentScale}
                 paintOrder="stroke"
               >
                 N
               </SvgText>
               <SvgText 
-                x={width - 20} 
-                y={centerY + 5} 
-                fontSize="14" 
+                x={width - 20 / currentScale} 
+                y={centerY + 5 / currentScale} 
+                fontSize={14 / currentScale} 
                 fontWeight="700" 
                 fill={isDark ? '#fff' : '#000'}
                 textAnchor="middle"
                 stroke={isDark ? '#000' : '#fff'}
-                strokeWidth="3"
+                strokeWidth={3 / currentScale}
                 paintOrder="stroke"
               >
                 E
               </SvgText>
               <SvgText 
                 x={centerX} 
-                y={height - 10} 
-                fontSize="14" 
+                y={height - 10 / currentScale} 
+                fontSize={14 / currentScale} 
                 fontWeight="700" 
                 fill={isDark ? '#fff' : '#000'}
                 textAnchor="middle"
                 stroke={isDark ? '#000' : '#fff'}
-                strokeWidth="3"
+                strokeWidth={3 / currentScale}
                 paintOrder="stroke"
               >
                 S
               </SvgText>
               <SvgText 
-                x={20} 
-                y={centerY + 5} 
-                fontSize="14" 
+                x={20 / currentScale} 
+                y={centerY + 5 / currentScale} 
+                fontSize={14 / currentScale} 
                 fontWeight="700" 
                 fill={isDark ? '#fff' : '#000'}
                 textAnchor="middle"
                 stroke={isDark ? '#000' : '#fff'}
-                strokeWidth="3"
+                strokeWidth={3 / currentScale}
                 paintOrder="stroke"
               >
                 W
@@ -739,51 +750,51 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
               <Circle
                 cx={markerPosition.x}
                 cy={markerPosition.y}
-                r={8}
+                r={8 / currentScale}
                 fill={colors.primary}
                 stroke="#fff"
-                strokeWidth="3"
+                strokeWidth={3 / currentScale}
                 opacity={0.9}
               />
               <Circle
                 cx={markerPosition.x}
                 cy={markerPosition.y}
-                r={4}
+                r={4 / currentScale}
                 fill="#fff"
               />
               
               {/* Crosshair for precise positioning */}
               <Line
-                x1={markerPosition.x - 12}
+                x1={markerPosition.x - 12 / currentScale}
                 y1={markerPosition.y}
-                x2={markerPosition.x - 4}
+                x2={markerPosition.x - 4 / currentScale}
                 y2={markerPosition.y}
                 stroke="#fff"
-                strokeWidth="2"
+                strokeWidth={2 / currentScale}
               />
               <Line
-                x1={markerPosition.x + 4}
+                x1={markerPosition.x + 4 / currentScale}
                 y1={markerPosition.y}
-                x2={markerPosition.x + 12}
+                x2={markerPosition.x + 12 / currentScale}
                 y2={markerPosition.y}
                 stroke="#fff"
-                strokeWidth="2"
+                strokeWidth={2 / currentScale}
               />
               <Line
                 x1={markerPosition.x}
-                y1={markerPosition.y - 12}
+                y1={markerPosition.y - 12 / currentScale}
                 x2={markerPosition.x}
-                y2={markerPosition.y - 4}
+                y2={markerPosition.y - 4 / currentScale}
                 stroke="#fff"
-                strokeWidth="2"
+                strokeWidth={2 / currentScale}
               />
               <Line
                 x1={markerPosition.x}
-                y1={markerPosition.y + 4}
+                y1={markerPosition.y + 4 / currentScale}
                 x2={markerPosition.x}
-                y2={markerPosition.y + 12}
+                y2={markerPosition.y + 12 / currentScale}
                 stroke="#fff"
-                strokeWidth="2"
+                strokeWidth={2 / currentScale}
               />
             </Svg>
             
