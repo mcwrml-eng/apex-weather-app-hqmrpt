@@ -48,20 +48,20 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="indycar"
-          options={{
-            title: 'IndyCar',
-            tabBarIcon: ({ color, size }) => (
-              <IndyCarIcon size={size} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
           name="motogp"
           options={{
             title: 'MotoGP',
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="bicycle" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="indycar"
+          options={{
+            title: 'IndyCar',
+            tabBarIcon: ({ color, size }) => (
+              <IndyCarIcon size={size} color={color} />
             ),
           }}
         />
