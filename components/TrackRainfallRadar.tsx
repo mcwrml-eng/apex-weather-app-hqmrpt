@@ -17,6 +17,7 @@ import Animated, {
   cancelAnimation,
   runOnJS,
   useAnimatedStyle,
+  withSpring,
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -111,6 +112,8 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   const savedScale = useSharedValue(1);
   const savedTranslateX = useSharedValue(0);
   const savedTranslateY = useSharedValue(0);
+  const focalX = useSharedValue(0);
+  const focalY = useSharedValue(0);
 
   // Distance scale in kilometers for each ring
   const distanceRings = [5, 10, 20, 30, 40, 50];
@@ -496,9 +499,9 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
 
   // Reset zoom and pan
   const handleResetZoom = useCallback(() => {
-    scale.value = withTiming(1, { duration: 300 });
-    translateX.value = withTiming(0, { duration: 300 });
-    translateY.value = withTiming(0, { duration: 300 });
+    scale.value = withSpring(1, { damping: 15, stiffness: 150 });
+    translateX.value = withSpring(0, { damping: 15, stiffness: 150 });
+    translateY.value = withSpring(0, { damping: 15, stiffness: 150 });
     savedScale.value = 1;
     savedTranslateX.value = 0;
     savedTranslateY.value = 0;
@@ -1405,36 +1408,44 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     };
   });
 
-  // Pinch gesture for zoom
+  // Pinch gesture for zoom with focal point
   const pinchGesture = Gesture.Pinch()
+    .onStart((event) => {
+      focalX.value = event.focalX;
+      focalY.value = event.focalY;
+    })
     .onUpdate((event) => {
       const newScale = savedScale.value * event.scale;
-      scale.value = Math.max(1, Math.min(5, newScale)); // Limit zoom between 1x and 5x
+      scale.value = Math.max(1, Math.min(5, newScale));
     })
     .onEnd(() => {
       savedScale.value = scale.value;
     });
 
-  // Pan gesture for dragging
+  // Pan gesture for dragging - improved with better constraints
   const panGesture = Gesture.Pan()
+    .minDistance(10)
     .onUpdate((event) => {
+      console.log('Pan gesture update:', event.translationX, event.translationY);
       translateX.value = savedTranslateX.value + event.translationX;
       translateY.value = savedTranslateY.value + event.translationY;
     })
     .onEnd(() => {
+      console.log('Pan gesture end - saving position');
       savedTranslateX.value = translateX.value;
       savedTranslateY.value = translateY.value;
     });
 
+  // Combine gestures - simultaneous allows both to work together
   const composedGesture = Gesture.Simultaneous(pinchGesture, panGesture);
 
-  // Animated style for radar container
+  // Animated style for radar container with proper transform order
   const radarAnimatedStyle = useAnimatedStyle(() => {
     return {
       transform: [
+        { scale: scale.value },
         { translateX: translateX.value },
         { translateY: translateY.value },
-        { scale: scale.value },
       ],
     };
   });
