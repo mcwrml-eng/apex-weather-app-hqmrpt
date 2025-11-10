@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useTheme } from '../state/ThemeContext';
 import { getColors, borderRadius, getShadows } from '../styles/commonStyles';
@@ -30,6 +30,7 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
   const shadows = getShadows(isDark);
   
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [currentZoom, setCurrentZoom] = useState(zoom);
   const [currentLayer, setCurrentLayer] = useState<'wind' | 'gust' | 'temp'>('wind');
 
@@ -48,40 +49,115 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
       overlay: currentLayer,
       product: 'ecmwf',
       menu: '',
-      message: 'true',
+      message: '',
       marker: 'true',
       calendar: 'now',
       pressure: '',
       type: 'map',
       location: 'coordinates',
-      detail: 'true',
+      detail: '',
       metricWind: 'km/h',
       metricTemp: '°C',
       radarRange: '-1',
     });
     
-    return `${baseUrl}?${params.toString()}`;
+    const url = `${baseUrl}?${params.toString()}`;
+    console.log('WindyWindFlow: Generated URL:', url);
+    return url;
   }, [latitude, longitude, currentZoom, currentLayer]);
+
+  // Generate HTML content for better control
+  const htmlContent = useMemo(() => {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            html, body {
+              width: 100%;
+              height: 100%;
+              overflow: hidden;
+              background-color: ${isDark ? '#1a1a1a' : '#f5f5f5'};
+            }
+            iframe {
+              width: 100%;
+              height: 100%;
+              border: none;
+              display: block;
+            }
+          </style>
+        </head>
+        <body>
+          <iframe 
+            src="${windyUrl}"
+            frameborder="0"
+            allowfullscreen
+            allow="geolocation"
+          ></iframe>
+        </body>
+      </html>
+    `;
+  }, [windyUrl, isDark]);
 
   const handleZoomIn = useCallback(() => {
     if (currentZoom < 12) {
       setCurrentZoom(prev => prev + 1);
+      setLoading(true);
+      setError(null);
     }
   }, [currentZoom]);
 
   const handleZoomOut = useCallback(() => {
     if (currentZoom > 4) {
       setCurrentZoom(prev => prev - 1);
+      setLoading(true);
+      setError(null);
     }
   }, [currentZoom]);
 
   const handleReset = useCallback(() => {
     setCurrentZoom(zoom);
     setCurrentLayer('wind');
+    setLoading(true);
+    setError(null);
   }, [zoom]);
 
   const handleLayerChange = useCallback((layer: 'wind' | 'gust' | 'temp') => {
     setCurrentLayer(layer);
+    setLoading(true);
+    setError(null);
+  }, []);
+
+  const handleLoadStart = useCallback(() => {
+    console.log('WindyWindFlow: Load started');
+    setLoading(true);
+    setError(null);
+  }, []);
+
+  const handleLoadEnd = useCallback(() => {
+    console.log('WindyWindFlow: Load ended');
+    setLoading(false);
+  }, []);
+
+  const handleError = useCallback((syntheticEvent: any) => {
+    const { nativeEvent } = syntheticEvent;
+    console.error('WindyWindFlow: WebView error:', nativeEvent);
+    setLoading(false);
+    setError('Failed to load wind flow map. Please check your internet connection.');
+  }, []);
+
+  const handleHttpError = useCallback((syntheticEvent: any) => {
+    const { nativeEvent } = syntheticEvent;
+    console.error('WindyWindFlow: HTTP error:', nativeEvent);
+    setLoading(false);
+    setError(`HTTP Error: ${nativeEvent.statusCode || 'Unknown'}`);
   }, []);
 
   const styles = useMemo(() => StyleSheet.create({
@@ -145,6 +221,38 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
       fontSize: 14,
       color: colors.text,
       fontFamily: 'Roboto_500Medium',
+    },
+    errorContainer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.backgroundAlt,
+      zIndex: 10,
+      padding: 20,
+    },
+    errorText: {
+      marginTop: 12,
+      fontSize: 14,
+      color: colors.error,
+      fontFamily: 'Roboto_500Medium',
+      textAlign: 'center',
+    },
+    retryButton: {
+      marginTop: 16,
+      backgroundColor: colors.primary,
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: borderRadius.md,
+    },
+    retryButtonText: {
+      color: '#fff',
+      fontSize: 14,
+      fontWeight: '600',
+      fontFamily: 'Roboto_600SemiBold',
     },
     controls: {
       flexDirection: 'row',
@@ -249,6 +357,11 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
     height: compact ? 320 : height,
   }), [styles.webviewContainer, compact, width, height]);
 
+  const handleRetry = useCallback(() => {
+    setError(null);
+    setLoading(true);
+  }, []);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -266,24 +379,55 @@ const WindyWindFlow: React.FC<WindyWindFlowProps> = ({
       </Text>
 
       <View style={webviewContainerStyle}>
-        {loading && (
+        {loading && !error && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loadingText}>Loading wind flow map...</Text>
           </View>
         )}
+
+        {error && (
+          <View style={styles.errorContainer}>
+            <Icon name="alert-circle" size={48} color={colors.error} />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity 
+              style={styles.retryButton}
+              onPress={handleRetry}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         
         <WebView
-          source={{ uri: windyUrl }}
+          source={{ html: htmlContent }}
           style={styles.webview}
-          onLoadStart={() => setLoading(true)}
-          onLoadEnd={() => setLoading(false)}
+          onLoadStart={handleLoadStart}
+          onLoadEnd={handleLoadEnd}
+          onError={handleError}
+          onHttpError={handleHttpError}
           javaScriptEnabled={true}
           domStorageEnabled={true}
           startInLoadingState={false}
           scalesPageToFit={true}
           scrollEnabled={false}
           bounces={false}
+          allowsInlineMediaPlayback={true}
+          mediaPlaybackRequiresUserAction={false}
+          originWhitelist={['*']}
+          mixedContentMode="always"
+          thirdPartyCookiesEnabled={true}
+          sharedCookiesEnabled={true}
+          cacheEnabled={true}
+          cacheMode="LOAD_DEFAULT"
+          incognito={false}
+          allowFileAccess={true}
+          allowUniversalAccessFromFileURLs={true}
+          allowFileAccessFromFileURLs={true}
+          geolocationEnabled={true}
+          setSupportMultipleWindows={false}
+          androidLayerType="hardware"
         />
       </View>
 
