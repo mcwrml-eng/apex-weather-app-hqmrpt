@@ -18,6 +18,7 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
 } from 'react-native-reanimated';
+import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 
 interface TrackRainfallRadarProps {
   latitude: number;
@@ -101,6 +102,14 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   const pulseAnimation = useSharedValue(1);
   const timeSliderPosition = useSharedValue(0);
   const markerPulse = useSharedValue(1);
+
+  // Zoom and pan values
+  const scale = useSharedValue(1);
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const savedScale = useSharedValue(1);
+  const savedTranslateX = useSharedValue(0);
+  const savedTranslateY = useSharedValue(0);
 
   // Distance scale in kilometers for each ring
   const distanceRings = [5, 10, 20, 30, 40, 50];
@@ -484,6 +493,16 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     }
   }, [radarData?.gridData, isPlaying, timeSliderPosition]);
 
+  // Reset zoom and pan
+  const handleResetZoom = useCallback(() => {
+    scale.value = withTiming(1, { duration: 300 });
+    translateX.value = withTiming(0, { duration: 300 });
+    translateY.value = withTiming(0, { duration: 300 });
+    savedScale.value = 1;
+    savedTranslateX.value = 0;
+    savedTranslateY.value = 0;
+  }, [scale, translateX, translateY, savedScale, savedTranslateX, savedTranslateY]);
+
   // Fetch data on mount and when coordinates change
   useEffect(() => {
     fetchRainfallData();
@@ -669,6 +688,13 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       width: '100%',
       maxWidth: '100%',
       overflow: 'hidden',
+    },
+    radarWrapper: {
+      width: compact ? 280 : 320,
+      height: compact ? 280 : 320,
+      maxWidth: '100%',
+      overflow: 'hidden',
+      borderRadius: borderRadius.md,
     },
     radarDisplay: {
       width: compact ? 280 : 320,
@@ -1043,6 +1069,28 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       justifyContent: 'center',
       alignItems: 'center',
     },
+    zoomControls: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 8,
+      marginTop: 8,
+    },
+    zoomButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    zoomButtonText: {
+      fontSize: 11,
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+    },
   }), [colors, shadows, compact, isDark]);
 
   const radarSize = compact ? 280 : 320;
@@ -1201,17 +1249,17 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
   // Animated track marker component
   const AnimatedTrackMarker = () => {
     const markerAnimatedProps = useAnimatedProps(() => {
-      const scale = markerPulse.value;
+      const markerScale = markerPulse.value;
       return {
-        r: 9 * scale,
+        r: 9 * markerScale,
       };
     });
 
     const outerRingAnimatedProps = useAnimatedProps(() => {
-      const scale = markerPulse.value;
-      const opacity = interpolate(scale, [1, 1.3], [0.6, 0.2]);
+      const markerScale = markerPulse.value;
+      const opacity = interpolate(markerScale, [1, 1.3], [0.6, 0.2]);
       return {
-        r: 15 * scale,
+        r: 15 * markerScale,
         strokeOpacity: opacity,
       };
     });
@@ -1263,6 +1311,40 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     return {
       left: `${timeSliderPosition.value * 100}%`,
       marginLeft: -10,
+    };
+  });
+
+  // Pinch gesture for zoom
+  const pinchGesture = Gesture.Pinch()
+    .onUpdate((event) => {
+      const newScale = savedScale.value * event.scale;
+      scale.value = Math.max(1, Math.min(5, newScale)); // Limit zoom between 1x and 5x
+    })
+    .onEnd(() => {
+      savedScale.value = scale.value;
+    });
+
+  // Pan gesture for dragging
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      translateX.value = savedTranslateX.value + event.translationX;
+      translateY.value = savedTranslateY.value + event.translationY;
+    })
+    .onEnd(() => {
+      savedTranslateX.value = translateX.value;
+      savedTranslateY.value = translateY.value;
+    });
+
+  const composedGesture = Gesture.Simultaneous(pinchGesture, panGesture);
+
+  // Animated style for radar container
+  const radarAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateX: translateX.value },
+        { translateY: translateY.value },
+        { scale: scale.value },
+      ],
     };
   });
 
@@ -1441,88 +1523,106 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       )}
 
       <View style={styles.radarContainer}>
-        <View style={styles.radarDisplay}>
-          <Svg width={radarSize} height={radarSize} viewBox={`0 0 ${radarSize} ${radarSize}`}>
-            <Defs>
-              <RadialGradient id="radarBg" cx="50%" cy="50%">
-                <Stop offset="0%" stopColor={isDark ? '#1a1a1a' : '#f5f5f5'} stopOpacity="1" />
-                <Stop offset="100%" stopColor={isDark ? '#0a0a0a' : '#e0e0e0'} stopOpacity="1" />
-              </RadialGradient>
-            </Defs>
-            
-            <Circle
-              cx={centerX}
-              cy={centerY}
-              r={maxRadius}
-              fill="url(#radarBg)"
-              stroke={colors.divider}
-              strokeWidth="2"
-            />
-            
-            {distanceRings.map((distance, i) => {
-              const scale = (i + 1) / distanceRings.length;
-              const ringRadius = maxRadius * scale;
-              const labelX = centerX + ringRadius * Math.cos(Math.PI / 4);
-              const labelY = centerY + ringRadius * Math.sin(Math.PI / 4);
+        <GestureHandlerRootView style={styles.radarWrapper}>
+          <GestureDetector gesture={composedGesture}>
+            <AnimatedView style={[styles.radarDisplay, radarAnimatedStyle]}>
+              <Svg width={radarSize} height={radarSize} viewBox={`0 0 ${radarSize} ${radarSize}`}>
+                <Defs>
+                  <RadialGradient id="radarBg" cx="50%" cy="50%">
+                    <Stop offset="0%" stopColor={isDark ? '#1a1a1a' : '#f5f5f5'} stopOpacity="1" />
+                    <Stop offset="100%" stopColor={isDark ? '#0a0a0a' : '#e0e0e0'} stopOpacity="1" />
+                  </RadialGradient>
+                </Defs>
+                
+                <Circle
+                  cx={centerX}
+                  cy={centerY}
+                  r={maxRadius}
+                  fill="url(#radarBg)"
+                  stroke={colors.divider}
+                  strokeWidth="2"
+                />
+                
+                {distanceRings.map((distance, i) => {
+                  const ringScale = (i + 1) / distanceRings.length;
+                  const ringRadius = maxRadius * ringScale;
+                  const labelX = centerX + ringRadius * Math.cos(Math.PI / 4);
+                  const labelY = centerY + ringRadius * Math.sin(Math.PI / 4);
+                  
+                  return (
+                    <G key={`ring-${i}`}>
+                      <Circle
+                        cx={centerX}
+                        cy={centerY}
+                        r={ringRadius}
+                        fill="none"
+                        stroke={colors.divider}
+                        strokeWidth="1"
+                        strokeDasharray="3,3"
+                        opacity={0.25}
+                      />
+                      <SvgText
+                        x={labelX}
+                        y={labelY}
+                        fontSize="8"
+                        fontWeight="500"
+                        fill={colors.text}
+                        textAnchor="middle"
+                        opacity={0.7}
+                      >
+                        {distance}km
+                      </SvgText>
+                    </G>
+                  );
+                })}
+                
+                <Line x1={centerX} y1={25} x2={centerX} y2={radarSize - 25} stroke={colors.divider} strokeWidth="1" opacity={0.2} />
+                <Line x1={25} y1={centerY} x2={radarSize - 25} y2={centerY} stroke={colors.divider} strokeWidth="1" opacity={0.2} />
+                <Line x1={centerX - maxRadius * 0.7} y1={centerY - maxRadius * 0.7} x2={centerX + maxRadius * 0.7} y2={centerY + maxRadius * 0.7} stroke={colors.divider} strokeWidth="1" opacity={0.15} />
+                <Line x1={centerX - maxRadius * 0.7} y1={centerY + maxRadius * 0.7} x2={centerX + maxRadius * 0.7} y2={centerY - maxRadius * 0.7} stroke={colors.divider} strokeWidth="1" opacity={0.15} />
+                
+                {radarData.hasRain && currentGridData.map((zone, index) => (
+                  <AnimatedPrecipitationZone key={`zone-${index}`} zone={zone} index={index} />
+                ))}
+                
+                {radarData.hasRain && radarData.rainSpeed > 2 && <AnimatedRainDirectionArrow />}
+                
+                {/* Enhanced animated track marker */}
+                <AnimatedTrackMarker />
+                
+                <SvgText x={centerX} y={18} fontSize="12" fontWeight="600" fill={colors.text} textAnchor="middle">N</SvgText>
+                <SvgText x={radarSize - 18} y={centerY + 5} fontSize="12" fontWeight="600" fill={colors.text} textAnchor="middle">E</SvgText>
+                <SvgText x={centerX} y={radarSize - 8} fontSize="12" fontWeight="600" fill={colors.text} textAnchor="middle">S</SvgText>
+                <SvgText x={18} y={centerY + 5} fontSize="12" fontWeight="600" fill={colors.text} textAnchor="middle">W</SvgText>
+              </Svg>
               
-              return (
-                <G key={`ring-${i}`}>
-                  <Circle
-                    cx={centerX}
-                    cy={centerY}
-                    r={ringRadius}
-                    fill="none"
-                    stroke={colors.divider}
-                    strokeWidth="1"
-                    strokeDasharray="3,3"
-                    opacity={0.25}
-                  />
-                  <SvgText
-                    x={labelX}
-                    y={labelY}
-                    fontSize="8"
-                    fontWeight="500"
-                    fill={colors.text}
-                    textAnchor="middle"
-                    opacity={0.7}
-                  >
-                    {distance}km
-                  </SvgText>
-                </G>
-              );
-            })}
-            
-            <Line x1={centerX} y1={25} x2={centerX} y2={radarSize - 25} stroke={colors.divider} strokeWidth="1" opacity={0.2} />
-            <Line x1={25} y1={centerY} x2={radarSize - 25} y2={centerY} stroke={colors.divider} strokeWidth="1" opacity={0.2} />
-            <Line x1={centerX - maxRadius * 0.7} y1={centerY - maxRadius * 0.7} x2={centerX + maxRadius * 0.7} y2={centerY + maxRadius * 0.7} stroke={colors.divider} strokeWidth="1" opacity={0.15} />
-            <Line x1={centerX - maxRadius * 0.7} y1={centerY + maxRadius * 0.7} x2={centerX + maxRadius * 0.7} y2={centerY - maxRadius * 0.7} stroke={colors.divider} strokeWidth="1" opacity={0.15} />
-            
-            {radarData.hasRain && currentGridData.map((zone, index) => (
-              <AnimatedPrecipitationZone key={`zone-${index}`} zone={zone} index={index} />
-            ))}
-            
-            {radarData.hasRain && radarData.rainSpeed > 2 && <AnimatedRainDirectionArrow />}
-            
-            {/* Enhanced animated track marker */}
-            <AnimatedTrackMarker />
-            
-            <SvgText x={centerX} y={18} fontSize="12" fontWeight="600" fill={colors.text} textAnchor="middle">N</SvgText>
-            <SvgText x={radarSize - 18} y={centerY + 5} fontSize="12" fontWeight="600" fill={colors.text} textAnchor="middle">E</SvgText>
-            <SvgText x={centerX} y={radarSize - 8} fontSize="12" fontWeight="600" fill={colors.text} textAnchor="middle">S</SvgText>
-            <SvgText x={18} y={centerY + 5} fontSize="12" fontWeight="600" fill={colors.text} textAnchor="middle">W</SvgText>
-          </Svg>
-          
-          {!radarData.hasRain && (
-            <View style={styles.noRainOverlay}>
-              <View style={styles.noRainBadge}>
-                <Icon name="sunny" size={32} color="#fff" />
-                <View>
-                  <Text style={styles.noRainText}>No Rain</Text>
-                  <Text style={styles.noRainSubtext}>Clear Forecast</Text>
+              {!radarData.hasRain && (
+                <View style={styles.noRainOverlay}>
+                  <View style={styles.noRainBadge}>
+                    <Icon name="sunny" size={32} color="#fff" />
+                    <View>
+                      <Text style={styles.noRainText}>No Rain</Text>
+                      <Text style={styles.noRainSubtext}>Clear Forecast</Text>
+                    </View>
+                  </View>
                 </View>
-              </View>
-            </View>
-          )}
+              )}
+            </AnimatedView>
+          </GestureDetector>
+        </GestureHandlerRootView>
+        
+        {/* Zoom controls */}
+        <View style={styles.zoomControls}>
+          <TouchableOpacity
+            style={styles.zoomButton}
+            onPress={handleResetZoom}
+            activeOpacity={0.7}
+          >
+            <Icon name="contract" size={16} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.zoomButtonText}>
+            Pinch to zoom • Drag to pan
+          </Text>
         </View>
         
         <Text style={styles.infoText}>
