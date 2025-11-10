@@ -15,6 +15,7 @@ import WeatherTextForecast from '../../components/WeatherTextForecast';
 import WeatherAlerts from '../../components/WeatherAlerts';
 import TrackRainfallRadar from '../../components/TrackRainfallRadar';
 import WindyCloudRadar from '../../components/WindyCloudRadar';
+import WindParticleAnimation from '../../components/WindParticleAnimation';
 import BottomSheet, { BottomSheetView, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
@@ -256,6 +257,13 @@ function DetailScreen() {
     return descriptions[code] || 'Unknown conditions';
   };
 
+  // Get wind direction label
+  const getWindDirectionLabel = useCallback((degrees: number): string => {
+    const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+    const index = Math.round(degrees / 22.5) % 16;
+    return directions[index];
+  }, []);
+
   // Create dynamic styles based on theme
   const styles = useMemo(() => StyleSheet.create({
     wrapper: { flex: 1, backgroundColor: colors.background },
@@ -340,7 +348,71 @@ function DetailScreen() {
       fontFamily: 'Roboto_400Regular',
       marginTop: 2,
     },
-
+    windAnimationCard: {
+      backgroundColor: colors.card,
+      borderRadius: 14,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      boxShadow: shadows.md,
+      marginBottom: 16,
+    },
+    windAnimationHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    windAnimationTitleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    windAnimationTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+    },
+    windAnimationSubtitle: {
+      fontSize: 14,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 12,
+    },
+    windAnimationContainer: {
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    windStatsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginTop: 12,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+    },
+    windStatItem: {
+      alignItems: 'center',
+    },
+    windStatLabel: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 4,
+    },
+    windStatValue: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+    },
+    windStatUnit: {
+      fontSize: 11,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: 2,
+    },
     next12HoursCard: {
       backgroundColor: colors.card,
       borderRadius: 14,
@@ -757,6 +829,55 @@ function DetailScreen() {
             </View>
           )}
 
+          {/* Animated Wind Visualization */}
+          {!loading && current && (
+            <SafeComponent componentName="WindParticleAnimation">
+              <View style={styles.windAnimationCard}>
+                <View style={styles.windAnimationHeader}>
+                  <View style={styles.windAnimationTitleContainer}>
+                    <Icon name="flag" size={20} color={colors.wind} />
+                    <Text style={styles.windAnimationTitle}>Live Wind Flow</Text>
+                  </View>
+                </View>
+                <Text style={styles.windAnimationSubtitle}>
+                  Real-time wind visualization showing speed and direction
+                </Text>
+                
+                <View style={styles.windAnimationContainer}>
+                  <WindParticleAnimation
+                    windSpeed={current.wind_speed}
+                    windDirection={current.wind_direction}
+                    width={320}
+                    height={280}
+                    particleCount={150}
+                    showGrid={true}
+                    unit={unit}
+                  />
+                </View>
+                
+                <View style={styles.windStatsContainer}>
+                  <View style={styles.windStatItem}>
+                    <Text style={styles.windStatLabel}>Speed</Text>
+                    <Text style={styles.windStatValue}>{Math.round(current.wind_speed)}</Text>
+                    <Text style={styles.windStatUnit}>{unit === 'metric' ? 'km/h' : 'mph'}</Text>
+                  </View>
+                  
+                  <View style={styles.windStatItem}>
+                    <Text style={styles.windStatLabel}>Direction</Text>
+                    <Text style={styles.windStatValue}>{getWindDirectionLabel(current.wind_direction)}</Text>
+                    <Text style={styles.windStatUnit}>{Math.round(current.wind_direction)}°</Text>
+                  </View>
+                  
+                  <View style={styles.windStatItem}>
+                    <Text style={styles.windStatLabel}>Gusts</Text>
+                    <Text style={styles.windStatValue}>{Math.round(current.wind_gusts)}</Text>
+                    <Text style={styles.windStatUnit}>{unit === 'metric' ? 'km/h' : 'mph'}</Text>
+                  </View>
+                </View>
+              </View>
+            </SafeComponent>
+          )}
+
           {/* Windy Cloud & Radar Imagery */}
           {!loading && circuit && (
             <SafeComponent componentName="WindyCloudRadar">
@@ -788,8 +909,6 @@ function DetailScreen() {
               />
             </SafeComponent>
           )}
-
-
 
           {/* Next 12 Hours Forecast */}
           {!loading && forecast72Hours.length > 0 && (
@@ -1131,7 +1250,7 @@ function DetailScreen() {
             />
             <View style={{ height: 18 }} />
             <Text style={styles.muted}>
-              Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, written text summaries, and sunrise/sunset times for each track location.
+              Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, written text summaries, animated wind visualization, and sunrise/sunset times for each track location.
               Data updates every 10 minutes for accuracy.
             </Text>
           </BottomSheetView>
