@@ -210,7 +210,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     return `https://cartodb-basemaps-a.global.ssl.fastly.net/${style}/${zoom}/${x}/${y}.png`;
   }, [getTileCoordinates, isDark]);
 
-  // Calculate pixel offset within tile
+  // Calculate pixel offset within tile for precise positioning
   const getPixelOffset = useCallback((lat: number, lon: number, zoom: number) => {
     const scale = Math.pow(2, zoom);
     const worldCoordX = (lon + 180) / 360 * scale;
@@ -250,6 +250,51 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     if (!latitude || !longitude) return { pixelX: 0, pixelY: 0 };
     return getPixelOffset(latitude, longitude, mapZoom);
   }, [latitude, longitude, mapZoom, getPixelOffset]);
+
+  // Calculate the precise marker position on the canvas
+  // This accounts for the map tile grid and the exact pixel position within the tile
+  const markerPosition = useMemo(() => {
+    if (!latitude || !longitude) {
+      // Default to center if no coordinates
+      return { x: width / 2, y: height / 2 };
+    }
+
+    // The map tiles are arranged in a 3x3 grid
+    // The center tile contains our location
+    // We need to calculate where exactly in the canvas our location appears
+    
+    // The map container is centered on the canvas
+    // mapTileContainer is positioned at 50% with negative margin to center it
+    // So the top-left of the tile grid is at:
+    const gridLeft = width / 2 - (mapTileSize * 1.5);
+    const gridTop = height / 2 - (mapTileSize * 1.5);
+    
+    // The center tile (where our location is) starts at:
+    const centerTileLeft = gridLeft + mapTileSize;
+    const centerTileTop = gridTop + mapTileSize;
+    
+    // Our exact location within the center tile is at mapOffset
+    // So the marker should be at:
+    const markerX = centerTileLeft + mapOffset.pixelX;
+    const markerY = centerTileTop + mapOffset.pixelY;
+    
+    console.log('Marker position calculation:', {
+      latitude,
+      longitude,
+      mapZoom,
+      mapOffset,
+      gridLeft,
+      gridTop,
+      centerTileLeft,
+      centerTileTop,
+      markerX,
+      markerY,
+      canvasWidth: width,
+      canvasHeight: height,
+    });
+    
+    return { x: markerX, y: markerY };
+  }, [latitude, longitude, mapZoom, mapOffset, width, height, mapTileSize]);
 
   // Calculate opacity based on particle life
   const getParticleOpacity = useCallback((particle: Particle): number => {
@@ -509,18 +554,18 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                 fill={isDark ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'}
               />
               
-              {/* Distance rings */}
+              {/* Distance rings - centered on the actual marker position */}
               {distanceRings.map((distance, i) => {
                 const ringScale = (i + 1) / distanceRings.length;
                 const ringRadius = (Math.min(width, height) / 2 - 30) * ringScale;
-                const labelX = centerX + ringRadius * Math.cos(Math.PI / 4);
-                const labelY = centerY + ringRadius * Math.sin(Math.PI / 4);
+                const labelX = markerPosition.x + ringRadius * Math.cos(Math.PI / 4);
+                const labelY = markerPosition.y + ringRadius * Math.sin(Math.PI / 4);
                 
                 return (
                   <G key={`ring-${i}`}>
                     <Circle
-                      cx={centerX}
-                      cy={centerY}
+                      cx={markerPosition.x}
+                      cy={markerPosition.y}
                       r={ringRadius}
                       fill="none"
                       stroke={isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)'}
@@ -579,7 +624,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                 );
               })}
               
-              {/* Compass labels */}
+              {/* Compass labels - positioned relative to canvas center */}
               <SvgText 
                 x={centerX} 
                 y={20} 
@@ -633,20 +678,55 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                 W
               </SvgText>
               
-              {/* Center marker (circuit location) */}
+              {/* Center marker (circuit location) - now positioned accurately */}
               <Circle
-                cx={centerX}
-                cy={centerY}
-                r={6}
+                cx={markerPosition.x}
+                cy={markerPosition.y}
+                r={8}
                 fill={colors.primary}
                 stroke="#fff"
                 strokeWidth="3"
+                opacity={0.9}
               />
               <Circle
-                cx={centerX}
-                cy={centerY}
-                r={3}
+                cx={markerPosition.x}
+                cy={markerPosition.y}
+                r={4}
                 fill="#fff"
+              />
+              
+              {/* Crosshair for precise positioning */}
+              <Line
+                x1={markerPosition.x - 12}
+                y1={markerPosition.y}
+                x2={markerPosition.x - 4}
+                y2={markerPosition.y}
+                stroke="#fff"
+                strokeWidth="2"
+              />
+              <Line
+                x1={markerPosition.x + 4}
+                y1={markerPosition.y}
+                x2={markerPosition.x + 12}
+                y2={markerPosition.y}
+                stroke="#fff"
+                strokeWidth="2"
+              />
+              <Line
+                x1={markerPosition.x}
+                y1={markerPosition.y - 12}
+                x2={markerPosition.x}
+                y2={markerPosition.y - 4}
+                stroke="#fff"
+                strokeWidth="2"
+              />
+              <Line
+                x1={markerPosition.x}
+                y1={markerPosition.y + 4}
+                x2={markerPosition.x}
+                y2={markerPosition.y + 12}
+                stroke="#fff"
+                strokeWidth="2"
               />
             </Svg>
             
@@ -691,7 +771,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       
       <Text style={styles.infoText}>
         {latitude && longitude 
-          ? `Wind flow visualization with map underlay • Lat: ${latitude.toFixed(4)}°, Lon: ${longitude.toFixed(4)}° • Distance rings: ${distanceRings.join('km, ')}km • Map zoom: ${mapZoom}`
+          ? `Wind flow visualization with map underlay • Lat: ${latitude.toFixed(4)}°, Lon: ${longitude.toFixed(4)}° • Distance rings: ${distanceRings.join('km, ')}km • Map zoom: ${mapZoom} • Marker: (${markerPosition.x.toFixed(1)}, ${markerPosition.y.toFixed(1)})`
           : `Wind flow visualization • Distance rings: ${distanceRings.join('km, ')}km`
         }
       </Text>
