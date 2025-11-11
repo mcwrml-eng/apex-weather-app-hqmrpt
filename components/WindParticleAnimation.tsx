@@ -53,7 +53,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
   windDirection,
   width = 320,
   height = 320,
-  particleCount = 3600, // Increased from 2400 for denser coverage
+  particleCount = 2400, // TRIPLED from 800 to 2400
   particleColor,
   showGrid = true,
   unit = 'metric',
@@ -120,11 +120,21 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     }
 
     // The marker should always be at the center of the visible area
+    // We calculate the offset needed to position the track location at the center
     const centerX = width / 2;
     const centerY = height / 2;
     
+    console.log('Marker position calculation:', {
+      latitude,
+      longitude,
+      mapZoom,
+      mapOffset,
+      centerX,
+      centerY,
+    });
+    
     return { x: centerX, y: centerY };
-  }, [latitude, longitude, width, height]);
+  }, [latitude, longitude, mapZoom, mapOffset, width, height]);
 
   // Calculate initial translation to center the map on the track location
   const initialMapTranslation = useMemo(() => {
@@ -135,6 +145,12 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     // Calculate the offset from the center tile to the exact track position
     const offsetX = mapOffset.pixelX - mapTileSize / 2;
     const offsetY = mapOffset.pixelY - mapTileSize / 2;
+    
+    console.log('Initial map translation:', {
+      offsetX,
+      offsetY,
+      mapOffset,
+    });
     
     return { x: -offsetX, y: -offsetY };
   }, [latitude, longitude, mapOffset, mapTileSize]);
@@ -152,60 +168,24 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     }
   }, [latitude, longitude, initialMapTranslation, translateX, translateY, savedTranslateX, savedTranslateY]);
 
-  // Calculate visible bounds in VIRTUAL SPACE (expanded for seamless wrapping)
+  // Calculate visible bounds in SCREEN SPACE (not world space)
+  // This ensures particles always cover the entire visible screen area
   const getVisibleBounds = useCallback(() => {
-    // Virtual space is much larger than screen space for seamless wrapping
-    const expansionFactor = 3.0; // 3x the screen size in each direction
-    
-    // Account for current scale - when zoomed in, we need more particles spread out
-    const effectiveScale = Math.max(1, currentScale);
-    
-    // Calculate expanded virtual dimensions
-    const virtualWidth = width * expansionFactor * effectiveScale;
-    const virtualHeight = height * expansionFactor * effectiveScale;
-    
-    // Center the virtual space around origin (0, 0)
-    const minX = -virtualWidth / 2;
-    const maxX = virtualWidth / 2;
-    const minY = -virtualHeight / 2;
-    const maxY = virtualHeight / 2;
-    
-    console.log('Wind particle virtual bounds:', {
-      expansionFactor,
-      effectiveScale,
-      virtualWidth,
-      virtualHeight,
-      minX,
-      maxX,
-      minY,
-      maxY,
-      particleCount
-    });
+    // Screen space bounds - always the full screen regardless of transform
+    // We add significant padding to ensure seamless wrapping
+    const paddingMultiplier = 2.0; // 200% padding for extra coverage
+    const paddedWidth = width * paddingMultiplier;
+    const paddedHeight = height * paddingMultiplier;
     
     return {
-      minX,
-      maxX,
-      minY,
-      maxY,
-      width: virtualWidth,
-      height: virtualHeight,
+      left: -paddedWidth / 2,
+      top: -paddedHeight / 2,
+      right: paddedWidth / 2,
+      bottom: paddedHeight / 2,
+      width: paddedWidth,
+      height: paddedHeight,
     };
-  }, [width, height, currentScale]);
-
-  // Map virtual coordinates to screen coordinates for rendering
-  const virtualToScreen = useCallback((vx: number, vy: number) => {
-    const bounds = getVisibleBounds();
-    
-    // Normalize virtual coordinates to 0-1 range
-    const normalizedX = (vx - bounds.minX) / bounds.width;
-    const normalizedY = (vy - bounds.minY) / bounds.height;
-    
-    // Map to screen coordinates (0 to width/height)
-    const screenX = normalizedX * width;
-    const screenY = normalizedY * height;
-    
-    return { screenX, screenY };
-  }, [width, height, getVisibleBounds]);
+  }, [width, height]);
 
   // Calculate particle velocity based on wind speed and direction
   const calculateVelocity = useCallback((speed: number, direction: number) => {
@@ -214,7 +194,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     const angleRad = ((direction + 180) % 360) * (Math.PI / 180);
     
     // Normalize speed for animation (scale down for visual effect)
-    const normalizedSpeed = speed / 40;
+    const normalizedSpeed = speed / 40; // Adjusted for better visual flow
     
     return {
       vx: Math.sin(angleRad) * normalizedSpeed,
@@ -222,33 +202,35 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     };
   }, []);
 
-  // Get color based on wind speed with vibrant gradient transitions
+  // ENHANCED: Get color based on wind speed with MORE VIBRANT and PROMINENT gradient transitions
   const getWindSpeedColor = useCallback((speed: number): string => {
     if (particleColor) return particleColor;
     
-    // Enhanced color gradient with saturated and vibrant colors
-    if (speed < 5) return 'rgba(100, 200, 255, 1.0)';
-    if (speed < 10) return 'rgba(50, 180, 255, 1.0)';
-    if (speed < 15) return 'rgba(0, 220, 255, 1.0)';
-    if (speed < 20) return 'rgba(0, 255, 200, 1.0)';
-    if (speed < 25) return 'rgba(100, 255, 100, 1.0)';
-    if (speed < 30) return 'rgba(200, 255, 0, 1.0)';
-    if (speed < 35) return 'rgba(255, 240, 0, 1.0)';
-    if (speed < 40) return 'rgba(255, 200, 0, 1.0)';
-    if (speed < 50) return 'rgba(255, 150, 0, 1.0)';
-    if (speed < 60) return 'rgba(255, 80, 80, 1.0)';
-    return 'rgba(255, 0, 150, 1.0)';
+    // ENHANCED color gradient with MORE SATURATED and VIBRANT colors
+    // Increased opacity from 0.9 to 1.0 for maximum prominence
+    if (speed < 5) return 'rgba(100, 200, 255, 1.0)'; // Bright cyan-blue - calm
+    if (speed < 10) return 'rgba(50, 180, 255, 1.0)'; // Vivid blue - gentle breeze
+    if (speed < 15) return 'rgba(0, 220, 255, 1.0)'; // Electric cyan - light wind
+    if (speed < 20) return 'rgba(0, 255, 200, 1.0)'; // Bright turquoise - moderate wind
+    if (speed < 25) return 'rgba(100, 255, 100, 1.0)'; // Vivid green - fresh wind
+    if (speed < 30) return 'rgba(200, 255, 0, 1.0)'; // Bright yellow-green - strong wind
+    if (speed < 35) return 'rgba(255, 240, 0, 1.0)'; // Pure yellow - near gale
+    if (speed < 40) return 'rgba(255, 200, 0, 1.0)'; // Bright orange - gale
+    if (speed < 50) return 'rgba(255, 150, 0, 1.0)'; // Vivid orange - strong gale
+    if (speed < 60) return 'rgba(255, 80, 80, 1.0)'; // Bright red - storm
+    return 'rgba(255, 0, 150, 1.0)'; // Hot pink - violent storm
   }, [particleColor]);
 
   // Get gradient color stops for streamlines with enhanced visibility
   const getStreamlineGradient = useCallback((speed: number) => {
     const baseColor = getWindSpeedColor(speed);
+    // Extract RGB values from rgba string
     const match = baseColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
     if (!match) return { start: baseColor, end: baseColor };
     
     const [_, r, g, b] = match;
-    const startOpacity = 0.8;
-    const endOpacity = 0.2;
+    const startOpacity = 0.8; // Increased from 0.6 for more prominence
+    const endOpacity = 0.2; // Increased from 0.1 for better visibility
     
     return {
       start: `rgba(${r}, ${g}, ${b}, ${startOpacity})`,
@@ -256,30 +238,27 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     };
   }, [getWindSpeedColor]);
 
-  // Initialize particles in VIRTUAL SPACE (expanded coordinate system)
+  // Initialize particles in SCREEN SPACE
   const initializeParticles = useCallback(() => {
     const bounds = getVisibleBounds();
     const newParticles: Particle[] = [];
     const { vx, vy } = calculateVelocity(windSpeed, windDirection);
     
-    console.log('Initializing particles in VIRTUAL space with seamless wrapping:', {
-      bounds,
-      particleCount,
-    });
+    console.log('Initializing particles in screen space:', bounds, 'Particle count:', particleCount);
     
     for (let i = 0; i < particleCount; i++) {
-      const maxLife = 120 + Math.random() * 180;
-      const speedVariation = 0.7 + Math.random() * 0.6;
+      const maxLife = 120 + Math.random() * 180; // Longer life for smoother flow
+      const speedVariation = 0.7 + Math.random() * 0.6; // More variation
       
       newParticles.push({
         id: i,
-        x: bounds.minX + Math.random() * bounds.width,
-        y: bounds.minY + Math.random() * bounds.height,
+        x: bounds.left + Math.random() * bounds.width,
+        y: bounds.top + Math.random() * bounds.height,
         vx: vx * speedVariation,
         vy: vy * speedVariation,
         life: Math.random() * maxLife,
         maxLife: maxLife,
-        opacity: 0.6 + Math.random() * 0.4,
+        opacity: 0.6 + Math.random() * 0.4, // Increased base opacity from 0.4 to 0.6
         speed: windSpeed * speedVariation,
       });
     }
@@ -287,53 +266,32 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     return newParticles;
   }, [windSpeed, windDirection, particleCount, getVisibleBounds, calculateVelocity]);
 
-  // SEAMLESS wrapping in virtual space using modulo arithmetic
-  const wrapParticlePosition = useCallback((x: number, y: number, bounds: any) => {
-    // Use modulo arithmetic for seamless infinite wrapping in virtual space
-    let wrappedX = x;
-    let wrappedY = y;
-    
-    const wrapWidth = bounds.width;
-    const wrapHeight = bounds.height;
-    
-    // Wrap X coordinate - seamless infinite wrapping
-    while (wrappedX < bounds.minX) {
-      wrappedX += wrapWidth;
-    }
-    while (wrappedX > bounds.maxX) {
-      wrappedX -= wrapWidth;
-    }
-    
-    // Wrap Y coordinate - seamless infinite wrapping
-    while (wrappedY < bounds.minY) {
-      wrappedY += wrapHeight;
-    }
-    while (wrappedY > bounds.maxY) {
-      wrappedY -= wrapHeight;
-    }
-    
-    return { x: wrappedX, y: wrappedY };
-  }, []);
-
-  // Update particle positions in VIRTUAL SPACE with SEAMLESS wrapping
+  // Update particle positions in SCREEN SPACE
   const updateParticles = useCallback(() => {
     const now = Date.now();
-    const deltaTime = (now - lastUpdateRef.current) / 16.67;
+    const deltaTime = (now - lastUpdateRef.current) / 16.67; // Normalize to 60fps
     lastUpdateRef.current = now;
 
     const { vx, vy } = calculateVelocity(windSpeed, windDirection);
     const bounds = getVisibleBounds();
     
     const updatedParticles = particlesRef.current.map(particle => {
-      // Update position in virtual space
       let newX = particle.x + particle.vx * deltaTime;
       let newY = particle.y + particle.vy * deltaTime;
       let newLife = particle.life - deltaTime;
       
-      // Apply seamless wrapping in virtual space
-      const wrapped = wrapParticlePosition(newX, newY, bounds);
-      newX = wrapped.x;
-      newY = wrapped.y;
+      // Wrap particles around the screen space bounds for seamless flow
+      if (newX < bounds.left) {
+        newX = bounds.right;
+      } else if (newX > bounds.right) {
+        newX = bounds.left;
+      }
+      
+      if (newY < bounds.top) {
+        newY = bounds.bottom;
+      } else if (newY > bounds.bottom) {
+        newY = bounds.top;
+      }
       
       // Reset particle if life expires
       if (newLife <= 0) {
@@ -342,8 +300,8 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
         
         return {
           ...particle,
-          x: bounds.minX + Math.random() * bounds.width,
-          y: bounds.minY + Math.random() * bounds.height,
+          x: bounds.left + Math.random() * bounds.width,
+          y: bounds.top + Math.random() * bounds.height,
           vx: vx * speedVariation,
           vy: vy * speedVariation,
           life: maxLife,
@@ -354,7 +312,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       }
       
       // Update velocity to match current wind with smooth blending
-      const velocityBlend = 0.03;
+      const velocityBlend = 0.03; // Slower adaptation for smoother flow
       const newVx = particle.vx + (vx - particle.vx) * velocityBlend;
       const newVy = particle.vy + (vy - particle.vy) * velocityBlend;
       
@@ -370,7 +328,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     
     particlesRef.current = updatedParticles;
     setParticles([...updatedParticles]);
-  }, [windSpeed, windDirection, calculateVelocity, getVisibleBounds, wrapParticlePosition]);
+  }, [windSpeed, windDirection, calculateVelocity, getVisibleBounds]);
 
   // Animation loop
   useEffect(() => {
@@ -388,7 +346,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     };
   }, [updateParticles]);
 
-  // Reinitialize particles when transform changes significantly
+  // Initialize particles when component mounts or wind changes significantly
   useEffect(() => {
     const newParticles = initializeParticles();
     particlesRef.current = newParticles;
@@ -405,6 +363,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
   // Generate map tile URL (using OpenStreetMap)
   const getMapTileUrl = useCallback((lat: number, lon: number, zoom: number) => {
     const { x, y } = getTileCoordinates(lat, lon, zoom);
+    // Using CartoDB Positron (light) or Dark Matter (dark) tiles for better visibility
     const style = isDark ? 'dark_all' : 'light_all';
     return `https://cartodb-basemaps-a.global.ssl.fastly.net/${style}/${zoom}/${x}/${y}.png`;
   }, [getTileCoordinates, isDark]);
@@ -418,6 +377,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
   // Calculate opacity based on particle life with smooth fade
   const getParticleOpacity = useCallback((particle: Particle): number => {
     const lifeRatio = particle.life / particle.maxLife;
+    // Smooth fade in and out
     const fadeIn = Math.min(1, lifeRatio * 3);
     const fadeOut = Math.min(1, (1 - lifeRatio) * 3);
     return particle.opacity * Math.min(fadeIn, fadeOut);
@@ -427,14 +387,14 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
   const streamlines = useMemo(() => {
     if (!showGrid) return [];
     
+    const bounds = getVisibleBounds();
     const lines: { x1: number; y1: number; x2: number; y2: number; gradient: { start: string; end: string } }[] = [];
     const { vx, vy } = calculateVelocity(windSpeed, windDirection);
-    const gridSpacing = 50;
+    const gridSpacing = 50; // Fixed spacing in screen space
     const lineLength = 35;
     
-    // Draw streamlines in screen space (visible area only)
-    for (let x = 0; x < width; x += gridSpacing) {
-      for (let y = 0; y < height; y += gridSpacing) {
+    for (let x = bounds.left; x < bounds.right; x += gridSpacing) {
+      for (let y = bounds.top; y < bounds.bottom; y += gridSpacing) {
         const magnitude = Math.sqrt(vx * vx + vy * vy);
         if (magnitude > 0.01) {
           const normalizedVx = (vx / magnitude) * lineLength;
@@ -452,7 +412,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     }
     
     return lines;
-  }, [windSpeed, windDirection, showGrid, calculateVelocity, width, height, getStreamlineGradient]);
+  }, [windSpeed, windDirection, showGrid, calculateVelocity, getVisibleBounds, getStreamlineGradient]);
 
   // Reset zoom and pan
   const handleResetZoom = useCallback(() => {
@@ -618,7 +578,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       gap: 4,
     },
     legendDot: {
-      width: 10,
+      width: 10, // Increased from 8 to 10 for better visibility
       height: 10,
       borderRadius: 5,
       borderWidth: 1,
@@ -628,7 +588,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       fontSize: 10,
       color: colors.textMuted,
       fontFamily: 'Roboto_400Regular',
-      fontWeight: '600',
+      fontWeight: '600', // Made text bolder
     },
   }), [width, height, colors, isDark, mapTileSize]);
 
@@ -702,10 +662,11 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
               </View>
             )}
             
-            {/* SVG overlay for wind visualization - particles mapped from virtual to screen space */}
+            {/* SVG overlay for wind visualization - FIXED viewBox to always show full screen */}
             <Svg 
               width={width} 
               height={height}
+              viewBox={`${-width} ${-height} ${width * 3} ${height * 3}`}
               style={styles.svgOverlay}
               pointerEvents="box-none"
             >
@@ -771,7 +732,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                 );
               })}
               
-              {/* Draw streamlines with gradient colors */}
+              {/* Draw streamlines with gradient colors - ENHANCED VISIBILITY */}
               {streamlines.map((line, index) => (
                 <Line
                   key={`streamline-${index}`}
@@ -786,42 +747,34 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                 />
               ))}
               
-              {/* Draw particles - map from virtual space to screen space */}
+              {/* Draw particles with ENHANCED color, size, and glow effects */}
               {particles.map((particle) => {
-                // Convert virtual coordinates to screen coordinates
-                const { screenX, screenY } = virtualToScreen(particle.x, particle.y);
-                
-                // Only render particles that are within the visible screen bounds
-                if (screenX < 0 || screenX > width || screenY < 0 || screenY > height) {
-                  return null;
-                }
-                
                 const opacity = getParticleOpacity(particle);
                 const baseRadius = 3.5 + (particle.speed / 60) * 3;
                 const particleColor = getWindSpeedColor(particle.speed);
                 
                 return (
                   <G key={`particle-${particle.id}`}>
-                    {/* Outer glow effect */}
+                    {/* ENHANCED outer glow effect - larger and more visible */}
                     <Circle
-                      cx={screenX}
-                      cy={screenY}
+                      cx={particle.x}
+                      cy={particle.y}
                       r={baseRadius * 3.5}
                       fill={particleColor}
                       opacity={opacity * 0.35}
                     />
-                    {/* Middle glow layer */}
+                    {/* ENHANCED middle glow layer */}
                     <Circle
-                      cx={screenX}
-                      cy={screenY}
+                      cx={particle.x}
+                      cy={particle.y}
                       r={baseRadius * 2}
                       fill={particleColor}
                       opacity={opacity * 0.5}
                     />
-                    {/* Main particle */}
+                    {/* Main particle - LARGER and MORE PROMINENT */}
                     <Circle
-                      cx={screenX}
-                      cy={screenY}
+                      cx={particle.x}
+                      cy={particle.y}
                       r={baseRadius}
                       fill={particleColor}
                       opacity={opacity}
@@ -949,7 +902,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
         </GestureDetector>
       </View>
       
-      {/* Wind speed color legend */}
+      {/* Wind speed color legend - ENHANCED with better visibility */}
       <View style={styles.legendContainer}>
         {windSpeedLegend.map((item, index) => (
           <View key={index} style={styles.legendItem}>
@@ -989,8 +942,8 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       
       <Text style={styles.infoText}>
         {latitude && longitude 
-          ? `Seamless infinite flow • ${windSpeed.toFixed(1)} ${unit === 'metric' ? 'km/h' : 'mph'} from ${windDirection}° • ${particleCount} particles • Scale: ${currentScale.toFixed(2)}x`
-          : `Global wind flow • ${windSpeed.toFixed(1)} ${unit === 'metric' ? 'km/h' : 'mph'} from ${windDirection}°`
+          ? `Centered on track location • ${windSpeed.toFixed(1)} ${unit === 'metric' ? 'km/h' : 'mph'} from ${windDirection}° • Particles: ${particleCount} • Scale: ${currentScale.toFixed(2)}x`
+          : `Global wind flow visualization • ${windSpeed.toFixed(1)} ${unit === 'metric' ? 'km/h' : 'mph'} from ${windDirection}°`
         }
       </Text>
       
