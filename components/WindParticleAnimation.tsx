@@ -53,7 +53,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
   windDirection,
   width = 320,
   height = 320,
-  particleCount = 2400,
+  particleCount = 3600, // Increased from 2400 for denser coverage
   particleColor,
   showGrid = true,
   unit = 'metric',
@@ -152,22 +152,30 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     }
   }, [latitude, longitude, initialMapTranslation, translateX, translateY, savedTranslateX, savedTranslateY]);
 
-  // Calculate visible bounds in SCREEN SPACE with dynamic expansion based on transform
+  // Calculate visible bounds in SCREEN SPACE with MASSIVE expansion for seamless coverage
   const getVisibleBounds = useCallback(() => {
-    // Calculate the actual visible area accounting for scale and translation
-    // We need to expand the bounds significantly to ensure particles are always visible
-    const expansionFactor = 3.0; // 300% expansion for seamless coverage
+    // INCREASED expansion factor from 3.0 to 6.0 for 600% coverage
+    // This ensures particles flow seamlessly across the entire visible area and beyond
+    const expansionFactor = 6.0; // 600% expansion for truly seamless coverage
     
     // Account for current scale - when zoomed in, we need more particles spread out
     const effectiveScale = Math.max(1, currentScale);
     
-    // Calculate expanded dimensions
+    // Calculate massively expanded dimensions
     const expandedWidth = width * expansionFactor * effectiveScale;
     const expandedHeight = height * expansionFactor * effectiveScale;
     
     // Center the bounds around the current view
     const centerX = width / 2;
     const centerY = height / 2;
+    
+    console.log('Wind particle bounds expanded:', {
+      expansionFactor,
+      effectiveScale,
+      expandedWidth,
+      expandedHeight,
+      particleCount
+    });
     
     return {
       left: centerX - expandedWidth / 2,
@@ -228,13 +236,17 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     };
   }, [getWindSpeedColor]);
 
-  // Initialize particles in SCREEN SPACE
+  // Initialize particles in SCREEN SPACE with expanded coverage
   const initializeParticles = useCallback(() => {
     const bounds = getVisibleBounds();
     const newParticles: Particle[] = [];
     const { vx, vy } = calculateVelocity(windSpeed, windDirection);
     
-    console.log('Initializing particles across expanded bounds:', bounds, 'Particle count:', particleCount);
+    console.log('Initializing particles with EXPANDED coverage:', {
+      bounds,
+      particleCount,
+      expansionFactor: 6.0
+    });
     
     for (let i = 0; i < particleCount; i++) {
       const maxLife = 120 + Math.random() * 180;
@@ -270,7 +282,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       let newY = particle.y + particle.vy * deltaTime;
       let newLife = particle.life - deltaTime;
       
-      // Seamless wrapping - particles wrap around the expanded bounds
+      // Seamless wrapping - particles wrap around the massively expanded bounds
       if (newX < bounds.left) {
         newX = bounds.right - (bounds.left - newX);
       } else if (newX > bounds.right) {
@@ -371,7 +383,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     return particle.opacity * Math.min(fadeIn, fadeOut);
   }, []);
 
-  // Draw wind flow lines (streamlines) in SCREEN SPACE
+  // Draw wind flow lines (streamlines) in SCREEN SPACE with expanded coverage
   const streamlines = useMemo(() => {
     if (!showGrid) return [];
     
@@ -929,8 +941,8 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       
       <Text style={styles.infoText}>
         {latitude && longitude 
-          ? `Centered on track location • ${windSpeed.toFixed(1)} ${unit === 'metric' ? 'km/h' : 'mph'} from ${windDirection}° • Particles: ${particleCount} • Scale: ${currentScale.toFixed(2)}x`
-          : `Global wind flow visualization • ${windSpeed.toFixed(1)} ${unit === 'metric' ? 'km/h' : 'mph'} from ${windDirection}°`
+          ? `Centered on track • ${windSpeed.toFixed(1)} ${unit === 'metric' ? 'km/h' : 'mph'} from ${windDirection}° • ${particleCount} particles • 6x coverage • Scale: ${currentScale.toFixed(2)}x`
+          : `Global wind flow • ${windSpeed.toFixed(1)} ${unit === 'metric' ? 'km/h' : 'mph'} from ${windDirection}°`
         }
       </Text>
       
