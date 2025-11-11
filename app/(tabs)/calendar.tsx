@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout } from '../../styles/commonStyles';
@@ -17,7 +17,6 @@ interface RaceEvent {
 }
 
 export default function CalendarScreen() {
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'f1' | 'motogp' | 'indycar' | 'nascar'>('all');
   const { isDark } = useTheme();
   const { t } = useLanguage();
   
@@ -76,42 +75,10 @@ export default function CalendarScreen() {
     return events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, []);
 
-  const filteredEvents = useMemo(() => {
-    if (selectedCategory === 'all') return raceEvents;
-    return raceEvents.filter(event => event.category === selectedCategory);
-  }, [raceEvents, selectedCategory]);
-
   const styles = StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background,
-    },
-    filterContainer: {
-      flexDirection: 'row',
-      paddingHorizontal: layout.screenPadding,
-      paddingVertical: spacing.md,
-      gap: spacing.sm,
-    },
-    filterButton: {
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.sm,
-      borderRadius: borderRadius.lg,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.backgroundAlt,
-    },
-    filterButtonActive: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
-    },
-    filterText: {
-      fontSize: 14,
-      fontWeight: '500',
-      color: colors.text,
-      fontFamily: 'Roboto_500Medium',
-    },
-    filterTextActive: {
-      color: '#FFFFFF',
     },
     content: {
       flex: 1,
@@ -254,9 +221,9 @@ export default function CalendarScreen() {
     router.push(`/circuit/${event.circuit.slug}?category=${event.category}`);
   };
 
-  const groupedEvents = groupEventsByMonth(filteredEvents);
+  const groupedEvents = groupEventsByMonth(raceEvents);
 
-  console.log('CalendarScreen: Rendering with', filteredEvents.length, 'events, theme:', isDark ? 'dark' : 'light');
+  console.log('CalendarScreen: Rendering with', raceEvents.length, 'events, theme:', isDark ? 'dark' : 'light');
 
   return (
     <View style={styles.container}>
@@ -266,42 +233,11 @@ export default function CalendarScreen() {
         icon={<Ionicons name="calendar" size={32} color={colors.primary} />}
       />
 
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterContainer}
-        contentContainerStyle={{ gap: spacing.sm }}
-      >
-        {[
-          { key: 'all', label: t('all') },
-          { key: 'f1', label: 'F1' },
-          { key: 'motogp', label: 'MotoGP' },
-          { key: 'indycar', label: 'IndyCar' },
-          { key: 'nascar', label: 'NASCAR' },
-        ].map(filter => (
-          <TouchableOpacity
-            key={filter.key}
-            style={[
-              styles.filterButton,
-              selectedCategory === filter.key && styles.filterButtonActive,
-            ]}
-            onPress={() => setSelectedCategory(filter.key as any)}
-          >
-            <Text style={[
-              styles.filterText,
-              selectedCategory === filter.key && styles.filterTextActive,
-            ]}>
-              {filter.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.scrollContent}>
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{filteredEvents.length}</Text>
+              <Text style={styles.statNumber}>{raceEvents.length}</Text>
               <Text style={styles.statLabel}>{t('total_races')}</Text>
             </View>
             <View style={styles.statItem}>
