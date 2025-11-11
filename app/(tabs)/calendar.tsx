@@ -99,7 +99,6 @@ export default function CalendarScreen() {
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.backgroundAlt,
-      minWidth: 70,
       alignItems: 'center',
       justifyContent: 'center',
     },
