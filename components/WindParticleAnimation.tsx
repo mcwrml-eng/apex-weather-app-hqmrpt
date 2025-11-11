@@ -53,7 +53,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
   windDirection,
   width = 320,
   height = 320,
-  particleCount = 3600, // Increased from 2400 for denser coverage
+  particleCount = 1800, // Reduced from 3600 to 1800 (half again)
   particleColor,
   showGrid = true,
   unit = 'metric',
@@ -549,7 +549,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       width: mapTileSize,
       height: mapTileSize,
       position: 'absolute',
-      opacity: 0.85, // Increased from default to make map more prominent
+      opacity: isDark ? 0.95 : 0.85, // Increased opacity in dark mode for better visibility
     },
     svgOverlay: {
       position: 'absolute',
@@ -727,12 +727,12 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                 ))}
               </Defs>
               
-              {/* Reduced semi-transparent overlay for better map visibility */}
+              {/* Reduced semi-transparent overlay for better map visibility in dark mode */}
               <Circle
                 cx={centerX}
                 cy={centerY}
                 r={Math.min(width, height) / 2}
-                fill={isDark ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)'}
+                fill={isDark ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.05)'}
               />
               
               {/* Distance rings */}
