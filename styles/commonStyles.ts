@@ -60,6 +60,14 @@ const lightColors = {
   indycarWhite: '#FFFFFF',
   indycarSilver: '#94A3B8',
   
+  // Enhanced NASCAR specific colors
+  nascarYellow: '#FCD34D',
+  nascarYellowLight: '#FDE68A',
+  nascarYellowDark: '#F59E0B',
+  nascarBlack: '#1F2937',
+  nascarRed: '#DC2626',
+  nascarBlue: '#2563EB',
+  
   // Enhanced weather colors with better contrast
   temperature: '#F97316', // Orange
   temperatureLight: '#FB923C',
@@ -192,6 +200,14 @@ const darkColors = {
   indycarRed: '#EF4444',
   indycarWhite: '#F8FAFC',
   indycarSilver: '#CBD5E1',
+  
+  // Enhanced NASCAR specific colors - Adjusted for dark theme
+  nascarYellow: '#FDE047',
+  nascarYellowLight: '#FEF08A',
+  nascarYellowDark: '#FBBF24',
+  nascarBlack: '#374151',
+  nascarRed: '#EF4444',
+  nascarBlue: '#3B82F6',
   
   // Enhanced weather colors - Brighter for dark theme
   temperature: '#FB923C', // Brighter Orange

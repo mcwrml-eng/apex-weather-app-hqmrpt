@@ -1,0 +1,202 @@
+
+import React, { useState, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout } from '../../styles/commonStyles';
+import { useTheme } from '../../state/ThemeContext';
+import CircuitCard from '../../components/CircuitCard';
+import FeaturedTrackCard from '../../components/FeaturedTrackCard';
+import AppHeader from '../../components/AppHeader';
+import NascarIcon from '../../components/NascarIcon';
+import { nascarCircuits } from '../../data/circuits';
+
+export default function NascarScreen() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const { isDark } = useTheme();
+  
+  const colors = getColors(isDark);
+  const commonStyles = getCommonStyles(isDark);
+  const shadows = getShadows(isDark);
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    searchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: borderRadius.lg,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginHorizontal: layout.screenPadding,
+      marginBottom: spacing.lg,
+    },
+    searchIcon: {
+      marginRight: spacing.md,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 16,
+      color: colors.text,
+      fontFamily: 'Roboto_400Regular',
+    },
+    content: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: layout.screenPadding,
+    },
+    sectionTitle: {
+      fontSize: 20,
+      fontWeight: '600',
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+      marginBottom: spacing.lg,
+      marginTop: spacing.md,
+    },
+    circuitsGrid: {
+      gap: spacing.md,
+    },
+    statsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: spacing.xl,
+      paddingHorizontal: spacing.md,
+    },
+    statItem: {
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      padding: spacing.lg,
+      borderRadius: borderRadius.lg,
+      flex: 1,
+      marginHorizontal: spacing.xs,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+      boxShadow: shadows.sm,
+    },
+    statNumber: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: colors.nascarYellow,
+      fontFamily: 'Roboto_700Bold',
+    },
+    statLabel: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginTop: spacing.xs,
+    },
+    emptyState: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing.massive,
+    },
+    emptyText: {
+      fontSize: 16,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      textAlign: 'center',
+      marginTop: spacing.lg,
+    },
+  });
+
+  const filteredCircuits = useMemo(() => {
+    if (!searchQuery.trim()) return nascarCircuits;
+    
+    const query = searchQuery.toLowerCase().trim();
+    return nascarCircuits.filter(circuit => 
+      circuit.name.toLowerCase().includes(query) ||
+      circuit.country.toLowerCase().includes(query)
+    );
+  }, [searchQuery]);
+
+  console.log('NascarScreen: Rendering with', filteredCircuits.length, 'circuits, theme:', isDark ? 'dark' : 'light');
+
+  return (
+    <View style={styles.container}>
+      <AppHeader
+        title="NASCAR"
+        subtitle="2026 Cup Series Calendar • 32 Races"
+        icon={<NascarIcon size={32} color={colors.nascarYellow} />}
+      />
+
+      <View style={styles.searchContainer}>
+        <Ionicons 
+          name="search" 
+          size={20} 
+          color={colors.textMuted} 
+          style={styles.searchIcon}
+        />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search circuits or locations..."
+          placeholderTextColor={colors.textMuted}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery.length > 0 && (
+          <Ionicons 
+            name="close-circle" 
+            size={20} 
+            color={colors.textMuted}
+            onPress={() => setSearchQuery('')}
+          />
+        )}
+      </View>
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.scrollContent}>
+          <FeaturedTrackCard category="nascar" />
+
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>20</Text>
+              <Text style={styles.statLabel}>Tracks</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>32</Text>
+              <Text style={styles.statLabel}>Races</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>36</Text>
+              <Text style={styles.statLabel}>Drivers</Text>
+            </View>
+          </View>
+
+          <Text style={styles.sectionTitle}>
+            All Tracks ({filteredCircuits.length})
+          </Text>
+
+          {filteredCircuits.length > 0 ? (
+            <View style={styles.circuitsGrid}>
+              {filteredCircuits.map((circuit) => (
+                <CircuitCard
+                  key={circuit.slug}
+                  circuit={circuit}
+                  category="nascar"
+                />
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons 
+                name="search" 
+                size={48} 
+                color={colors.textMuted} 
+              />
+              <Text style={styles.emptyText}>
+                No tracks found matching &quot;{searchQuery}&quot;
+              </Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}

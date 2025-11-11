@@ -18,7 +18,7 @@ export interface Circuit {
   longitude: number;
 }
 
-export type Category = 'f1' | 'motogp' | 'indycar';
+export type Category = 'f1' | 'motogp' | 'indycar' | 'nascar';
 
 interface Props {
   circuit: Circuit;
@@ -131,6 +131,8 @@ export default function CircuitCard({ circuit, category }: Props) {
         return colors.gradientMotoGP;
       case 'indycar':
         return colors.gradientIndyCar;
+      case 'nascar':
+        return [colors.nascarYellow, colors.nascarBlack];
       default:
         return colors.gradientPrimary;
     }

@@ -5,6 +5,7 @@ import { getColors } from '../../styles/commonStyles';
 import { useTheme } from '../../state/ThemeContext';
 import ChequeredFlag from '../../components/ChequeredFlag';
 import IndyCarIcon from '../../components/IndyCarIcon';
+import NascarIcon from '../../components/NascarIcon';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -62,6 +63,15 @@ export default function TabLayout() {
             title: 'IndyCar',
             tabBarIcon: ({ color, size }) => (
               <IndyCarIcon size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="nascar"
+          options={{
+            title: 'NASCAR',
+            tabBarIcon: ({ color, size }) => (
+              <NascarIcon size={size} color={color} />
             ),
           }}
         />

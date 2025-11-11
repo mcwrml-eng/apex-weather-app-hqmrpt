@@ -15,11 +15,11 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
-import { f1Circuits, motogpCircuits, indycarCircuits } from '../data/circuits';
+import { f1Circuits, motogpCircuits, indycarCircuits, nascarCircuits } from '../data/circuits';
 
 interface InteractiveGlobeProps {
-  category?: 'f1' | 'motogp' | 'indycar' | 'all';
-  onTrackSelect?: (slug: string, category: 'f1' | 'motogp' | 'indycar') => void;
+  category?: 'f1' | 'motogp' | 'indycar' | 'nascar' | 'all';
+  onTrackSelect?: (slug: string, category: 'f1' | 'motogp' | 'indycar' | 'nascar') => void;
 }
 
 interface TrackMarker {
@@ -28,7 +28,7 @@ interface TrackMarker {
   country: string;
   latitude: number;
   longitude: number;
-  category: 'f1' | 'motogp' | 'indycar';
+  category: 'f1' | 'motogp' | 'indycar' | 'nascar';
   x: number;
   y: number;
 }
@@ -88,6 +88,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
         ...f1Circuits.map(c => ({ ...c, category: 'f1' as const })),
         ...motogpCircuits.map(c => ({ ...c, category: 'motogp' as const })),
         ...indycarCircuits.map(c => ({ ...c, category: 'indycar' as const })),
+        ...nascarCircuits.map(c => ({ ...c, category: 'nascar' as const })),
       ];
     } else if (category === 'f1') {
       circuits = f1Circuits.map(c => ({ ...c, category: 'f1' as const }));
@@ -95,6 +96,8 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
       circuits = motogpCircuits.map(c => ({ ...c, category: 'motogp' as const }));
     } else if (category === 'indycar') {
       circuits = indycarCircuits.map(c => ({ ...c, category: 'indycar' as const }));
+    } else if (category === 'nascar') {
+      circuits = nascarCircuits.map(c => ({ ...c, category: 'nascar' as const }));
     }
 
     return circuits.map(circuit => {
@@ -261,7 +264,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
   });
 
   // Get category color
-  const getCategoryColor = (cat: 'f1' | 'motogp' | 'indycar') => {
+  const getCategoryColor = (cat: 'f1' | 'motogp' | 'indycar' | 'nascar') => {
     switch (cat) {
       case 'f1':
         return '#E10600';
@@ -269,6 +272,8 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
         return '#FF6600';
       case 'indycar':
         return '#0066CC';
+      case 'nascar':
+        return '#FCD34D';
       default:
         return colors.primary;
     }
@@ -748,6 +753,10 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: '#0066CC' }]} />
                 <Text style={styles.legendText}>IndyCar</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#FCD34D' }]} />
+                <Text style={styles.legendText}>NASCAR</Text>
               </View>
             </>
           )}

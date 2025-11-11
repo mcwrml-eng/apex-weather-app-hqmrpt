@@ -32,9 +32,9 @@ function DetailScreen() {
   const shadows = getShadows(isDark);
 
   // Get params
-  const params = useLocalSearchParams<{ slug?: string; category?: 'f1' | 'motogp' | 'indycar' }>();
+  const params = useLocalSearchParams<{ slug?: string; category?: 'f1' | 'motogp' | 'indycar' | 'nascar' }>();
   const slug = params.slug as string;
-  const category = (params.category as 'f1' | 'motogp' | 'indycar') || 'f1';
+  const category = (params.category as 'f1' | 'motogp' | 'indycar' | 'nascar') || 'f1';
 
   console.log('DetailScreen: Loading circuit', slug, 'category', category, 'isDark:', isDark);
 

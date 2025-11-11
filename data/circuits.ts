@@ -76,9 +76,48 @@ export const indycarCircuits: Circuit[] = [
   { slug: 'laguna-seca', name: 'WeatherTech Raceway Laguna Seca', country: 'USA', latitude: 36.5844, longitude: -121.7544 },
 ];
 
-export function getCircuitBySlug(slug: string, category?: 'f1' | 'motogp' | 'indycar') {
+// NASCAR 2026 Cup Series calendar circuits
+export const nascarCircuits: Circuit[] = [
+  { slug: 'daytona', name: 'Daytona International Speedway', country: 'USA', latitude: 29.1864, longitude: -81.0712 },
+  { slug: 'atlanta', name: 'Atlanta Motor Speedway', country: 'USA', latitude: 33.3881, longitude: -84.3189 },
+  { slug: 'las-vegas-nascar', name: 'Las Vegas Motor Speedway', country: 'USA', latitude: 36.2719, longitude: -115.0094 },
+  { slug: 'phoenix-nascar', name: 'Phoenix Raceway', country: 'USA', latitude: 33.3750, longitude: -112.3111 },
+  { slug: 'cota-nascar', name: 'Circuit of The Americas', country: 'USA', latitude: 30.1328, longitude: -97.6411 },
+  { slug: 'richmond', name: 'Richmond Raceway', country: 'USA', latitude: 37.5917, longitude: -77.4208 },
+  { slug: 'martinsville', name: 'Martinsville Speedway', country: 'USA', latitude: 36.6317, longitude: -79.8472 },
+  { slug: 'texas', name: 'Texas Motor Speedway', country: 'USA', latitude: 33.0364, longitude: -97.2811 },
+  { slug: 'talladega', name: 'Talladega Superspeedway', country: 'USA', latitude: 33.5661, longitude: -86.0694 },
+  { slug: 'dover', name: 'Dover Motor Speedway', country: 'USA', latitude: 39.1886, longitude: -75.5297 },
+  { slug: 'kansas', name: 'Kansas Speedway', country: 'USA', latitude: 39.1153, longitude: -94.8303 },
+  { slug: 'darlington', name: 'Darlington Raceway', country: 'USA', latitude: 34.2997, longitude: -79.9006 },
+  { slug: 'charlotte-600', name: 'Charlotte Motor Speedway (Coca-Cola 600)', country: 'USA', latitude: 35.3525, longitude: -80.6828 },
+  { slug: 'gateway-nascar', name: 'World Wide Technology Raceway', country: 'USA', latitude: 38.6470, longitude: -90.1560 },
+  { slug: 'sonoma', name: 'Sonoma Raceway', country: 'USA', latitude: 38.1614, longitude: -122.4544 },
+  { slug: 'iowa', name: 'Iowa Speedway', country: 'USA', latitude: 41.6544, longitude: -93.4069 },
+  { slug: 'chicago', name: 'Chicago Street Course', country: 'USA', latitude: 41.8781, longitude: -87.6298 },
+  { slug: 'pocono', name: 'Pocono Raceway', country: 'USA', latitude: 41.0550, longitude: -75.5189 },
+  { slug: 'indianapolis-nascar', name: 'Indianapolis Motor Speedway (Brickyard 400)', country: 'USA', latitude: 39.7950, longitude: -86.2336 },
+  { slug: 'michigan', name: 'Michigan International Speedway', country: 'USA', latitude: 42.0678, longitude: -84.2397 },
+  { slug: 'daytona-2', name: 'Daytona International Speedway (Coke Zero Sugar 400)', country: 'USA', latitude: 29.1864, longitude: -81.0712 },
+  { slug: 'watkins-glen', name: 'Watkins Glen International', country: 'USA', latitude: 42.3369, longitude: -76.9275 },
+  { slug: 'bristol', name: 'Bristol Motor Speedway', country: 'USA', latitude: 36.5156, longitude: -82.2581 },
+  { slug: 'new-hampshire', name: 'New Hampshire Motor Speedway', country: 'USA', latitude: 43.3656, longitude: -71.4686 },
+  { slug: 'charlotte-roval', name: 'Charlotte Motor Speedway ROVAL', country: 'USA', latitude: 35.3525, longitude: -80.6828 },
+  { slug: 'homestead', name: 'Homestead-Miami Speedway', country: 'USA', latitude: 25.4492, longitude: -80.4142 },
+  { slug: 'las-vegas-nascar-2', name: 'Las Vegas Motor Speedway (South Point 400)', country: 'USA', latitude: 36.2719, longitude: -115.0094 },
+  { slug: 'talladega-2', name: 'Talladega Superspeedway (YellaWood 500)', country: 'USA', latitude: 33.5661, longitude: -86.0694 },
+  { slug: 'charlotte-fall', name: 'Charlotte Motor Speedway (Bank of America ROVAL 400)', country: 'USA', latitude: 35.3525, longitude: -80.6828 },
+  { slug: 'homestead-2', name: 'Homestead-Miami Speedway (Dixie Vodka 400)', country: 'USA', latitude: 25.4492, longitude: -80.4142 },
+  { slug: 'martinsville-2', name: 'Martinsville Speedway (Xfinity 500)', country: 'USA', latitude: 36.6317, longitude: -79.8472 },
+  { slug: 'phoenix-championship', name: 'Phoenix Raceway (Championship)', country: 'USA', latitude: 33.3750, longitude: -112.3111 },
+];
+
+export function getCircuitBySlug(slug: string, category?: 'f1' | 'motogp' | 'indycar' | 'nascar') {
   if (category) {
-    const list = category === 'f1' ? f1Circuits : category === 'motogp' ? motogpCircuits : indycarCircuits;
+    const list = category === 'f1' ? f1Circuits : 
+                  category === 'motogp' ? motogpCircuits : 
+                  category === 'indycar' ? indycarCircuits :
+                  nascarCircuits;
     const hit = list.find((c) => c.slug === slug);
     if (!hit) {
       console.log('Circuit not found', slug, category);
@@ -88,7 +127,7 @@ export function getCircuitBySlug(slug: string, category?: 'f1' | 'motogp' | 'ind
   }
   
   // Search all circuits if no category specified
-  const allCircuits = [...f1Circuits, ...motogpCircuits, ...indycarCircuits];
+  const allCircuits = [...f1Circuits, ...motogpCircuits, ...indycarCircuits, ...nascarCircuits];
   const hit = allCircuits.find((c) => c.slug === slug);
   if (!hit) {
     console.log('Circuit not found', slug, 'in any category');

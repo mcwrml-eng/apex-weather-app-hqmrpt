@@ -171,6 +171,8 @@ export default function FeaturedTrackCard({ category }: Props) {
         return colors.gradientMotoGP;
       case 'indycar':
         return colors.gradientIndyCar;
+      case 'nascar':
+        return [colors.nascarYellow, colors.nascarBlack];
       default:
         return colors.gradientPrimary;
     }
@@ -184,6 +186,8 @@ export default function FeaturedTrackCard({ category }: Props) {
         return t('motogp');
       case 'indycar':
         return t('indycar');
+      case 'nascar':
+        return 'NASCAR';
       default:
         return t('featured');
     }

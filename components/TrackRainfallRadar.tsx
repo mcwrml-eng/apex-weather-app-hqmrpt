@@ -26,7 +26,7 @@ interface TrackRainfallRadarProps {
   longitude: number;
   circuitName: string;
   country: string;
-  category: 'f1' | 'motogp' | 'indycar';
+  category: 'f1' | 'motogp' | 'indycar' | 'nascar';
   compact?: boolean;
   showControls?: boolean;
   autoStartAnimation?: boolean;
