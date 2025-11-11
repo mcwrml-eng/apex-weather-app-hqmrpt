@@ -1,7 +1,7 @@
 
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
-import Svg, { Circle, Line, Path, G, Text as SvgText, Defs, RadialGradient, Stop, LinearGradient, Polygon } from 'react-native-svg';
+import Svg, { Circle, Line, Path, G, Text as SvgText, Defs, RadialGradient, Stop, LinearGradient } from 'react-native-svg';
 import Animated, {
   useSharedValue,
   useAnimatedProps,
@@ -42,7 +42,6 @@ interface Particle {
   maxLife: number;
   opacity: number;
   speed: number;
-  angle: number; // Direction angle for the arrow
 }
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -219,7 +218,6 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     return {
       vx: Math.sin(angleRad) * normalizedSpeed,
       vy: -Math.cos(angleRad) * normalizedSpeed,
-      angle: (direction + 180) % 360, // Direction the wind is going TO
     };
   }, []);
 
@@ -263,7 +261,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
   const initializeParticles = useCallback(() => {
     const bounds = getVisibleBounds();
     const newParticles: Particle[] = [];
-    const { vx, vy, angle } = calculateVelocity(windSpeed, windDirection);
+    const { vx, vy } = calculateVelocity(windSpeed, windDirection);
     
     console.log('Initializing particles with extended bounds:', bounds, 'Particle count:', particleCount);
     
@@ -281,7 +279,6 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
         maxLife: maxLife,
         opacity: 0.6 + Math.random() * 0.4, // Increased base opacity from 0.4 to 0.6
         speed: windSpeed * speedVariation,
-        angle: angle,
       });
     }
     
@@ -294,7 +291,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     const deltaTime = (now - lastUpdateRef.current) / 16.67; // Normalize to 60fps
     lastUpdateRef.current = now;
 
-    const { vx, vy, angle } = calculateVelocity(windSpeed, windDirection);
+    const { vx, vy } = calculateVelocity(windSpeed, windDirection);
     const bounds = getVisibleBounds();
     
     const updatedParticles = particlesRef.current.map(particle => {
@@ -319,7 +316,6 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
           maxLife: maxLife,
           opacity: 0.6 + Math.random() * 0.4, // Increased base opacity
           speed: windSpeed * speedVariation,
-          angle: angle,
         };
       }
       
@@ -335,7 +331,6 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
         vx: newVx,
         vy: newVy,
         life: newLife,
-        angle: angle,
       };
     });
     
@@ -407,43 +402,6 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     const fadeIn = Math.min(1, lifeRatio * 3);
     const fadeOut = Math.min(1, (1 - lifeRatio) * 3);
     return particle.opacity * Math.min(fadeIn, fadeOut);
-  }, []);
-
-  // Generate arrow path for directional arrows
-  const generateArrowPath = useCallback((x: number, y: number, angle: number, size: number): string => {
-    // Convert angle to radians
-    const angleRad = (angle * Math.PI) / 180;
-    
-    // Arrow dimensions
-    const arrowLength = size * 2.5;
-    const arrowWidth = size * 1.2;
-    const headLength = size * 1.5;
-    const headWidth = size * 1.8;
-    
-    // Calculate arrow points
-    const cos = Math.cos(angleRad);
-    const sin = Math.sin(angleRad);
-    
-    // Arrow shaft (rectangle)
-    const shaftBack = arrowLength / 2 - headLength;
-    const shaftFront = -arrowLength / 2;
-    
-    // Transform points based on angle
-    const transform = (px: number, py: number) => ({
-      x: x + px * cos - py * sin,
-      y: y + px * sin + py * cos,
-    });
-    
-    // Define arrow shape points
-    const p1 = transform(shaftFront, -arrowWidth / 2);
-    const p2 = transform(shaftBack, -arrowWidth / 2);
-    const p3 = transform(shaftBack, -headWidth / 2);
-    const p4 = transform(arrowLength / 2, 0);
-    const p5 = transform(shaftBack, headWidth / 2);
-    const p6 = transform(shaftBack, arrowWidth / 2);
-    const p7 = transform(shaftFront, arrowWidth / 2);
-    
-    return `M ${p1.x},${p1.y} L ${p2.x},${p2.y} L ${p3.x},${p3.y} L ${p4.x},${p4.y} L ${p5.x},${p5.y} L ${p6.x},${p6.y} L ${p7.x},${p7.y} Z`;
   }, []);
 
   // Draw wind flow lines (streamlines) with gradient colors
@@ -748,13 +706,6 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                     <Stop offset="100%" stopColor={getStreamlineGradient(windSpeed).end} />
                   </LinearGradient>
                 ))}
-                
-                {/* Radial gradient for arrow glow effect */}
-                <RadialGradient id="arrowGlow" cx="50%" cy="50%" r="50%">
-                  <Stop offset="0%" stopColor="rgba(255, 255, 255, 0.8)" />
-                  <Stop offset="50%" stopColor="rgba(255, 255, 255, 0.4)" />
-                  <Stop offset="100%" stopColor="rgba(255, 255, 255, 0)" />
-                </RadialGradient>
               </Defs>
               
               {/* Semi-transparent overlay for better particle visibility */}
@@ -817,37 +768,39 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                 />
               ))}
               
-              {/* Draw directional arrows instead of orbs */}
+              {/* Draw particles with ENHANCED color, size, and glow effects */}
               {particles.map((particle) => {
                 const opacity = getParticleOpacity(particle);
-                const baseSize = (3.5 + (particle.speed / 60) * 3) / currentScale;
-                const arrowColor = getWindSpeedColor(particle.speed);
+                const baseRadius = (3.5 + (particle.speed / 60) * 3) / currentScale; // INCREASED from 2.5 to 3.5
+                const particleColor = getWindSpeedColor(particle.speed);
                 
                 return (
                   <G key={`particle-${particle.id}`}>
-                    {/* Outer glow effect for arrow */}
+                    {/* ENHANCED outer glow effect - larger and more visible */}
                     <Circle
                       cx={particle.x}
                       cy={particle.y}
-                      r={baseSize * 4}
-                      fill={arrowColor}
-                      opacity={opacity * 0.25}
+                      r={baseRadius * 3.5} // Increased from 2 to 3.5
+                      fill={particleColor}
+                      opacity={opacity * 0.35} // Increased from 0.2 to 0.35
                     />
-                    {/* Middle glow layer */}
+                    {/* ENHANCED middle glow layer */}
                     <Circle
                       cx={particle.x}
                       cy={particle.y}
-                      r={baseSize * 2.5}
-                      fill={arrowColor}
-                      opacity={opacity * 0.4}
+                      r={baseRadius * 2}
+                      fill={particleColor}
+                      opacity={opacity * 0.5}
                     />
-                    {/* Directional arrow */}
-                    <Path
-                      d={generateArrowPath(particle.x, particle.y, particle.angle, baseSize)}
-                      fill={arrowColor}
+                    {/* Main particle - LARGER and MORE PROMINENT */}
+                    <Circle
+                      cx={particle.x}
+                      cy={particle.y}
+                      r={baseRadius}
+                      fill={particleColor}
                       opacity={opacity}
-                      stroke={isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)'}
-                      strokeWidth={0.6 / currentScale}
+                      stroke={isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.3)'}
+                      strokeWidth={0.8 / currentScale} // Increased from 0.5 to 0.8
                     />
                   </G>
                 );
