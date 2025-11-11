@@ -152,11 +152,11 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     }
   }, [latitude, longitude, initialMapTranslation, translateX, translateY, savedTranslateX, savedTranslateY]);
 
-  // Calculate visible bounds in SCREEN SPACE with MASSIVE expansion for seamless coverage
+  // Calculate visible bounds in SCREEN SPACE with INFINITE wrapping support
   const getVisibleBounds = useCallback(() => {
-    // INCREASED expansion factor from 3.0 to 6.0 for 600% coverage
-    // This ensures particles flow seamlessly across the entire visible area and beyond
-    const expansionFactor = 6.0; // 600% expansion for truly seamless coverage
+    // MASSIVE expansion factor for truly seamless infinite wrapping
+    // This creates a virtual infinite canvas where particles wrap seamlessly
+    const expansionFactor = 10.0; // 1000% expansion for infinite-feeling coverage
     
     // Account for current scale - when zoomed in, we need more particles spread out
     const effectiveScale = Math.max(1, currentScale);
@@ -169,7 +169,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     const centerX = width / 2;
     const centerY = height / 2;
     
-    console.log('Wind particle bounds expanded:', {
+    console.log('Wind particle bounds - INFINITE wrapping:', {
       expansionFactor,
       effectiveScale,
       expandedWidth,
@@ -184,6 +184,8 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       bottom: centerY + expandedHeight / 2,
       width: expandedWidth,
       height: expandedHeight,
+      centerX,
+      centerY,
     };
   }, [width, height, currentScale]);
 
@@ -242,10 +244,10 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     const newParticles: Particle[] = [];
     const { vx, vy } = calculateVelocity(windSpeed, windDirection);
     
-    console.log('Initializing particles with EXPANDED coverage:', {
+    console.log('Initializing particles with INFINITE wrapping support:', {
       bounds,
       particleCount,
-      expansionFactor: 6.0
+      expansionFactor: 10.0
     });
     
     for (let i = 0; i < particleCount; i++) {
@@ -268,7 +270,39 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     return newParticles;
   }, [windSpeed, windDirection, particleCount, getVisibleBounds, calculateVelocity]);
 
-  // Update particle positions in SCREEN SPACE with seamless wrapping
+  // IMPROVED: Seamless wrapping with modulo arithmetic for infinite flow
+  const wrapParticlePosition = useCallback((x: number, y: number, bounds: any) => {
+    // Use modulo arithmetic for seamless wrapping
+    // This creates a truly infinite wrapping effect with no visible boundaries
+    let wrappedX = x;
+    let wrappedY = y;
+    
+    // Calculate the wrapping dimensions
+    const wrapWidth = bounds.width;
+    const wrapHeight = bounds.height;
+    
+    // Wrap X coordinate using modulo for seamless infinite wrapping
+    if (wrappedX < bounds.left) {
+      const overflow = bounds.left - wrappedX;
+      wrappedX = bounds.right - (overflow % wrapWidth);
+    } else if (wrappedX > bounds.right) {
+      const overflow = wrappedX - bounds.right;
+      wrappedX = bounds.left + (overflow % wrapWidth);
+    }
+    
+    // Wrap Y coordinate using modulo for seamless infinite wrapping
+    if (wrappedY < bounds.top) {
+      const overflow = bounds.top - wrappedY;
+      wrappedY = bounds.bottom - (overflow % wrapHeight);
+    } else if (wrappedY > bounds.bottom) {
+      const overflow = wrappedY - bounds.bottom;
+      wrappedY = bounds.top + (overflow % wrapHeight);
+    }
+    
+    return { x: wrappedX, y: wrappedY };
+  }, []);
+
+  // Update particle positions in SCREEN SPACE with SEAMLESS INFINITE wrapping
   const updateParticles = useCallback(() => {
     const now = Date.now();
     const deltaTime = (now - lastUpdateRef.current) / 16.67;
@@ -278,22 +312,15 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     const bounds = getVisibleBounds();
     
     const updatedParticles = particlesRef.current.map(particle => {
+      // Update position
       let newX = particle.x + particle.vx * deltaTime;
       let newY = particle.y + particle.vy * deltaTime;
       let newLife = particle.life - deltaTime;
       
-      // Seamless wrapping - particles wrap around the massively expanded bounds
-      if (newX < bounds.left) {
-        newX = bounds.right - (bounds.left - newX);
-      } else if (newX > bounds.right) {
-        newX = bounds.left + (newX - bounds.right);
-      }
-      
-      if (newY < bounds.top) {
-        newY = bounds.bottom - (bounds.top - newY);
-      } else if (newY > bounds.bottom) {
-        newY = bounds.top + (newY - bounds.bottom);
-      }
+      // Apply seamless wrapping using improved modulo-based wrapping
+      const wrapped = wrapParticlePosition(newX, newY, bounds);
+      newX = wrapped.x;
+      newY = wrapped.y;
       
       // Reset particle if life expires
       if (newLife <= 0) {
@@ -330,7 +357,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     
     particlesRef.current = updatedParticles;
     setParticles([...updatedParticles]);
-  }, [windSpeed, windDirection, calculateVelocity, getVisibleBounds]);
+  }, [windSpeed, windDirection, calculateVelocity, getVisibleBounds, wrapParticlePosition]);
 
   // Animation loop
   useEffect(() => {
@@ -941,7 +968,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       
       <Text style={styles.infoText}>
         {latitude && longitude 
-          ? `Centered on track • ${windSpeed.toFixed(1)} ${unit === 'metric' ? 'km/h' : 'mph'} from ${windDirection}° • ${particleCount} particles • 6x coverage • Scale: ${currentScale.toFixed(2)}x`
+          ? `Seamless infinite flow • ${windSpeed.toFixed(1)} ${unit === 'metric' ? 'km/h' : 'mph'} from ${windDirection}° • ${particleCount} particles • 10x coverage • Scale: ${currentScale.toFixed(2)}x`
           : `Global wind flow • ${windSpeed.toFixed(1)} ${unit === 'metric' ? 'km/h' : 'mph'} from ${windDirection}°`
         }
       </Text>
