@@ -93,14 +93,12 @@ export default function CalendarScreen() {
       gap: spacing.sm,
     },
     filterButton: {
-      paddingHorizontal: spacing.md,
+      paddingHorizontal: spacing.lg,
       paddingVertical: spacing.sm,
-      borderRadius: borderRadius.md,
+      borderRadius: borderRadius.lg,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.backgroundAlt,
-      alignItems: 'center',
-      justifyContent: 'center',
     },
     filterButtonActive: {
       backgroundColor: colors.primary,
@@ -108,7 +106,7 @@ export default function CalendarScreen() {
     },
     filterText: {
       fontSize: 14,
-      fontWeight: '600',
+      fontWeight: '500',
       color: colors.text,
       fontFamily: 'Roboto_500Medium',
     },
