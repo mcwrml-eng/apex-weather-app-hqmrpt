@@ -207,6 +207,38 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     return { screenX, screenY };
   }, [width, height, getVisibleBounds]);
 
+  // Calculate edge fade opacity based on distance from screen edges
+  const calculateEdgeFadeOpacity = useCallback((screenX: number, screenY: number) => {
+    // Define fade zone distance from edges (in pixels)
+    const fadeZone = 40; // Particles start fading 40px from the edge
+    
+    // Calculate distance from each edge
+    const distanceFromLeft = screenX;
+    const distanceFromRight = width - screenX;
+    const distanceFromTop = screenY;
+    const distanceFromBottom = height - screenY;
+    
+    // Find the minimum distance to any edge
+    const minDistanceToEdge = Math.min(
+      distanceFromLeft,
+      distanceFromRight,
+      distanceFromTop,
+      distanceFromBottom
+    );
+    
+    // Calculate fade factor (1.0 = fully visible, 0.0 = fully transparent)
+    // Particles fade smoothly as they approach the edge
+    if (minDistanceToEdge >= fadeZone) {
+      return 1.0; // Full opacity in the center
+    } else if (minDistanceToEdge <= 0) {
+      return 0.0; // Fully transparent at/beyond edge
+    } else {
+      // Smooth fade using a cubic easing function for natural appearance
+      const fadeRatio = minDistanceToEdge / fadeZone;
+      return fadeRatio * fadeRatio * (3 - 2 * fadeRatio); // Smoothstep interpolation
+    }
+  }, [width, height]);
+
   // Calculate particle velocity based on wind speed and direction
   const calculateVelocity = useCallback((speed: number, direction: number) => {
     // Convert wind direction to radians (wind direction is where wind is coming FROM)
@@ -415,13 +447,20 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     return getMapTileUrl(latitude, longitude, mapZoom);
   }, [latitude, longitude, mapZoom, getMapTileUrl]);
 
-  // Calculate opacity based on particle life with smooth fade
-  const getParticleOpacity = useCallback((particle: Particle): number => {
+  // Calculate opacity based on particle life with smooth fade AND edge fade
+  const getParticleOpacity = useCallback((particle: Particle, screenX: number, screenY: number): number => {
+    // Calculate life-based opacity (fade in/out based on particle age)
     const lifeRatio = particle.life / particle.maxLife;
     const fadeIn = Math.min(1, lifeRatio * 3);
     const fadeOut = Math.min(1, (1 - lifeRatio) * 3);
-    return particle.opacity * Math.min(fadeIn, fadeOut);
-  }, []);
+    const lifeOpacity = particle.opacity * Math.min(fadeIn, fadeOut);
+    
+    // Calculate edge-based opacity (fade as particle approaches screen edges)
+    const edgeFadeOpacity = calculateEdgeFadeOpacity(screenX, screenY);
+    
+    // Combine both opacity factors for smooth, natural fading
+    return lifeOpacity * edgeFadeOpacity;
+  }, [calculateEdgeFadeOpacity]);
 
   // Draw wind flow lines (streamlines) in SCREEN SPACE
   const streamlines = useMemo(() => {
@@ -779,7 +818,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                 />
               ))}
               
-              {/* Draw particles - map from virtual space to screen space with MINIMAL GLOW */}
+              {/* Draw particles - map from virtual space to screen space with edge fading */}
               {particles.map((particle) => {
                 // Convert virtual coordinates to screen coordinates
                 const { screenX, screenY } = virtualToScreen(particle.x, particle.y);
@@ -789,7 +828,14 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                   return null;
                 }
                 
-                const opacity = getParticleOpacity(particle);
+                // Calculate opacity with both life-based and edge-based fading
+                const opacity = getParticleOpacity(particle, screenX, screenY);
+                
+                // Skip rendering if opacity is too low (optimization)
+                if (opacity < 0.01) {
+                  return null;
+                }
+                
                 const baseRadius = 3.0 + (particle.speed / 60) * 2.5;
                 const particleColor = getWindSpeedColor(particle.speed);
                 
@@ -974,7 +1020,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       
       <Text style={styles.infoText}>
         {latitude && longitude 
-          ? `Seamless infinite flow • ${windSpeed.toFixed(1)} ${unit === 'metric' ? 'km/h' : 'mph'} from ${windDirection}° • ${particleCount} particles • Scale: ${currentScale.toFixed(2)}x`
+          ? `Seamless flow with edge fade • ${windSpeed.toFixed(1)} ${unit === 'metric' ? 'km/h' : 'mph'} from ${windDirection}° • ${particleCount} particles • Scale: ${currentScale.toFixed(2)}x`
           : `Global wind flow • ${windSpeed.toFixed(1)} ${unit === 'metric' ? 'km/h' : 'mph'} from ${windDirection}°`
         }
       </Text>
