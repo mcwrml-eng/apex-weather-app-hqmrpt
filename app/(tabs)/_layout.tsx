@@ -6,6 +6,7 @@ import { useTheme } from '../../state/ThemeContext';
 import ChequeredFlag from '../../components/ChequeredFlag';
 import IndyCarIcon from '../../components/IndyCarIcon';
 import NascarIcon from '../../components/NascarIcon';
+import MotoGPIcon from '../../components/MotoGPIcon';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -53,7 +54,7 @@ export default function TabLayout() {
           options={{
             title: 'MotoGP',
             tabBarIcon: ({ color, size }) => (
-              <Ionicons name="bicycle" size={size} color={color} />
+              <MotoGPIcon size={size} color={color} />
             ),
           }}
         />
