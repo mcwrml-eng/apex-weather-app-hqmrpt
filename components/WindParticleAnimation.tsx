@@ -53,7 +53,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
   windDirection,
   width = 320,
   height = 320,
-  particleCount = 800, // SIGNIFICANTLY INCREASED from 200 to 800
+  particleCount = 2400, // TRIPLED from 800 to 2400
   particleColor,
   showGrid = true,
   unit = 'metric',

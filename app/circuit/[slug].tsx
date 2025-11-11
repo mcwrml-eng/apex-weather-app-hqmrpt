@@ -1189,7 +1189,7 @@ function DetailScreen() {
                         windDirection={current.wind_direction}
                         width={320}
                         height={280}
-                        particleCount={150}
+                        particleCount={450}
                         showGrid={true}
                         unit={unit}
                         latitude={circuit.latitude}
