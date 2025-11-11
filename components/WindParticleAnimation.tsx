@@ -190,7 +190,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       width: virtualWidth,
       height: virtualHeight,
     };
-  }, [width, height, currentScale]);
+  }, [width, height, currentScale, particleCount]);
 
   // Map virtual coordinates to screen coordinates for rendering
   const virtualToScreen = useCallback((vx: number, vy: number) => {
