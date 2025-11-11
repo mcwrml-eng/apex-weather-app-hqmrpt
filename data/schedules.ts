@@ -1,5 +1,5 @@
 
-export type Category = 'f1' | 'motogp' | 'indycar';
+export type Category = 'f1' | 'motogp' | 'indycar' | 'nascar';
 
 export interface WeekendSession {
   key: string;
@@ -200,6 +200,110 @@ const indycarRaceDates: DateMap = {
   'laguna-seca': '2026-09-06',      // Sunday, Sept. 6 - WeatherTech Raceway Laguna Seca
 };
 
+// NASCAR 2026 Cup Series default schedule
+const defaultNascarSchedule: WeekendSession[] = [
+  { key: 'practice', title: 'Practice', day: 'Fri', time: '14:00' },
+  { key: 'qualifying', title: 'Qualifying', day: 'Sat', time: '12:00' },
+  { key: 'race', title: 'Race', day: 'Sun', time: '14:00' },
+];
+
+const defaultNascarSaturdaySchedule: WeekendSession[] = [
+  { key: 'practice', title: 'Practice', day: 'Fri', time: '14:00' },
+  { key: 'qualifying', title: 'Qualifying', day: 'Sat', time: '10:00' },
+  { key: 'race', title: 'Race', day: 'Sat', time: '19:00' },
+];
+
+const nascarSchedules: ScheduleMap = {
+  'daytona': [
+    { key: 'practice', title: 'Practice', day: 'Fri', time: '14:00' },
+    { key: 'qualifying', title: 'Qualifying (Daytona 500)', day: 'Sat', time: '15:00' },
+    { key: 'race', title: 'Daytona 500', day: 'Sun', time: '14:30' },
+  ],
+  'atlanta': defaultNascarSchedule,
+  'las-vegas-nascar': defaultNascarSchedule,
+  'phoenix-nascar': defaultNascarSchedule,
+  'cota-nascar': defaultNascarSchedule,
+  'richmond': defaultNascarSchedule,
+  'martinsville': defaultNascarSchedule,
+  'texas': defaultNascarSchedule,
+  'talladega': defaultNascarSchedule,
+  'dover': defaultNascarSchedule,
+  'kansas': defaultNascarSchedule,
+  'darlington': defaultNascarSchedule,
+  'charlotte-600': [
+    { key: 'practice', title: 'Practice', day: 'Fri', time: '14:00' },
+    { key: 'qualifying', title: 'Qualifying', day: 'Sat', time: '12:00' },
+    { key: 'race', title: 'Coca-Cola 600', day: 'Sun', time: '18:00' },
+  ],
+  'gateway-nascar': defaultNascarSchedule,
+  'sonoma': defaultNascarSchedule,
+  'iowa': defaultNascarSchedule,
+  'chicago': defaultNascarSchedule,
+  'pocono': defaultNascarSchedule,
+  'indianapolis-nascar': [
+    { key: 'practice', title: 'Practice', day: 'Fri', time: '14:00' },
+    { key: 'qualifying', title: 'Qualifying', day: 'Sat', time: '12:00' },
+    { key: 'race', title: 'Brickyard 400', day: 'Sun', time: '14:30' },
+  ],
+  'michigan': defaultNascarSchedule,
+  'daytona-2': [
+    { key: 'practice', title: 'Practice', day: 'Fri', time: '14:00' },
+    { key: 'qualifying', title: 'Qualifying', day: 'Sat', time: '12:00' },
+    { key: 'race', title: 'Coke Zero Sugar 400', day: 'Sat', time: '19:00' },
+  ],
+  'watkins-glen': defaultNascarSchedule,
+  'bristol': defaultNascarSaturdaySchedule,
+  'new-hampshire': defaultNascarSchedule,
+  'charlotte-roval': defaultNascarSchedule,
+  'homestead': defaultNascarSchedule,
+  'las-vegas-nascar-2': defaultNascarSchedule,
+  'talladega-2': defaultNascarSchedule,
+  'charlotte-fall': defaultNascarSchedule,
+  'homestead-2': defaultNascarSchedule,
+  'martinsville-2': defaultNascarSchedule,
+  'phoenix-championship': [
+    { key: 'practice', title: 'Practice', day: 'Fri', time: '14:00' },
+    { key: 'qualifying', title: 'Qualifying', day: 'Sat', time: '12:00' },
+    { key: 'race', title: 'Championship Race', day: 'Sun', time: '15:00' },
+  ],
+};
+
+// NASCAR 2026 Cup Series race dates
+const nascarRaceDates: DateMap = {
+  'daytona': '2026-02-15',              // February 15 - Daytona 500
+  'atlanta': '2026-02-22',              // February 22 - Atlanta Motor Speedway
+  'las-vegas-nascar': '2026-03-01',     // March 1 - Las Vegas Motor Speedway
+  'phoenix-nascar': '2026-03-08',       // March 8 - Phoenix Raceway
+  'cota-nascar': '2026-03-15',          // March 15 - Circuit of The Americas
+  'richmond': '2026-03-22',             // March 22 - Richmond Raceway
+  'martinsville': '2026-03-29',         // March 29 - Martinsville Speedway
+  'texas': '2026-04-05',                // April 5 - Texas Motor Speedway
+  'talladega': '2026-04-26',            // April 26 - Talladega Superspeedway
+  'dover': '2026-05-03',                // May 3 - Dover Motor Speedway
+  'kansas': '2026-05-10',               // May 10 - Kansas Speedway
+  'darlington': '2026-05-17',           // May 17 - Darlington Raceway
+  'charlotte-600': '2026-05-24',        // May 24 - Charlotte Motor Speedway (Coca-Cola 600)
+  'gateway-nascar': '2026-05-31',       // May 31 - World Wide Technology Raceway
+  'sonoma': '2026-06-07',               // June 7 - Sonoma Raceway
+  'iowa': '2026-06-14',                 // June 14 - Iowa Speedway
+  'chicago': '2026-06-28',              // June 28 - Chicago Street Course
+  'pocono': '2026-07-12',               // July 12 - Pocono Raceway
+  'indianapolis-nascar': '2026-07-19',  // July 19 - Indianapolis Motor Speedway (Brickyard 400)
+  'michigan': '2026-08-02',             // August 2 - Michigan International Speedway
+  'daytona-2': '2026-08-22',            // August 22 - Daytona International Speedway (Coke Zero Sugar 400)
+  'watkins-glen': '2026-08-30',         // August 30 - Watkins Glen International
+  'bristol': '2026-09-05',              // September 5 - Bristol Motor Speedway
+  'new-hampshire': '2026-09-13',        // September 13 - New Hampshire Motor Speedway
+  'charlotte-roval': '2026-09-27',      // September 27 - Charlotte Motor Speedway ROVAL
+  'homestead': '2026-10-18',            // October 18 - Homestead-Miami Speedway
+  'las-vegas-nascar-2': '2026-10-25',   // October 25 - Las Vegas Motor Speedway (South Point 400)
+  'talladega-2': '2026-11-01',          // November 1 - Talladega Superspeedway (YellaWood 500)
+  'charlotte-fall': '2026-11-08',       // November 8 - Charlotte Motor Speedway (Bank of America ROVAL 400)
+  'homestead-2': '2026-11-15',          // November 15 - Homestead-Miami Speedway (Dixie Vodka 400)
+  'martinsville-2': '2026-11-22',       // November 22 - Martinsville Speedway (Xfinity 500)
+  'phoenix-championship': '2026-11-29', // November 29 - Phoenix Raceway (Championship)
+};
+
 function addDays(isoDate: string, days: number) {
   const d = new Date(isoDate + 'T00:00:00');
   d.setDate(d.getDate() + days);
@@ -223,7 +327,8 @@ function dayOffsetFromSunday(day: WeekendSession['day']) {
 function attachDates(slug: string, category: Category, sessions: WeekendSession[]): WeekendSession[] {
   const raceDate = category === 'f1' ? f1RaceDates[slug] : 
                    category === 'motogp' ? motogpRaceDates[slug] : 
-                   indycarRaceDates[slug];
+                   category === 'indycar' ? indycarRaceDates[slug] :
+                   nascarRaceDates[slug];
   if (!raceDate) return sessions; // fallback if unknown date
   return sessions.map((s) => ({ ...s, date: addDays(raceDate, dayOffsetFromSunday(s.day)) }));
 }
@@ -231,7 +336,8 @@ function attachDates(slug: string, category: Category, sessions: WeekendSession[
 export function getWeekendSchedule(slug: string, category: Category): WeekendSession[] {
   const sessions = category === 'f1' ? (f1Schedules[slug] || defaultF1Schedule) : 
                    category === 'motogp' ? (motogpSchedules[slug] || defaultMotoGPSchedule) :
-                   (indycarSchedules[slug] || defaultIndyCarSchedule);
+                   category === 'indycar' ? (indycarSchedules[slug] || defaultIndyCarSchedule) :
+                   (nascarSchedules[slug] || defaultNascarSchedule);
   return attachDates(slug, category, sessions);
 }
 
@@ -239,13 +345,15 @@ export function getAllCalendarEvents(category: Category | 'all' = 'all', circuit
   const make = (cat: Category) => {
     const dates = cat === 'f1' ? f1RaceDates : 
                   cat === 'motogp' ? motogpRaceDates : 
-                  indycarRaceDates;
+                  cat === 'indycar' ? indycarRaceDates :
+                  nascarRaceDates;
     const allSlugs = Object.keys(dates);
     const col: CalendarEvent[] = [];
     for (const slug of allSlugs) {
       const base = cat === 'f1' ? (f1Schedules[slug] || defaultF1Schedule) : 
                    cat === 'motogp' ? (motogpSchedules[slug] || defaultMotoGPSchedule) :
-                   (indycarSchedules[slug] || defaultIndyCarSchedule);
+                   cat === 'indycar' ? (indycarSchedules[slug] || defaultIndyCarSchedule) :
+                   (nascarSchedules[slug] || defaultNascarSchedule);
       const withDates = attachDates(slug, cat, base);
       for (const s of withDates) {
         const name = circuitLookup ? circuitLookup(slug, cat)?.name : slug;
@@ -256,9 +364,9 @@ export function getAllCalendarEvents(category: Category | 'all' = 'all', circuit
   };
 
   if (category === 'all') {
-    return [...make('f1'), ...make('motogp'), ...make('indycar')];
+    return [...make('f1'), ...make('motogp'), ...make('indycar'), ...make('nascar')];
   }
   return make(category);
 }
 
-export { f1RaceDates, motogpRaceDates, indycarRaceDates };
+export { f1RaceDates, motogpRaceDates, indycarRaceDates, nascarRaceDates };

@@ -6,18 +6,18 @@ import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout }
 import { useTheme } from '../../state/ThemeContext';
 import { useLanguage } from '../../state/LanguageContext';
 import AppHeader from '../../components/AppHeader';
-import { f1Circuits, motogpCircuits, indycarCircuits } from '../../data/circuits';
+import { f1Circuits, motogpCircuits, indycarCircuits, nascarCircuits } from '../../data/circuits';
 import { router } from 'expo-router';
 
 interface RaceEvent {
   date: string;
-  category: 'f1' | 'motogp' | 'indycar';
+  category: 'f1' | 'motogp' | 'indycar' | 'nascar';
   circuit: any;
   round: number;
 }
 
 export default function CalendarScreen() {
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'f1' | 'motogp' | 'indycar'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'f1' | 'motogp' | 'indycar' | 'nascar'>('all');
   const { isDark } = useTheme();
   const { t } = useLanguage();
   
@@ -57,6 +57,20 @@ export default function CalendarScreen() {
       events.push({
         date: date.toISOString().split('T')[0],
         category: 'indycar',
+        circuit,
+        round: index + 1,
+      });
+    });
+
+    // Add NASCAR races (32 races starting February)
+    nascarCircuits.forEach((circuit, index) => {
+      // NASCAR season starts in February and runs through November
+      const monthOffset = Math.floor(index * 0.3); // Spread across ~10 months
+      const dayOffset = (index % 4) * 7;
+      const date = new Date(2026, 1 + monthOffset, 15 + dayOffset); // Start in February
+      events.push({
+        date: date.toISOString().split('T')[0],
+        category: 'nascar',
         circuit,
         round: index + 1,
       });
@@ -202,6 +216,7 @@ export default function CalendarScreen() {
       case 'f1': return colors.f1Red;
       case 'motogp': return colors.motogpBlue;
       case 'indycar': return colors.indycarBlue;
+      case 'nascar': return colors.nascarOrange;
       default: return colors.primary;
     }
   };
@@ -260,6 +275,7 @@ export default function CalendarScreen() {
           { key: 'f1', label: 'F1' },
           { key: 'motogp', label: 'MotoGP' },
           { key: 'indycar', label: 'IndyCar' },
+          { key: 'nascar', label: 'NASCAR' },
         ].map(filter => (
           <TouchableOpacity
             key={filter.key}
@@ -291,7 +307,7 @@ export default function CalendarScreen() {
               <Text style={styles.statLabel}>{t('months')}</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>3</Text>
+              <Text style={styles.statNumber}>4</Text>
               <Text style={styles.statLabel}>{t('categories')}</Text>
             </View>
           </View>
