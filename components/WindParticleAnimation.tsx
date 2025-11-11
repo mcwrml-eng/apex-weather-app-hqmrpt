@@ -168,43 +168,24 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     }
   }, [latitude, longitude, initialMapTranslation, translateX, translateY, savedTranslateX, savedTranslateY]);
 
-  // Calculate visible bounds based on current transform with extended coverage
+  // Calculate visible bounds in SCREEN SPACE (not world space)
+  // This ensures particles always cover the entire visible screen area
   const getVisibleBounds = useCallback(() => {
-    // Calculate the inverse transform to get world coordinates from screen coordinates
-    const invScale = 1 / currentScale;
-    
-    // Screen corners in world space
-    const left = -currentTranslateX * invScale;
-    const top = -currentTranslateY * invScale;
-    const right = left + width * invScale;
-    const bottom = top + height * invScale;
-    
-    // Add significant padding to ensure particles spawn well outside visible area
-    // This creates a "buffer zone" for seamless particle flow
-    const paddingMultiplier = 1.5; // 150% padding on all sides
-    const paddingX = (right - left) * paddingMultiplier;
-    const paddingY = (bottom - top) * paddingMultiplier;
+    // Screen space bounds - always the full screen regardless of transform
+    // We add significant padding to ensure seamless wrapping
+    const paddingMultiplier = 2.0; // 200% padding for extra coverage
+    const paddedWidth = width * paddingMultiplier;
+    const paddedHeight = height * paddingMultiplier;
     
     return {
-      left: left - paddingX,
-      top: top - paddingY,
-      right: right + paddingX,
-      bottom: bottom + paddingY,
-      width: (right - left) + paddingX * 2,
-      height: (bottom - top) + paddingY * 2,
+      left: -paddedWidth / 2,
+      top: -paddedHeight / 2,
+      right: paddedWidth / 2,
+      bottom: paddedHeight / 2,
+      width: paddedWidth,
+      height: paddedHeight,
     };
-  }, [currentScale, currentTranslateX, currentTranslateY, width, height]);
-
-  // Calculate the SVG viewBox based on current transform
-  const svgViewBox = useMemo(() => {
-    const invScale = 1 / currentScale;
-    const viewBoxX = -currentTranslateX * invScale;
-    const viewBoxY = -currentTranslateY * invScale;
-    const viewBoxWidth = width * invScale;
-    const viewBoxHeight = height * invScale;
-    
-    return `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`;
-  }, [currentScale, currentTranslateX, currentTranslateY, width, height]);
+  }, [width, height]);
 
   // Calculate particle velocity based on wind speed and direction
   const calculateVelocity = useCallback((speed: number, direction: number) => {
@@ -257,13 +238,13 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     };
   }, [getWindSpeedColor]);
 
-  // Initialize particles based on visible bounds
+  // Initialize particles in SCREEN SPACE
   const initializeParticles = useCallback(() => {
     const bounds = getVisibleBounds();
     const newParticles: Particle[] = [];
     const { vx, vy } = calculateVelocity(windSpeed, windDirection);
     
-    console.log('Initializing particles with extended bounds:', bounds, 'Particle count:', particleCount);
+    console.log('Initializing particles in screen space:', bounds, 'Particle count:', particleCount);
     
     for (let i = 0; i < particleCount; i++) {
       const maxLife = 120 + Math.random() * 180; // Longer life for smoother flow
@@ -285,7 +266,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     return newParticles;
   }, [windSpeed, windDirection, particleCount, getVisibleBounds, calculateVelocity]);
 
-  // Update particle positions
+  // Update particle positions in SCREEN SPACE
   const updateParticles = useCallback(() => {
     const now = Date.now();
     const deltaTime = (now - lastUpdateRef.current) / 16.67; // Normalize to 60fps
@@ -299,10 +280,21 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       let newY = particle.y + particle.vy * deltaTime;
       let newLife = particle.life - deltaTime;
       
-      // Reset particle if it goes off extended bounds or life expires
-      if (newX < bounds.left || newX > bounds.right || 
-          newY < bounds.top || newY > bounds.bottom || 
-          newLife <= 0) {
+      // Wrap particles around the screen space bounds for seamless flow
+      if (newX < bounds.left) {
+        newX = bounds.right;
+      } else if (newX > bounds.right) {
+        newX = bounds.left;
+      }
+      
+      if (newY < bounds.top) {
+        newY = bounds.bottom;
+      } else if (newY > bounds.bottom) {
+        newY = bounds.top;
+      }
+      
+      // Reset particle if life expires
+      if (newLife <= 0) {
         const maxLife = 120 + Math.random() * 180;
         const speedVariation = 0.7 + Math.random() * 0.6;
         
@@ -314,7 +306,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
           vy: vy * speedVariation,
           life: maxLife,
           maxLife: maxLife,
-          opacity: 0.6 + Math.random() * 0.4, // Increased base opacity
+          opacity: 0.6 + Math.random() * 0.4,
           speed: windSpeed * speedVariation,
         };
       }
@@ -361,19 +353,6 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     setParticles(newParticles);
   }, [initializeParticles]);
 
-  // Reinitialize particles when transform changes significantly
-  useEffect(() => {
-    console.log('Transform changed - reinitializing particles:', {
-      scale: currentScale,
-      translateX: currentTranslateX,
-      translateY: currentTranslateY,
-    });
-    
-    const newParticles = initializeParticles();
-    particlesRef.current = newParticles;
-    setParticles(newParticles);
-  }, [currentScale, currentTranslateX, currentTranslateY, initializeParticles]);
-
   // Calculate map tile coordinates from lat/lon
   const getTileCoordinates = useCallback((lat: number, lon: number, zoom: number) => {
     const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
@@ -404,15 +383,15 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     return particle.opacity * Math.min(fadeIn, fadeOut);
   }, []);
 
-  // Draw wind flow lines (streamlines) with gradient colors
+  // Draw wind flow lines (streamlines) in SCREEN SPACE
   const streamlines = useMemo(() => {
     if (!showGrid) return [];
     
     const bounds = getVisibleBounds();
     const lines: { x1: number; y1: number; x2: number; y2: number; gradient: { start: string; end: string } }[] = [];
     const { vx, vy } = calculateVelocity(windSpeed, windDirection);
-    const gridSpacing = 50 / currentScale; // Adjusted spacing
-    const lineLength = 35 / currentScale;
+    const gridSpacing = 50; // Fixed spacing in screen space
+    const lineLength = 35;
     
     for (let x = bounds.left; x < bounds.right; x += gridSpacing) {
       for (let y = bounds.top; y < bounds.bottom; y += gridSpacing) {
@@ -433,7 +412,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     }
     
     return lines;
-  }, [windSpeed, windDirection, showGrid, calculateVelocity, getVisibleBounds, currentScale, getStreamlineGradient]);
+  }, [windSpeed, windDirection, showGrid, calculateVelocity, getVisibleBounds, getStreamlineGradient]);
 
   // Reset zoom and pan
   const handleResetZoom = useCallback(() => {
@@ -683,11 +662,11 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
               </View>
             )}
             
-            {/* SVG overlay for wind visualization */}
+            {/* SVG overlay for wind visualization - FIXED viewBox to always show full screen */}
             <Svg 
               width={width} 
               height={height}
-              viewBox={svgViewBox}
+              viewBox={`${-width} ${-height} ${width * 3} ${height * 3}`}
               style={styles.svgOverlay}
               pointerEvents="box-none"
             >
@@ -731,20 +710,20 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                       r={ringRadius}
                       fill="none"
                       stroke={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)'}
-                      strokeWidth={1 / currentScale}
-                      strokeDasharray={`${3 / currentScale},${3 / currentScale}`}
+                      strokeWidth={1}
+                      strokeDasharray="3,3"
                       opacity={0.4}
                     />
                     <SvgText
                       x={labelX}
                       y={labelY}
-                      fontSize={9 / currentScale}
+                      fontSize={9}
                       fontWeight="600"
                       fill={isDark ? '#fff' : '#000'}
                       textAnchor="middle"
                       opacity={0.8}
                       stroke={isDark ? '#000' : '#fff'}
-                      strokeWidth={2 / currentScale}
+                      strokeWidth={2}
                       paintOrder="stroke"
                     >
                       {distance}km
@@ -762,16 +741,16 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                   x2={line.x2}
                   y2={line.y2}
                   stroke={line.gradient.start}
-                  strokeWidth={2.5 / currentScale} // Increased from 2 to 2.5
+                  strokeWidth={2.5}
                   strokeLinecap="round"
-                  opacity={0.75} // Increased from 0.6 to 0.75
+                  opacity={0.75}
                 />
               ))}
               
               {/* Draw particles with ENHANCED color, size, and glow effects */}
               {particles.map((particle) => {
                 const opacity = getParticleOpacity(particle);
-                const baseRadius = (3.5 + (particle.speed / 60) * 3) / currentScale; // INCREASED from 2.5 to 3.5
+                const baseRadius = 3.5 + (particle.speed / 60) * 3;
                 const particleColor = getWindSpeedColor(particle.speed);
                 
                 return (
@@ -780,9 +759,9 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                     <Circle
                       cx={particle.x}
                       cy={particle.y}
-                      r={baseRadius * 3.5} // Increased from 2 to 3.5
+                      r={baseRadius * 3.5}
                       fill={particleColor}
-                      opacity={opacity * 0.35} // Increased from 0.2 to 0.35
+                      opacity={opacity * 0.35}
                     />
                     {/* ENHANCED middle glow layer */}
                     <Circle
@@ -800,7 +779,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                       fill={particleColor}
                       opacity={opacity}
                       stroke={isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.3)'}
-                      strokeWidth={0.8 / currentScale} // Increased from 0.5 to 0.8
+                      strokeWidth={0.8}
                     />
                   </G>
                 );
@@ -809,52 +788,52 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
               {/* Compass labels */}
               <SvgText 
                 x={centerX} 
-                y={20 / currentScale} 
-                fontSize={14 / currentScale} 
+                y={20} 
+                fontSize={14} 
                 fontWeight="700" 
                 fill={isDark ? '#fff' : '#000'}
                 textAnchor="middle"
                 stroke={isDark ? '#000' : '#fff'}
-                strokeWidth={3 / currentScale}
+                strokeWidth={3}
                 paintOrder="stroke"
               >
                 N
               </SvgText>
               <SvgText 
-                x={width - 20 / currentScale} 
-                y={centerY + 5 / currentScale} 
-                fontSize={14 / currentScale} 
+                x={width - 20} 
+                y={centerY + 5} 
+                fontSize={14} 
                 fontWeight="700" 
                 fill={isDark ? '#fff' : '#000'}
                 textAnchor="middle"
                 stroke={isDark ? '#000' : '#fff'}
-                strokeWidth={3 / currentScale}
+                strokeWidth={3}
                 paintOrder="stroke"
               >
                 E
               </SvgText>
               <SvgText 
                 x={centerX} 
-                y={height - 10 / currentScale} 
-                fontSize={14 / currentScale} 
+                y={height - 10} 
+                fontSize={14} 
                 fontWeight="700" 
                 fill={isDark ? '#fff' : '#000'}
                 textAnchor="middle"
                 stroke={isDark ? '#000' : '#fff'}
-                strokeWidth={3 / currentScale}
+                strokeWidth={3}
                 paintOrder="stroke"
               >
                 S
               </SvgText>
               <SvgText 
-                x={20 / currentScale} 
-                y={centerY + 5 / currentScale} 
-                fontSize={14 / currentScale} 
+                x={20} 
+                y={centerY + 5} 
+                fontSize={14} 
                 fontWeight="700" 
                 fill={isDark ? '#fff' : '#000'}
                 textAnchor="middle"
                 stroke={isDark ? '#000' : '#fff'}
-                strokeWidth={3 / currentScale}
+                strokeWidth={3}
                 paintOrder="stroke"
               >
                 W
@@ -864,51 +843,51 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
               <Circle
                 cx={markerPosition.x}
                 cy={markerPosition.y}
-                r={8 / currentScale}
+                r={8}
                 fill={colors.primary}
                 stroke="#fff"
-                strokeWidth={3 / currentScale}
+                strokeWidth={3}
                 opacity={0.9}
               />
               <Circle
                 cx={markerPosition.x}
                 cy={markerPosition.y}
-                r={4 / currentScale}
+                r={4}
                 fill="#fff"
               />
               
               {/* Crosshair for precise positioning */}
               <Line
-                x1={markerPosition.x - 12 / currentScale}
+                x1={markerPosition.x - 12}
                 y1={markerPosition.y}
-                x2={markerPosition.x - 4 / currentScale}
+                x2={markerPosition.x - 4}
                 y2={markerPosition.y}
                 stroke="#fff"
-                strokeWidth={2 / currentScale}
+                strokeWidth={2}
               />
               <Line
-                x1={markerPosition.x + 4 / currentScale}
+                x1={markerPosition.x + 4}
                 y1={markerPosition.y}
-                x2={markerPosition.x + 12 / currentScale}
+                x2={markerPosition.x + 12}
                 y2={markerPosition.y}
                 stroke="#fff"
-                strokeWidth={2 / currentScale}
+                strokeWidth={2}
               />
               <Line
                 x1={markerPosition.x}
-                y1={markerPosition.y - 12 / currentScale}
+                y1={markerPosition.y - 12}
                 x2={markerPosition.x}
-                y2={markerPosition.y - 4 / currentScale}
+                y2={markerPosition.y - 4}
                 stroke="#fff"
-                strokeWidth={2 / currentScale}
+                strokeWidth={2}
               />
               <Line
                 x1={markerPosition.x}
-                y1={markerPosition.y + 4 / currentScale}
+                y1={markerPosition.y + 4}
                 x2={markerPosition.x}
-                y2={markerPosition.y + 12 / currentScale}
+                y2={markerPosition.y + 12}
                 stroke="#fff"
-                strokeWidth={2 / currentScale}
+                strokeWidth={2}
               />
             </Svg>
             
