@@ -53,7 +53,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
   windDirection,
   width = 320,
   height = 320,
-  particleCount = 1800, // Reduced from 3600 to 1800 (half again)
+  particleCount = 900, // Reduced from 1800 to 900 (half again) for better map visibility
   particleColor,
   showGrid = true,
   unit = 'metric',
@@ -549,7 +549,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       width: mapTileSize,
       height: mapTileSize,
       position: 'absolute',
-      opacity: isDark ? 0.95 : 0.85, // Increased opacity in dark mode for better visibility
+      opacity: isDark ? 1.0 : 0.85, // Full opacity in dark mode for maximum visibility
     },
     svgOverlay: {
       position: 'absolute',
@@ -727,14 +727,6 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                 ))}
               </Defs>
               
-              {/* Reduced semi-transparent overlay for better map visibility in dark mode */}
-              <Circle
-                cx={centerX}
-                cy={centerY}
-                r={Math.min(width, height) / 2}
-                fill={isDark ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.05)'}
-              />
-              
               {/* Distance rings */}
               {distanceRings.map((distance, i) => {
                 const ringScale = (i + 1) / distanceRings.length;
@@ -749,10 +741,10 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                       cy={markerPosition.y}
                       r={ringRadius}
                       fill="none"
-                      stroke={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)'}
+                      stroke={isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.25)'}
                       strokeWidth={1}
                       strokeDasharray="3,3"
-                      opacity={0.4}
+                      opacity={0.35}
                     />
                     <SvgText
                       x={labelX}
@@ -761,7 +753,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                       fontWeight="600"
                       fill={isDark ? '#fff' : '#000'}
                       textAnchor="middle"
-                      opacity={0.8}
+                      opacity={0.7}
                       stroke={isDark ? '#000' : '#fff'}
                       strokeWidth={2}
                       paintOrder="stroke"
@@ -783,11 +775,11 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                   stroke={line.gradient.start}
                   strokeWidth={2.5}
                   strokeLinecap="round"
-                  opacity={0.75}
+                  opacity={0.6}
                 />
               ))}
               
-              {/* Draw particles - map from virtual space to screen space with REDUCED GLOW */}
+              {/* Draw particles - map from virtual space to screen space with MINIMAL GLOW */}
               {particles.map((particle) => {
                 // Convert virtual coordinates to screen coordinates
                 const { screenX, screenY } = virtualToScreen(particle.x, particle.y);
@@ -798,36 +790,28 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
                 }
                 
                 const opacity = getParticleOpacity(particle);
-                const baseRadius = 3.5 + (particle.speed / 60) * 3;
+                const baseRadius = 3.0 + (particle.speed / 60) * 2.5;
                 const particleColor = getWindSpeedColor(particle.speed);
                 
                 return (
                   <G key={`particle-${particle.id}`}>
-                    {/* Outer glow effect - REDUCED by half */}
+                    {/* Minimal outer glow effect - reduced significantly */}
                     <Circle
                       cx={screenX}
                       cy={screenY}
-                      r={baseRadius * 1.75}
+                      r={baseRadius * 1.4}
                       fill={particleColor}
-                      opacity={opacity * 0.175}
+                      opacity={opacity * 0.1}
                     />
-                    {/* Middle glow layer - REDUCED by half */}
-                    <Circle
-                      cx={screenX}
-                      cy={screenY}
-                      r={baseRadius * 1.5}
-                      fill={particleColor}
-                      opacity={opacity * 0.25}
-                    />
-                    {/* Main particle */}
+                    {/* Main particle with slight glow */}
                     <Circle
                       cx={screenX}
                       cy={screenY}
                       r={baseRadius}
                       fill={particleColor}
-                      opacity={opacity}
-                      stroke={isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.3)'}
-                      strokeWidth={0.8}
+                      opacity={opacity * 0.85}
+                      stroke={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'}
+                      strokeWidth={0.5}
                     />
                   </G>
                 );
