@@ -166,7 +166,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
       setCurrentTranslateX(initialMapTranslation.x);
       setCurrentTranslateY(initialMapTranslation.y);
     }
-  }, [latitude, longitude, initialMapTranslation.x, initialMapTranslation.y]);
+  }, [latitude, longitude, initialMapTranslation, translateX, translateY, savedTranslateX, savedTranslateY]);
 
   // Calculate visible bounds based on current transform with extended coverage
   const getVisibleBounds = useCallback(() => {

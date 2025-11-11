@@ -2,6 +2,16 @@
 import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocales } from 'expo-localization';
+import en from '../translations/en.json';
+import es from '../translations/es.json';
+import fr from '../translations/fr.json';
+import de from '../translations/de.json';
+import it from '../translations/it.json';
+import pt from '../translations/pt.json';
+import ja from '../translations/ja.json';
+import zh from '../translations/zh.json';
+import ar from '../translations/ar.json';
+import ru from '../translations/ru.json';
 
 export type Language = 'en' | 'es' | 'fr' | 'de' | 'it' | 'pt' | 'ja' | 'zh' | 'ar' | 'ru';
 
@@ -14,18 +24,6 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
 const STORAGE_KEY = 'app_language';
-
-// Import translations
-import en from '../translations/en.json';
-import es from '../translations/es.json';
-import fr from '../translations/fr.json';
-import de from '../translations/de.json';
-import it from '../translations/it.json';
-import pt from '../translations/pt.json';
-import ja from '../translations/ja.json';
-import zh from '../translations/zh.json';
-import ar from '../translations/ar.json';
-import ru from '../translations/ru.json';
 
 const translations: Record<Language, Record<string, string>> = {
   en,
@@ -105,14 +103,14 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const t = (key: string): string => {
+  const t = useCallback((key: string): string => {
     const translation = translations[language]?.[key];
     if (!translation) {
       console.warn(`LanguageContext: Missing translation for key "${key}" in language "${language}"`);
       return translations.en[key] || key;
     }
     return translation;
-  };
+  }, [language]);
 
   const value = useMemo(
     () => ({
@@ -120,7 +118,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       setLanguage,
       t,
     }),
-    [language]
+    [language, t]
   );
 
   if (isLoading) {
