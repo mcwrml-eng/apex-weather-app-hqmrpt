@@ -264,6 +264,14 @@ function DetailScreen() {
     return directions[index];
   }, []);
 
+  // Helper function to create a daytime timestamp for a given date
+  const getDaytimeTimestamp = useCallback((dateString: string): string => {
+    // Create a timestamp at 12:00 (noon) for the given date to ensure daytime symbol
+    const date = new Date(dateString);
+    date.setHours(12, 0, 0, 0);
+    return date.toISOString();
+  }, []);
+
   // Create dynamic styles based on theme
   const styles = useMemo(() => StyleSheet.create({
     wrapper: { flex: 1, backgroundColor: colors.background },
@@ -1059,6 +1067,7 @@ function DetailScreen() {
                             size={24}
                             latitude={circuit.latitude}
                             longitude={circuit.longitude}
+                            time={getDaytimeTimestamp(d.date)}
                             sunrise={d.sunrise}
                             sunset={d.sunset}
                           />
