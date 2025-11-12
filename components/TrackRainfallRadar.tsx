@@ -866,50 +866,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     viewToggleTextActive: {
       color: '#fff',
     },
-    forecastContainer: {
-      marginBottom: 16,
-      width: '100%',
-      maxWidth: '100%',
-    },
-    forecastTitle: {
-      fontSize: 15,
-      fontWeight: '600',
-      color: colors.text,
-      fontFamily: 'Roboto_600SemiBold',
-      marginBottom: 12,
-    },
-    forecastScroll: {
-      paddingVertical: 8,
-    },
-    forecastCard: {
-      backgroundColor: colors.backgroundAlt,
-      borderRadius: borderRadius.md,
-      padding: 12,
-      marginRight: 12,
-      minWidth: 100,
-      alignItems: 'center',
-      borderWidth: 1,
-      borderColor: colors.divider,
-    },
-    forecastTime: {
-      fontSize: 12,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      marginBottom: 8,
-    },
-    forecastValue: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: colors.text,
-      fontFamily: 'Roboto_600SemiBold',
-      marginTop: 8,
-    },
-    forecastProb: {
-      fontSize: 11,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      marginTop: 4,
-    },
     legend: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -1472,29 +1428,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         </View>
       )}
 
-      {radarData.minutely.length > 0 && (
-        <View style={styles.viewToggle}>
-          <TouchableOpacity
-            style={[styles.viewToggleButton, !showMinutelyView && styles.viewToggleButtonActive]}
-            onPress={() => setShowMinutelyView(false)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.viewToggleText, !showMinutelyView && styles.viewToggleTextActive]}>
-              Hourly
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.viewToggleButton, showMinutelyView && styles.viewToggleButtonActive]}
-            onPress={() => setShowMinutelyView(true)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.viewToggleText, showMinutelyView && styles.viewToggleTextActive]}>
-              15-Minute
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
       <View style={styles.radarContainer}>
         <View style={styles.radarWrapper}>
           <GestureDetector gesture={composedGesture}>
@@ -1636,43 +1569,6 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         </View>
         
         <Text style={styles.summary}>{radarData.summary}</Text>
-      </View>
-
-      <View style={styles.forecastContainer}>
-        <Text style={styles.forecastTitle}>
-          {showMinutelyView && radarData.minutely.length > 0 ? 'Next 6 Hours (15-min intervals, Circuit Local Time)' : 'Next 24 Hours (Circuit Local Time)'}
-        </Text>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.forecastScroll}
-        >
-          {(showMinutelyView && radarData.minutely.length > 0 
-            ? radarData.minutely.slice(0, 24) 
-            : radarData.hourly.slice(0, 24)
-          ).map((item, index) => (
-            <View key={index} style={styles.forecastCard}>
-              <Text style={styles.forecastTime}>{formatTime(item.time)}</Text>
-              {!showMinutelyView && (
-                <WeatherSymbol 
-                  weatherCode={item.weatherCode}
-                  size={28}
-                  latitude={latitude}
-                  longitude={longitude}
-                  time={item.time}
-                  sunrise={radarData.sunrise}
-                  sunset={radarData.sunset}
-                />
-              )}
-              <Text style={styles.forecastValue}>
-                {item.precipitation.toFixed(2)}mm
-              </Text>
-              <Text style={styles.forecastProb}>
-                {item.precipitationProbability}%
-              </Text>
-            </View>
-          ))}
-        </ScrollView>
       </View>
 
       <View style={styles.legend}>
