@@ -912,6 +912,51 @@ function DetailScreen() {
             </SafeComponent>
           )}
 
+          {/* 7-Day Forecast - MOVED HERE (after Next 12 Hours) */}
+          {!loading && daily && (
+            <SafeComponent componentName="7DayForecast">
+              <View style={styles.card}>
+                <Text style={styles.cardLabel}>7-Day Forecast</Text>
+                <View style={{ height: 8 }} />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+                  {daily.days.map((d) => (
+                    <View key={d.date} style={styles.dayPill}>
+                      <Text style={styles.dayText}>{d.weekday}</Text>
+                      <View style={styles.daySymbolContainer}>
+                        <WeatherSymbol 
+                          weatherCode={d.weather_code} 
+                          size={24}
+                          latitude={circuit.latitude}
+                          longitude={circuit.longitude}
+                          time={getDaytimeTimestamp(d.date)}
+                          sunrise={d.sunrise}
+                          sunset={d.sunset}
+                        />
+                      </View>
+                      <Text style={styles.dayTemp}>
+                        {Math.round(d.max)}° / {Math.round(d.min)}°
+                      </Text>
+                      <Text style={[styles.dayRain, { 
+                        color: d.precipitation_sum > 0 ? colors.precipitation : colors.textMuted 
+                      }]}>
+                        {d.precipitation_sum === 0 ? '0' : 
+                         unit === 'imperial' ? 
+                           (d.precipitation_sum < 0.01 ? '<0.01' : Math.round(d.precipitation_sum * 100) / 100) :
+                           (d.precipitation_sum < 0.1 ? '<0.1' : Math.round(d.precipitation_sum * 10) / 10)
+                        }{unit === 'metric' ? 'mm' : 'in'}
+                      </Text>
+                      {d.precipitation_probability > 0 && (
+                        <Text style={styles.dayRainProb}>
+                          {d.precipitation_probability}%
+                        </Text>
+                      )}
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+            </SafeComponent>
+          )}
+
           {/* Written Text Weather Forecast */}
           {!loading && current && hourly.length > 0 && (
             <SafeComponent componentName="WeatherTextForecast">
@@ -1052,48 +1097,6 @@ function DetailScreen() {
                   </View>
                 </SafeComponent>
               )}
-
-              <SafeComponent componentName="7DayForecast">
-                <View style={styles.card}>
-                  <Text style={styles.cardLabel}>7-Day Forecast</Text>
-                  <View style={{ height: 8 }} />
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-                    {daily.days.map((d) => (
-                      <View key={d.date} style={styles.dayPill}>
-                        <Text style={styles.dayText}>{d.weekday}</Text>
-                        <View style={styles.daySymbolContainer}>
-                          <WeatherSymbol 
-                            weatherCode={d.weather_code} 
-                            size={24}
-                            latitude={circuit.latitude}
-                            longitude={circuit.longitude}
-                            time={getDaytimeTimestamp(d.date)}
-                            sunrise={d.sunrise}
-                            sunset={d.sunset}
-                          />
-                        </View>
-                        <Text style={styles.dayTemp}>
-                          {Math.round(d.max)}° / {Math.round(d.min)}°
-                        </Text>
-                        <Text style={[styles.dayRain, { 
-                          color: d.precipitation_sum > 0 ? colors.precipitation : colors.textMuted 
-                        }]}>
-                          {d.precipitation_sum === 0 ? '0' : 
-                           unit === 'imperial' ? 
-                             (d.precipitation_sum < 0.01 ? '<0.01' : Math.round(d.precipitation_sum * 100) / 100) :
-                             (d.precipitation_sum < 0.1 ? '<0.1' : Math.round(d.precipitation_sum * 10) / 10)
-                          }{unit === 'metric' ? 'mm' : 'in'}
-                        </Text>
-                        {d.precipitation_probability > 0 && (
-                          <Text style={styles.dayRainProb}>
-                            {d.precipitation_probability}%
-                          </Text>
-                        )}
-                      </View>
-                    ))}
-                  </ScrollView>
-                </View>
-              </SafeComponent>
 
               {/* 72-Hour Forecast Section */}
               {forecast72Hours.length > 0 && (
