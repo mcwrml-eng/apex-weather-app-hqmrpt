@@ -15,6 +15,7 @@
   "formula_one": "Fórmula 1",
   "motogp": "MotoGP",
   "indycar": "IndyCar",
+  "nascar": "NASCAR",
   
   "calendar": "Calendario",
   "disclaimer": "Aviso Legal",
@@ -63,6 +64,16 @@
   "categories": "Categorías",
   "round": "Ronda",
   
+  "race_day": "¡Día de Carrera!",
+  "tomorrow": "Mañana",
+  "yesterday": "Ayer",
+  "days_to_go": "Faltan {days} días",
+  "next_race_in_days": "Próxima carrera en {days} días",
+  "next_race_in_month": "Próxima carrera en aproximadamente 1 mes",
+  "next_race_in_months": "Próxima carrera en aproximadamente {months} meses",
+  "next_race_2026": "Próxima carrera en la temporada 2026",
+  "recently_completed": "Recientemente completada",
+  
   "terms_privacy": "Términos, Privacidad y Soporte",
   "privacy_data": "Privacidad y Datos",
   "privacy_description": "Tu privacidad es importante para nosotros. Esta aplicación recopila datos mínimos para proporcionar pronósticos meteorológicos para circuitos de automovilismo.",
@@ -83,7 +94,7 @@
   "disclaimer_point_1": "Los datos meteorológicos provienen de servicios meteorológicos confiables",
   "disclaimer_point_2": "Los pronósticos son estimaciones y pueden variar de las condiciones reales",
   "disclaimer_point_3": "Siempre consulta los servicios meteorológicos oficiales de carreras para decisiones de competición",
-  "disclaimer_point_4": "La aplicación no está afiliada con las organizaciones de F1, MotoGP o IndyCar",
+  "disclaimer_point_4": "La aplicación no está afiliada con las organizaciones de F1, MotoGP, IndyCar o NASCAR",
   
   "weather_data_sources": "Fuentes de Datos Meteorológicos",
   "weather_sources_description": "Nuestros pronósticos meteorológicos están impulsados por múltiples fuentes confiables:",

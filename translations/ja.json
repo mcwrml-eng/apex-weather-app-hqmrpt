@@ -15,6 +15,7 @@
   "formula_one": "フォーミュラ1",
   "motogp": "MotoGP",
   "indycar": "インディカー",
+  "nascar": "NASCAR",
   
   "calendar": "カレンダー",
   "disclaimer": "免責事項",
@@ -63,6 +64,16 @@
   "categories": "カテゴリー",
   "round": "ラウンド",
   
+  "race_day": "レース当日！",
+  "tomorrow": "明日",
+  "yesterday": "昨日",
+  "days_to_go": "あと{days}日",
+  "next_race_in_days": "次のレースまで{days}日",
+  "next_race_in_month": "次のレースまで約1ヶ月",
+  "next_race_in_months": "次のレースまで約{months}ヶ月",
+  "next_race_2026": "2026年シーズンの次のレース",
+  "recently_completed": "最近完了",
+  
   "terms_privacy": "利用規約、プライバシー、サポート",
   "privacy_data": "プライバシーとデータ",
   "privacy_description": "お客様のプライバシーは私たちにとって重要です。このアプリは、モータースポーツサーキットの天気予報を提供するために最小限のデータを収集します。",
@@ -83,10 +94,10 @@
   "disclaimer_point_1": "天気データは信頼できる気象サービスから提供されています",
   "disclaimer_point_2": "予報は推定値であり、実際の状況とは異なる場合があります",
   "disclaimer_point_3": "競技の決定には常に公式のレース天気サービスを参照してください",
-  "disclaimer_point_4": "このアプリはF1、MotoGP、またはIndyCar組織とは提携していません",
+  "disclaimer_point_4": "このアプリはF1、MotoGP、IndyCar、NASCARの組織とは提携していません",
   
   "weather_data_sources": "天気データソース",
-  "weather_sources_description": "当社の天気予報は、複数の信頼できるソースによって提供されています：",
+  "weather_sources_description": "私たちの天気予報は、複数の信頼できるソースによって提供されています：",
   "weather_source_1": "グローバル天気データのためのOpen-Meteo API",
   "weather_source_2": "15分ごとのリアルタイム更新",
   "weather_source_3": "7日間の詳細予報",

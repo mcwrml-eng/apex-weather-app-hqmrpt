@@ -2,7 +2,7 @@
 import { useWeather } from '../hooks/useWeather';
 import { Circuit, Category } from './CircuitCard';
 import { getColors, getCommonStyles, animations, spacing, borderRadius, getShadows } from '../styles/commonStyles';
-import { getCurrentTrackOfWeek, getTrackStatusText } from '../utils/currentTrack';
+import { getCurrentTrackOfWeek, getTrackStatusKey } from '../utils/currentTrack';
 import { router } from 'expo-router';
 import WeatherSymbol from './WeatherSymbol';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -193,6 +193,35 @@ export default function FeaturedTrackCard({ category }: Props) {
     }
   };
 
+  const getStatusText = () => {
+    if (!currentTrack) return '';
+    
+    const statusInfo = getTrackStatusKey(currentTrack);
+    
+    switch (statusInfo.key) {
+      case 'race_day':
+        return t('race_day');
+      case 'tomorrow':
+        return t('tomorrow');
+      case 'yesterday':
+        return t('yesterday');
+      case 'days_to_go':
+        return t('days_to_go').replace('{days}', String(statusInfo.days));
+      case 'next_race_in_days':
+        return t('next_race_in_days').replace('{days}', String(statusInfo.days));
+      case 'next_race_in_month':
+        return t('next_race_in_month');
+      case 'next_race_in_months':
+        return t('next_race_in_months').replace('{months}', String(statusInfo.months));
+      case 'next_race_2026':
+        return t('next_race_2026');
+      case 'recently_completed':
+        return t('recently_completed');
+      default:
+        return '';
+    }
+  };
+
   const onPressIn = () => {
     Animated.spring(scaleAnim, {
       toValue: animations.scale.pressed,
@@ -251,7 +280,7 @@ export default function FeaturedTrackCard({ category }: Props) {
                 {circuit.country}
               </Text>
               <Text style={styles.status}>
-                {getTrackStatusText(currentTrack)}
+                {getStatusText()}
               </Text>
             </View>
             

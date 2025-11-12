@@ -15,6 +15,7 @@
   "formula_one": "Formula 1",
   "motogp": "MotoGP",
   "indycar": "IndyCar",
+  "nascar": "NASCAR",
   
   "calendar": "Calendar",
   "disclaimer": "Disclaimer",
@@ -62,6 +63,16 @@
   "months": "Months",
   "categories": "Categories",
   "round": "Round",
+  
+  "race_day": "Race Day!",
+  "tomorrow": "Tomorrow",
+  "yesterday": "Yesterday",
+  "days_to_go": "{days} days to go",
+  "next_race_in_days": "Next race in {days} days",
+  "next_race_in_month": "Next race in about 1 month",
+  "next_race_in_months": "Next race in about {months} months",
+  "next_race_2026": "Next race in 2026 season",
+  "recently_completed": "Recently completed",
   
   "terms_privacy": "Terms, Privacy & Support",
   "privacy_data": "Privacy & Data",
