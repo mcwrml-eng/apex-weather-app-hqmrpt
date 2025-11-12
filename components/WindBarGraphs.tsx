@@ -2,10 +2,9 @@
 import { useTheme } from '../state/ThemeContext';
 import { validateWindSpeed, validateWindDirection } from '../hooks/useWeather';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import Svg, { Polygon, Line, Circle } from 'react-native-svg';
+import Svg, { Polygon, Line, Circle, Rect, G } from 'react-native-svg';
 import { getColors } from '../styles/commonStyles';
 import React, { memo } from 'react';
-import { BarChart, YAxis, XAxis } from 'react-native-svg-charts';
 
 interface HourlyData {
   time: string;
@@ -45,17 +44,18 @@ const styles = StyleSheet.create({
   },
   chartRow: {
     flexDirection: 'row',
-    height: 200,
+    height: 220,
     marginBottom: 8,
   },
   yAxisContainer: {
     width: 50,
+    paddingRight: 8,
   },
   chartContent: {
     flex: 1,
   },
   xAxisContainer: {
-    height: 30,
+    height: 40,
     marginLeft: 50,
   },
   legendContainer: {
@@ -90,6 +90,14 @@ const styles = StyleSheet.create({
   directionSubtitle: {
     fontSize: 14,
     marginBottom: 12,
+    fontFamily: 'Roboto_400Regular',
+  },
+  yAxisLabel: {
+    fontSize: 10,
+    fontFamily: 'Roboto_400Regular',
+  },
+  xAxisLabel: {
+    fontSize: 10,
     fontFamily: 'Roboto_400Regular',
   },
 });
@@ -201,76 +209,168 @@ const WindDirectionArrow = memo(({ direction, size = 20, colors }: { direction: 
 
 WindDirectionArrow.displayName = 'WindDirectionArrow';
 
-const WindDirectionScatterPlot = memo(({ data, width, height, colors }: { data: any[], width: number, height: number, colors: any }) => {
-  const padding = 40;
-  const plotWidth = width - padding * 2;
-  const plotHeight = height - padding * 2;
+const CustomBarChart = memo(({ 
+  data, 
+  width, 
+  height, 
+  colors,
+  unit 
+}: { 
+  data: { windSpeed: number; windGusts: number }[];
+  width: number;
+  height: number;
+  colors: any;
+  unit: 'metric' | 'imperial';
+}) => {
+  const padding = { top: 10, bottom: 10, left: 0, right: 0 };
+  const chartHeight = height - padding.top - padding.bottom;
+  const chartWidth = width - padding.left - padding.right;
   
-  const xScale = (index: number) => padding + (index / (data.length - 1)) * plotWidth;
-  const yScale = (value: number) => padding + plotHeight - (value / 360) * plotHeight;
+  // Calculate max value for scaling
+  const maxSpeed = Math.max(...data.map(d => Math.max(d.windSpeed, d.windGusts)));
+  const yMax = Math.ceil(maxSpeed / 10) * 10 || 10;
+  
+  // Calculate bar width and spacing
+  const barGroupWidth = chartWidth / data.length;
+  const barWidth = Math.max(barGroupWidth * 0.35, 8); // Each bar takes 35% of group width
+  const barSpacing = barWidth * 0.2; // Small gap between speed and gust bars
+  
+  // Scale function
+  const scaleY = (value: number) => {
+    return chartHeight - (value / yMax) * chartHeight;
+  };
   
   return (
     <Svg width={width} height={height}>
-      <Line
-        x1={padding}
-        y1={padding}
-        x2={padding}
-        y2={height - padding}
-        stroke={colors.divider}
-        strokeWidth="2"
-      />
-      <Line
-        x1={padding}
-        y1={height - padding}
-        x2={width - padding}
-        y2={height - padding}
-        stroke={colors.divider}
-        strokeWidth="2"
-      />
-      
-      {[0, 90, 180, 270, 360].map((deg) => (
-        <Line
-          key={deg}
-          x1={padding}
-          y1={yScale(deg)}
-          x2={width - padding}
-          y2={yScale(deg)}
-          stroke={colors.divider}
-          strokeWidth="1"
-          strokeDasharray="4,4"
-          opacity={0.3}
-        />
-      ))}
-      
-      {data.map((point, index) => {
-        const x = xScale(index);
-        const y = yScale(point.windDirection);
-        const arrowSize = 16;
-        
-        return (
-          <Svg key={index} x={x - arrowSize / 2} y={y - arrowSize / 2}>
-            <Polygon
-              points={`${arrowSize / 2},0 ${arrowSize},${arrowSize} ${arrowSize / 2},${arrowSize * 0.7} 0,${arrowSize}`}
-              fill={colors.wind}
-              rotation={point.windDirection}
-              origin={`${arrowSize / 2}, ${arrowSize / 2}`}
-              opacity={0.7}
+      <G transform={`translate(${padding.left}, ${padding.top})`}>
+        {/* Grid lines */}
+        {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+          const y = chartHeight * (1 - ratio);
+          return (
+            <Line
+              key={ratio}
+              x1={0}
+              y1={y}
+              x2={chartWidth}
+              y2={y}
+              stroke={colors.divider}
+              strokeWidth="1"
+              opacity={0.3}
             />
-          </Svg>
-        );
-      })}
+          );
+        })}
+        
+        {/* Bars */}
+        {data.map((d, index) => {
+          const groupX = index * barGroupWidth;
+          const centerX = groupX + barGroupWidth / 2;
+          
+          // Wind speed bar (left)
+          const speedBarX = centerX - barWidth - barSpacing / 2;
+          const speedBarHeight = chartHeight - scaleY(d.windSpeed);
+          const speedBarY = scaleY(d.windSpeed);
+          
+          // Wind gust bar (right)
+          const gustBarX = centerX + barSpacing / 2;
+          const gustBarHeight = chartHeight - scaleY(d.windGusts);
+          const gustBarY = scaleY(d.windGusts);
+          
+          return (
+            <G key={index}>
+              {/* Wind Speed Bar */}
+              <Rect
+                x={speedBarX}
+                y={speedBarY}
+                width={barWidth}
+                height={speedBarHeight}
+                fill={colors.wind}
+                rx={2}
+              />
+              
+              {/* Wind Gust Bar */}
+              <Rect
+                x={gustBarX}
+                y={gustBarY}
+                width={barWidth}
+                height={gustBarHeight}
+                fill={colors.windGust}
+                rx={2}
+              />
+            </G>
+          );
+        })}
+      </G>
     </Svg>
   );
 });
 
-WindDirectionScatterPlot.displayName = 'WindDirectionScatterPlot';
+CustomBarChart.displayName = 'CustomBarChart';
+
+const YAxisLabels = memo(({ 
+  maxValue, 
+  height, 
+  colors 
+}: { 
+  maxValue: number; 
+  height: number; 
+  colors: any;
+}) => {
+  const labels = [0, 0.25, 0.5, 0.75, 1].map(ratio => Math.round(maxValue * ratio));
+  const padding = { top: 10, bottom: 10 };
+  const chartHeight = height - padding.top - padding.bottom;
+  
+  return (
+    <View style={{ height, justifyContent: 'space-between', paddingVertical: padding.top }}>
+      {labels.reverse().map((label, index) => (
+        <Text 
+          key={index} 
+          style={[styles.yAxisLabel, { color: colors.textMuted, textAlign: 'right' }]}
+        >
+          {label}
+        </Text>
+      ))}
+    </View>
+  );
+});
+
+YAxisLabels.displayName = 'YAxisLabels';
+
+const XAxisLabels = memo(({ 
+  data, 
+  colors 
+}: { 
+  data: HourlyData[];
+  colors: any;
+}) => {
+  return (
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4 }}>
+      {data.map((d, index) => {
+        const label = formatTimeLabel(d.time, index, data.length);
+        if (!label) return <View key={index} style={{ flex: 1 }} />;
+        
+        return (
+          <View key={index} style={{ flex: 1, alignItems: 'center' }}>
+            <Text style={[styles.xAxisLabel, { color: colors.textMuted }]}>
+              {label}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+});
+
+XAxisLabels.displayName = 'XAxisLabels';
 
 function WindBarGraphs({ hourlyData, unit }: Props) {
   const { isDark } = useTheme();
   const colors = getColors(isDark);
   const dynamicStyles = getStyles(colors);
 
-  const validData = hourlyData.map(h => ({
+  // Take first 24 hours for cleaner display
+  const displayData = hourlyData.slice(0, 24);
+
+  const validData = displayData.map(h => ({
     time: h.time,
     windSpeed: validateWindSpeed(h.windSpeed, unit),
     windDirection: validateWindDirection(h.windDirection),
@@ -280,19 +380,10 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
   const speedData = validData.map(d => d.windSpeed);
   const gustData = validData.map(d => d.windGusts);
   const maxSpeed = Math.max(...speedData, ...gustData);
+  const yMax = Math.ceil(maxSpeed / 10) * 10 || 10;
   const speedUnit = unit === 'metric' ? 'km/h' : 'mph';
 
-  const generateSpeedYAxisLabels = () => {
-    const max = Math.ceil(maxSpeed / 10) * 10;
-    const step = max / 4;
-    return [0, step, step * 2, step * 3, max];
-  };
-
-  const generateTimeLabels = () => {
-    return validData.map((d, i) => formatTimeLabel(d.time, i, validData.length));
-  };
-
-  console.log('WindBarGraphs: Rendering with', validData.length, 'data points');
+  console.log('WindBarGraphs: Rendering with', validData.length, 'data points, max speed:', maxSpeed);
 
   return (
     <View style={dynamicStyles.card}>
@@ -302,47 +393,26 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
       </Text>
 
       <View style={styles.chartContainer}>
-        <Text style={dynamicStyles.chartTitle}>Wind Speed & Gusts</Text>
+        <Text style={dynamicStyles.chartTitle}>Wind Speed & Gusts ({speedUnit})</Text>
         
         <View style={styles.chartRow}>
           <View style={styles.yAxisContainer}>
-            <YAxis
-              data={speedData}
-              contentInset={{ top: 10, bottom: 10 }}
-              svg={{ fontSize: 10, fill: colors.textMuted }}
-              numberOfTicks={5}
-              formatLabel={(value) => `${Math.round(value)}`}
-            />
+            <YAxisLabels maxValue={yMax} height={220} colors={colors} />
           </View>
           
           <View style={styles.chartContent}>
-            <BarChart
-              style={{ flex: 1 }}
-              data={speedData}
-              svg={{ fill: colors.wind }}
-              contentInset={{ top: 10, bottom: 10 }}
-              yAccessor={({ item }) => item}
-            >
-            </BarChart>
-            <BarChart
-              style={{ flex: 1, position: 'absolute', width: '100%', height: '100%' }}
-              data={gustData}
-              svg={{ fill: colors.windGust, opacity: 0.6 }}
-              contentInset={{ top: 10, bottom: 10 }}
-              yAccessor={({ item }) => item}
-            >
-            </BarChart>
+            <CustomBarChart
+              data={validData}
+              width={280}
+              height={220}
+              colors={colors}
+              unit={unit}
+            />
           </View>
         </View>
 
         <View style={styles.xAxisContainer}>
-          <XAxis
-            style={{ flex: 1 }}
-            data={validData}
-            formatLabel={(value, index) => generateTimeLabels()[index]}
-            contentInset={{ left: 10, right: 10 }}
-            svg={{ fontSize: 10, fill: colors.textMuted }}
-          />
+          <XAxisLabels data={validData} colors={colors} />
         </View>
 
         <View style={styles.legendContainer}>
@@ -351,7 +421,7 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
             <Text style={dynamicStyles.legendText}>Wind Speed</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: colors.windGust, opacity: 0.6 }]} />
+            <View style={[styles.legendColor, { backgroundColor: colors.windGust }]} />
             <Text style={dynamicStyles.legendText}>Wind Gusts</Text>
           </View>
         </View>
