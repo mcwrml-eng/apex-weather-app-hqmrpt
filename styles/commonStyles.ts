@@ -75,6 +75,7 @@ const lightColors = {
   wind: '#0EA5E9', // Sky Blue
   windLight: '#38BDF8',
   windDark: '#0284C7',
+  windGust: '#F97316', // Orange - matches radar gust chart
   humidity: '#06B6D4', // Cyan
   humidityLight: '#22D3EE',
   humidityDark: '#0891B2',
@@ -216,6 +217,7 @@ const darkColors = {
   wind: '#38BDF8', // Brighter Sky Blue
   windLight: '#7DD3FC',
   windDark: '#0EA5E9',
+  windGust: '#FB923C', // Orange - matches radar gust chart
   humidity: '#22D3EE', // Brighter Cyan
   humidityLight: '#67E8F9',
   humidityDark: '#06B6D4',
