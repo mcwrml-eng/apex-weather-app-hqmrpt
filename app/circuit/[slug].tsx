@@ -1102,7 +1102,7 @@ function DetailScreen() {
                     </View>
                     
                     <Text style={styles.forecast72Subtitle}>
-                      Next 3 days • {forecast72Hours.length} hours of data
+                      Next 3 days
                     </Text>
 
                     {/* Temperature Chart Preview */}
@@ -1180,7 +1180,7 @@ function DetailScreen() {
                       </View>
                     </View>
                     <Text style={styles.windAnimationSubtitle}>
-                      Real-time wind visualization with map underlay showing speed and direction
+                      Real-time wind visualisation
                     </Text>
                     
                     <View style={styles.windAnimationContainer}>

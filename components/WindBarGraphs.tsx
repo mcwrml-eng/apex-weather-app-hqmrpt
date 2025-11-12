@@ -1,11 +1,11 @@
 
-import React, { memo } from 'react';
+import { useTheme } from '../state/ThemeContext';
+import { validateWindSpeed, validateWindDirection } from '../hooks/useWeather';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { BarChart, YAxis, XAxis } from 'react-native-svg-charts';
 import Svg, { Polygon, Line, Circle } from 'react-native-svg';
 import { getColors } from '../styles/commonStyles';
-import { validateWindSpeed, validateWindDirection } from '../hooks/useWeather';
-import { useTheme } from '../state/ThemeContext';
+import React, { memo } from 'react';
+import { BarChart, YAxis, XAxis } from 'react-native-svg-charts';
 
 interface HourlyData {
   time: string;
@@ -19,648 +19,20 @@ interface Props {
   unit: 'metric' | 'imperial';
 }
 
-function formatHour(timeString: string): string {
-  const date = new Date(timeString);
-  return date.toLocaleTimeString([], { 
-    hour: 'numeric', 
-    hour12: false 
-  });
-}
-
-// Enhanced time formatting for 3-hour intervals on 24-hour day
-function formatTimeLabel(timeString: string, index: number, totalPoints: number): string {
-  const date = new Date(timeString);
-  const hour = date.getHours();
-  
-  // For 24-hour display with 3-hour intervals, show: 0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h
-  return `${hour.toString().padStart(2, '0')}h`;
-}
-
-function getWindDirectionLabel(degrees: number): string {
-  const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-  const normalizedDegrees = ((degrees % 360) + 360) % 360; // Ensure positive
-  const index = Math.round(normalizedDegrees / 22.5) % 16;
-  return directions[index];
-}
-
-// Enhanced Wind direction arrow component with better accuracy
-function WindDirectionArrow({ direction, size = 20, colors }: { direction: number; size?: number; colors: any }) {
-  // Validate and normalize direction
-  const normalizedDirection = validateWindDirection(direction);
-  
-  // Adjust rotation so arrow points in the direction wind is blowing TO
-  // Add 180 degrees to convert from "coming from" to "blowing to"
-  const rotation = (normalizedDirection + 180) % 360;
-  const arrowSize = size;
-  const center = arrowSize / 2;
-  
-  // Create more accurate arrow shape points (pointing upward initially)
-  const arrowPoints = [
-    `${center},2`,           // Top point
-    `${arrowSize - 3},${arrowSize - 3}`, // Bottom right
-    `${center},${arrowSize - 6}`,        // Bottom center (shaft)
-    `3,${arrowSize - 3}`     // Bottom left
-  ].join(' ');
-  
-  return (
-    <View style={[styles.arrowWrapper, { width: arrowSize, height: arrowSize }]}>
-      <Svg 
-        width={arrowSize} 
-        height={arrowSize} 
-        style={{ 
-          transform: [{ rotate: `${rotation}deg` }],
-        }}
-        viewBox={`0 0 ${arrowSize} ${arrowSize}`}
-      >
-        {/* Arrow body */}
-        <Polygon
-          points={arrowPoints}
-          fill={colors.primary}
-          stroke={colors.primary}
-          strokeWidth="1"
-        />
-        {/* Arrow shaft line for better visibility */}
-        <Line
-          x1={center}
-          y1={4}
-          x2={center}
-          y2={arrowSize - 4}
-          stroke={colors.primary}
-          strokeWidth="2"
-        />
-      </Svg>
-    </View>
-  );
-}
-
-// Custom Scatter Plot Component for Wind Direction
-function WindDirectionScatterPlot({ data, width, height, colors }: { data: any[], width: number, height: number, colors: any }) {
-  console.log('WindDirectionScatterPlot: Rendering scatter plot with', data.length, 'points');
-  
-  const margin = { top: 20, right: 20, bottom: 20, left: 20 };
-  const chartWidth = width - margin.left - margin.right;
-  const chartHeight = height - margin.top - margin.bottom;
-  
-  // Calculate scales
-  const xScale = (index: number) => (index / (data.length - 1)) * chartWidth + margin.left;
-  const yScale = (value: number) => chartHeight - ((value / 360) * chartHeight) + margin.top;
-  
-  return (
-    <Svg width={width} height={height}>
-      {/* Grid lines for better readability */}
-      {[0, 90, 180, 270, 360].map((value) => (
-        <Line
-          key={value}
-          x1={margin.left}
-          y1={yScale(value)}
-          x2={width - margin.right}
-          y2={yScale(value)}
-          stroke={colors.divider}
-          strokeWidth="1"
-          strokeOpacity="0.3"
-        />
-      ))}
-      
-      {/* Vertical grid lines */}
-      {data.map((_, index) => {
-        if (index % 3 === 0) { // Show grid lines every 3 hours
-          return (
-            <Line
-              key={index}
-              x1={xScale(index)}
-              y1={margin.top}
-              x2={xScale(index)}
-              y2={height - margin.bottom}
-              stroke={colors.divider}
-              strokeWidth="1"
-              strokeOpacity="0.2"
-            />
-          );
-        }
-        return null;
-      })}
-      
-      {/* Scatter plot points */}
-      {data.map((point, index) => (
-        <Circle
-          key={index}
-          cx={xScale(index)}
-          cy={yScale(point.value)}
-          r="4"
-          fill={colors.text}
-          fillOpacity="0.8"
-          stroke={colors.primary}
-          strokeWidth="1"
-        />
-      ))}
-      
-      {/* Connect points with a line for trend visibility */}
-      {data.length > 1 && (
-        <Line
-          x1={xScale(0)}
-          y1={yScale(data[0].value)}
-          x2={xScale(data.length - 1)}
-          y2={yScale(data[data.length - 1].value)}
-          stroke={colors.textMuted}
-          strokeWidth="1"
-          strokeOpacity="0.4"
-          strokeDasharray="5,5"
-        />
-      )}
-    </Svg>
-  );
-}
-
-function WindBarGraphs({ hourlyData, unit }: Props) {
-  const { isDark } = useTheme();
-  const colors = getColors(isDark);
-  const styles = getStyles(colors);
-  
-  console.log('WindBarGraphs: Rendering accurate wind data for', hourlyData.length, 'hours, unit:', unit);
-
-  if (!hourlyData || hourlyData.length === 0) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.noDataText}>No wind data available</Text>
-      </View>
-    );
-  }
-
-  // Use the first 24 hours of data and validate all values
-  const displayData = hourlyData.slice(0, 24).map(hour => ({
-    ...hour,
-    windSpeed: validateWindSpeed(hour.windSpeed, unit),
-    windGusts: validateWindSpeed(hour.windGusts, unit),
-    windDirection: validateWindDirection(hour.windDirection),
-  }));
-
-  console.log('WindBarGraphs: Sample wind data after validation:', displayData.slice(0, 3).map(h => ({
-    time: h.time,
-    windSpeed: h.windSpeed,
-    windGusts: h.windGusts,
-    windDirection: h.windDirection
-  })));
-
-  if (displayData.length === 0) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.noDataText}>No valid wind data available for display</Text>
-      </View>
-    );
-  }
-
-  // Extract and validate wind data with enhanced accuracy
-  const windSpeedData = displayData.map((hour, index) => {
-    const speed = hour.windSpeed;
-    return { value: speed, index, hour };
-  });
-  
-  const windGustData = displayData.map((hour, index) => {
-    const gusts = hour.windGusts;
-    return { value: gusts, index, hour };
-  });
-  
-  const windDirectionData = displayData.map((hour, index) => {
-    const direction = hour.windDirection;
-    return { value: direction, index, hour };
-  });
-  
-  // Enhanced scale calculations with better accuracy
-  const allWindSpeeds = windSpeedData.map(d => d.value);
-  const allWindGusts = windGustData.map(d => d.value);
-  const allWindValues = [...allWindSpeeds, ...allWindGusts];
-  
-  console.log('WindBarGraphs: Wind speed values:', allWindSpeeds.slice(0, 5));
-  console.log('WindBarGraphs: Wind gust values:', allWindGusts.slice(0, 5));
-  console.log('WindBarGraphs: All wind values range:', Math.min(...allWindValues), 'to', Math.max(...allWindValues));
-  
-  const minWind = Math.min(...allWindValues);
-  const maxWind = Math.max(...allWindValues);
-  const avgWindSpeed = allWindSpeeds.reduce((sum, val) => sum + val, 0) / allWindSpeeds.length;
-  const avgWindGusts = allWindGusts.reduce((sum, val) => sum + val, 0) / allWindGusts.length;
-  
-  // Calculate intelligent scale with proper padding
-  const range = maxWind - minWind;
-  const padding = Math.max(range * 0.1, 2); // Minimum 2 unit padding
-  const chartMin = Math.max(0, minWind - padding);
-  const chartMax = maxWind + padding;
-  
-  const speedUnit = unit === 'metric' ? 'km/h' : 'mph';
-
-  // Generate accurate Y-axis labels for wind speed
-  const generateSpeedYAxisLabels = () => {
-    const range = chartMax - chartMin;
-    const stepCount = 6;
-    const step = range / (stepCount - 1);
-    
-    return Array.from({ length: stepCount }, (_, i) => {
-      const value = chartMin + (step * i);
-      return Math.round(value * 10) / 10; // Round to 1 decimal place
-    });
-  };
-
-  const speedYAxisLabels = generateSpeedYAxisLabels();
-
-  // Generate time labels at 3-hour intervals for 24-hour day
-  const generateTimeLabels = () => {
-    const totalPoints = displayData.length;
-    console.log('WindBarGraphs: Generating 3-hour interval labels for', totalPoints, 'data points');
-    
-    // For 24-hour period, we want labels at 3-hour intervals: 0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h
-    const targetHours = [0, 3, 6, 9, 12, 15, 18, 21];
-    
-    return displayData.map((hour, index) => {
-      const date = new Date(hour.time);
-      const hourValue = date.getHours();
-      
-      // Show label if this hour matches one of our target 3-hour intervals
-      if (targetHours.includes(hourValue)) {
-        return formatTimeLabel(hour.time, index, totalPoints);
-      }
-      return '';
-    });
-  };
-
-  const timeLabels = generateTimeLabels();
-
-  // Prepare data for BarChart - it expects simple number arrays
-  const windSpeedValues = windSpeedData.map(d => d.value);
-  const windGustValues = windGustData.map(d => d.value);
-  const windDirectionValues = windDirectionData.map(d => d.value);
-
-  console.log('WindBarGraphs: Final chart data - Speed values:', windSpeedValues.slice(0, 5));
-  console.log('WindBarGraphs: Final chart data - Gust values:', windGustValues.slice(0, 5));
-  console.log('WindBarGraphs: Chart scale - min:', chartMin, 'max:', chartMax);
-
-  // Calculate wind statistics for enhanced accuracy
-  const maxSpeedIndex = windSpeedValues.indexOf(Math.max(...windSpeedValues));
-  const maxGustIndex = windGustValues.indexOf(Math.max(...windGustValues));
-  const minSpeedIndex = windSpeedValues.indexOf(Math.min(...windSpeedValues));
-  
-  const gustFactor = avgWindSpeed > 0 ? avgWindGusts / avgWindSpeed : 1;
-  
-  // Calculate wind variability (standard deviation)
-  const speedVariance = windSpeedValues.reduce((sum, val) => sum + Math.pow(val - avgWindSpeed, 2), 0) / windSpeedValues.length;
-  const speedStdDev = Math.sqrt(speedVariance);
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Enhanced Wind Analysis</Text>
-      <Text style={styles.subtitle}>Separate charts for wind speed and gusts with accurate 24-hour analysis and 3-hour interval time scales</Text>
-      
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Enhanced Wind Speed Chart */}
-        <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>Wind Speed ({speedUnit})</Text>
-          <Text style={styles.chartSubtitle}>
-            Average: {avgWindSpeed.toFixed(1)} {speedUnit} | Peak: {Math.max(...windSpeedValues).toFixed(1)} {speedUnit} | Variability: ±{speedStdDev.toFixed(1)} {speedUnit}
-          </Text>
-          <View style={styles.chartWrapper}>
-            <YAxis
-              data={speedYAxisLabels}
-              contentInset={{ top: 20, bottom: 20 }}
-              svg={{
-                fill: colors.textMuted,
-                fontSize: 10,
-                fontFamily: 'Roboto_400Regular',
-              }}
-              numberOfTicks={speedYAxisLabels.length}
-              formatLabel={(value) => `${value.toFixed(1)}`}
-              style={styles.yAxis}
-              min={chartMin}
-              max={chartMax}
-            />
-            <View style={styles.chartContent}>
-              {/* Wind Speed Bars */}
-              <BarChart
-                style={[styles.chart]}
-                data={windSpeedValues}
-                svg={{ fill: colors.wind, fillOpacity: 0.8 }}
-                contentInset={{ top: 20, bottom: 20 }}
-                spacingInner={0.2}
-                spacingOuter={0.1}
-                yMax={chartMax}
-                yMin={chartMin}
-              />
-            </View>
-          </View>
-          
-          {/* Enhanced X-axis with 3-hour interval time scales */}
-          <View style={styles.xAxisContainer}>
-            <View style={styles.xAxisLabelsContainer}>
-              {timeLabels.map((label, index) => (
-                <View key={index} style={[
-                  styles.xAxisLabelWrapper,
-                  { flex: 1 }
-                ]}>
-                  <Text style={[
-                    styles.xAxisLabel,
-                    { 
-                      opacity: label ? 1 : 0,
-                      fontSize: 10,
-                      fontWeight: label ? '500' : '400'
-                    }
-                  ]}>
-                    {label}
-                  </Text>
-                </View>
-              ))}
-            </View>
-            <Text style={styles.xAxisTitle}>Time Scale (3-hour intervals)</Text>
-          </View>
-          
-          <View style={styles.legendContainer}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendColor, { backgroundColor: colors.wind }]} />
-              <Text style={styles.legendText}>Wind Speed</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Enhanced Wind Gusts Chart - Separate Chart */}
-        <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>Wind Gusts ({speedUnit})</Text>
-          <Text style={styles.chartSubtitle}>
-            Average: {avgWindGusts.toFixed(1)} {speedUnit} | Peak: {Math.max(...windGustValues).toFixed(1)} {speedUnit} | Gust Factor: {gustFactor.toFixed(2)}x
-          </Text>
-          <View style={styles.chartWrapper}>
-            <YAxis
-              data={speedYAxisLabels}
-              contentInset={{ top: 20, bottom: 20 }}
-              svg={{
-                fill: colors.textMuted,
-                fontSize: 10,
-                fontFamily: 'Roboto_400Regular',
-              }}
-              numberOfTicks={speedYAxisLabels.length}
-              formatLabel={(value) => `${value.toFixed(1)}`}
-              style={styles.yAxis}
-              min={chartMin}
-              max={chartMax}
-            />
-            <View style={styles.chartContent}>
-              {/* Wind Gust Bars */}
-              <BarChart
-                style={[styles.chart]}
-                data={windGustValues}
-                svg={{ fill: colors.accent, fillOpacity: 0.8 }}
-                contentInset={{ top: 20, bottom: 20 }}
-                spacingInner={0.2}
-                spacingOuter={0.1}
-                yMax={chartMax}
-                yMin={chartMin}
-              />
-            </View>
-          </View>
-          
-          {/* Enhanced X-axis with 3-hour interval time scales for gusts */}
-          <View style={styles.xAxisContainer}>
-            <View style={styles.xAxisLabelsContainer}>
-              {timeLabels.map((label, index) => (
-                <View key={index} style={[
-                  styles.xAxisLabelWrapper,
-                  { flex: 1 }
-                ]}>
-                  <Text style={[
-                    styles.xAxisLabel,
-                    { 
-                      opacity: label ? 1 : 0,
-                      fontSize: 10,
-                      fontWeight: label ? '500' : '400'
-                    }
-                  ]}>
-                    {label}
-                  </Text>
-                </View>
-              ))}
-            </View>
-            <Text style={styles.xAxisTitle}>Time Scale (3-hour intervals)</Text>
-          </View>
-          
-          <View style={styles.legendContainer}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendColor, { backgroundColor: colors.accent }]} />
-              <Text style={styles.legendText}>Wind Gusts</Text>
-            </View>
-          </View>
-          
-          <View style={styles.chartStats}>
-            <Text style={styles.statText}>
-              Peak Gust: {Math.max(...windGustValues).toFixed(1)} {speedUnit}
-            </Text>
-            <Text style={styles.statText}>
-              Gust Factor: {gustFactor.toFixed(2)}x
-            </Text>
-            <Text style={styles.statText}>
-              Consistency: {speedStdDev < 2 ? 'Stable' : 'Variable'}
-            </Text>
-          </View>
-        </View>
-
-        {/* Enhanced Wind Direction Scatter Plot Chart */}
-        <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>Wind Direction Analysis (Degrees) - Scatter Plot</Text>
-          <Text style={styles.chartSubtitle}>
-            0°=North, 90°=East, 180°=South, 270°=West | Scatter plot shows direction trends over time
-          </Text>
-          <View style={styles.chartWrapper}>
-            <YAxis
-              data={[0, 90, 180, 270, 360]}
-              contentInset={{ top: 20, bottom: 20 }}
-              svg={{
-                fill: colors.textMuted,
-                fontSize: 10,
-                fontFamily: 'Roboto_400Regular',
-              }}
-              numberOfTicks={5}
-              formatLabel={(value) => `${Math.round(value)}°`}
-              style={styles.yAxis}
-              min={0}
-              max={360}
-            />
-            <View style={styles.chartContent}>
-              <WindDirectionScatterPlot 
-                data={windDirectionData}
-                width={300}
-                height={200}
-                colors={colors}
-              />
-            </View>
-          </View>
-          
-          {/* Enhanced X-axis with 3-hour interval time scales for direction */}
-          <View style={styles.xAxisContainer}>
-            <View style={styles.xAxisLabelsContainer}>
-              {timeLabels.map((label, index) => (
-                <View key={index} style={[
-                  styles.xAxisLabelWrapper,
-                  { flex: 1 }
-                ]}>
-                  <Text style={[
-                    styles.xAxisLabel,
-                    { 
-                      opacity: label ? 1 : 0,
-                      fontSize: 10,
-                      fontWeight: label ? '500' : '400'
-                    }
-                  ]}>
-                    {label}
-                  </Text>
-                </View>
-              ))}
-            </View>
-            <Text style={styles.xAxisTitle}>Time Scale (3-hour intervals)</Text>
-          </View>
-          
-          <View style={styles.legendContainer}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendColor, { backgroundColor: colors.text }]} />
-              <Text style={styles.legendText}>Wind Direction Points</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendColor, { backgroundColor: colors.primary }]} />
-              <Text style={styles.legendText}>Point Outline</Text>
-            </View>
-          </View>
-          
-          {/* Enhanced Wind Direction Arrows with 3-hour interval spacing */}
-          <View style={styles.arrowSection}>
-            <Text style={styles.arrowSectionTitle}>Accurate Wind Direction Arrows</Text>
-            <Text style={styles.arrowSectionSubtitle}>Arrows point in the direction wind is blowing TO (3-hour intervals)</Text>
-            <View style={styles.arrowContainer}>
-              {displayData.map((hour, index) => {
-                // Show arrows with same frequency as time labels (3-hour intervals)
-                const shouldShow = timeLabels[index] !== '';
-                return (
-                  <View key={index} style={[
-                    styles.arrowItem,
-                    { flex: 1 }
-                  ]}>
-                    {shouldShow && <WindDirectionArrow direction={hour.windDirection} size={24} colors={colors} />}
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-          
-          {/* Enhanced Compass Direction Labels with 3-hour interval spacing */}
-          <View style={styles.directionLabels}>
-            {displayData.map((hour, index) => {
-              const shouldShow = timeLabels[index] !== '';
-              return (
-                <View key={index} style={[
-                  styles.directionLabelContainer,
-                  { flex: 1 }
-                ]}>
-                  {shouldShow && (
-                    <>
-                      <Text style={styles.directionLabel}>
-                        {getWindDirectionLabel(hour.windDirection)}
-                      </Text>
-                      <Text style={styles.directionDegrees}>
-                        {Math.round(hour.windDirection)}°
-                      </Text>
-                    </>
-                  )}
-                </View>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* Enhanced Wind Summary with Accuracy Metrics */}
-        <View style={styles.summaryContainer}>
-          <Text style={styles.summaryTitle}>Detailed Wind Analysis Summary</Text>
-          <View style={styles.summaryGrid}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Strongest Wind</Text>
-              <Text style={styles.summaryValue}>
-                {Math.max(...windSpeedValues).toFixed(1)} {speedUnit}
-              </Text>
-              <Text style={styles.summaryTime}>
-                at {formatHour(displayData[maxSpeedIndex].time)}
-              </Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Strongest Gust</Text>
-              <Text style={styles.summaryValue}>
-                {Math.max(...windGustValues).toFixed(1)} {speedUnit}
-              </Text>
-              <Text style={styles.summaryTime}>
-                at {formatHour(displayData[maxGustIndex].time)}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.summaryGrid}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Calmest Period</Text>
-              <Text style={styles.summaryValue}>
-                {Math.min(...windSpeedValues).toFixed(1)} {speedUnit}
-              </Text>
-              <Text style={styles.summaryTime}>
-                at {formatHour(displayData[minSpeedIndex].time)}
-              </Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Wind Consistency</Text>
-              <Text style={styles.summaryValue}>
-                {speedStdDev < 2 ? 'Very Stable' : speedStdDev < 5 ? 'Stable' : speedStdDev < 10 ? 'Variable' : 'Highly Variable'}
-              </Text>
-              <Text style={styles.summaryTime}>
-                ±{speedStdDev.toFixed(1)} {speedUnit}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.summaryGrid}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Avg Gust Factor</Text>
-              <Text style={styles.summaryValue}>
-                {gustFactor.toFixed(2)}x
-              </Text>
-              <Text style={styles.summaryTime}>
-                gusts vs wind speed
-              </Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Direction Range</Text>
-              <Text style={styles.summaryValue}>
-                {Math.round(Math.max(...windDirectionValues) - Math.min(...windDirectionValues))}°
-              </Text>
-              <Text style={styles.summaryTime}>
-                variation span
-              </Text>
-            </View>
-          </View>
-        </View>
-      </ScrollView>
-    </View>
-  );
-}
-
-export default memo(WindBarGraphs);
-
-const getStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  title: {
+  sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: colors.text,
+    marginBottom: 12,
     fontFamily: 'Roboto_700Bold',
-    marginBottom: 4,
   },
-  subtitle: {
+  sectionSubtitle: {
     fontSize: 14,
-    color: colors.textMuted,
+    marginBottom: 12,
     fontFamily: 'Roboto_400Regular',
-    marginBottom: 20,
   },
   chartContainer: {
     marginBottom: 24,
@@ -668,68 +40,29 @@ const getStyles = (colors: any) => StyleSheet.create({
   chartTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    marginBottom: 4,
+    marginBottom: 8,
+    fontFamily: 'Roboto_600SemiBold',
   },
-  chartSubtitle: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginBottom: 12,
-    lineHeight: 16,
-  },
-  chartWrapper: {
+  chartRow: {
     flexDirection: 'row',
     height: 200,
     marginBottom: 8,
   },
-  yAxis: {
-    width: 45,
+  yAxisContainer: {
+    width: 50,
   },
   chartContent: {
     flex: 1,
-    position: 'relative',
-  },
-  chart: {
-    flex: 1,
   },
   xAxisContainer: {
-    marginTop: 8,
-    paddingLeft: 45, // Account for Y-axis width
-  },
-  xAxisLabelsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-    minHeight: 16,
-  },
-  xAxisLabelWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 1,
-  },
-  xAxisLabel: {
-    fontSize: 10,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    textAlign: 'center',
-    lineHeight: 12,
-  },
-  xAxisTitle: {
-    fontSize: 11,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_500Medium',
-    textAlign: 'center',
-    marginTop: 4,
-    fontWeight: '500',
+    height: 30,
+    marginLeft: 50,
   },
   legendContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 20,
-    marginBottom: 8,
+    marginTop: 8,
+    gap: 16,
   },
   legendItem: {
     flexDirection: 'row',
@@ -743,150 +76,315 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    color: colors.text,
     fontFamily: 'Roboto_400Regular',
   },
-  chartStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 8,
+  directionContainer: {
+    marginTop: 16,
   },
-  statText: {
-    fontSize: 12,
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    textAlign: 'center',
-  },
-  arrowSection: {
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  arrowSectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  arrowSectionSubtitle: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  arrowContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    minHeight: 32,
-    alignItems: 'center',
-  },
-  arrowItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 32,
-  },
-  arrowWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(225, 6, 0, 0.1)',
-    borderRadius: 12,
-    padding: 2,
-  },
-  directionLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    marginTop: 8,
-  },
-  directionLabelContainer: {
-    alignItems: 'center',
-  },
-  directionLabel: {
-    fontSize: 11,
-    color: colors.primary,
-    fontFamily: 'Roboto_500Medium',
-    textAlign: 'center',
-    marginBottom: 2,
-  },
-  directionDegrees: {
-    fontSize: 9,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    textAlign: 'center',
-  },
-  summaryContainer: {
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 8,
-  },
-  summaryTitle: {
+  directionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'Roboto_500Medium',
     marginBottom: 12,
+    fontFamily: 'Roboto_600SemiBold',
   },
-  summaryGrid: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 12,
-  },
-  summaryItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  summaryValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    fontFamily: 'Roboto_700Bold',
-    marginBottom: 2,
-    textAlign: 'center',
-  },
-  summaryTime: {
-    fontSize: 10,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    textAlign: 'center',
-  },
-  summaryNote: {
-    fontSize: 11,
-    color: colors.textMuted,
-    fontFamily: 'Roboto_400Regular',
-    textAlign: 'center',
-    fontStyle: 'italic',
-    lineHeight: 16,
-    marginTop: 8,
-  },
-  noDataText: {
+  directionSubtitle: {
     fontSize: 14,
-    color: colors.textMuted,
+    marginBottom: 12,
     fontFamily: 'Roboto_400Regular',
-    textAlign: 'center',
-    padding: 20,
   },
 });
 
-const styles = StyleSheet.create({
-  arrowWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+function formatHour(timeString: string): string {
+  try {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString([], { hour: 'numeric' });
+  } catch (err) {
+    console.error('WindBarGraphs: Error formatting hour:', err);
+    return '';
+  }
+}
+
+function formatTimeLabel(timeString: string, index: number, totalPoints: number): string {
+  try {
+    if (totalPoints <= 24) {
+      if (index % 3 === 0) {
+        return formatHour(timeString);
+      }
+    } else if (totalPoints <= 48) {
+      if (index % 6 === 0) {
+        return formatHour(timeString);
+      }
+    } else {
+      if (index % 12 === 0) {
+        return formatHour(timeString);
+      }
+    }
+    return '';
+  } catch (err) {
+    console.error('WindBarGraphs: Error formatting time label:', err);
+    return '';
+  }
+}
+
+function getWindDirectionLabel(degrees: number): string {
+  const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+  const index = Math.round(degrees / 22.5) % 16;
+  return directions[index];
+}
+
+function getStyles(colors: any) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: 14,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      boxShadow: colors.shadows?.md || '0px 2px 4px rgba(0,0,0,0.1)',
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 8,
+      fontFamily: 'Roboto_700Bold',
+    },
+    sectionSubtitle: {
+      fontSize: 14,
+      color: colors.textMuted,
+      marginBottom: 12,
+      fontFamily: 'Roboto_400Regular',
+    },
+    chartTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 8,
+      fontFamily: 'Roboto_600SemiBold',
+    },
+    legendText: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+    },
+    directionTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 8,
+      fontFamily: 'Roboto_600SemiBold',
+    },
+    directionSubtitle: {
+      fontSize: 14,
+      color: colors.textMuted,
+      marginBottom: 12,
+      fontFamily: 'Roboto_400Regular',
+    },
+  });
+}
+
+const WindDirectionArrow = memo(({ direction, size = 20, colors }: { direction: number; size?: number; colors: any }) => {
+  const rotation = direction;
+  
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Polygon
+        points="12,2 16,10 12,8 8,10"
+        fill={colors.wind}
+        rotation={rotation}
+        origin="12, 12"
+      />
+      <Circle cx="12" cy="12" r="2" fill={colors.wind} opacity={0.5} />
+    </Svg>
+  );
 });
+
+WindDirectionArrow.displayName = 'WindDirectionArrow';
+
+const WindDirectionScatterPlot = memo(({ data, width, height, colors }: { data: any[], width: number, height: number, colors: any }) => {
+  const padding = 40;
+  const plotWidth = width - padding * 2;
+  const plotHeight = height - padding * 2;
+  
+  const xScale = (index: number) => padding + (index / (data.length - 1)) * plotWidth;
+  const yScale = (value: number) => padding + plotHeight - (value / 360) * plotHeight;
+  
+  return (
+    <Svg width={width} height={height}>
+      <Line
+        x1={padding}
+        y1={padding}
+        x2={padding}
+        y2={height - padding}
+        stroke={colors.divider}
+        strokeWidth="2"
+      />
+      <Line
+        x1={padding}
+        y1={height - padding}
+        x2={width - padding}
+        y2={height - padding}
+        stroke={colors.divider}
+        strokeWidth="2"
+      />
+      
+      {[0, 90, 180, 270, 360].map((deg) => (
+        <Line
+          key={deg}
+          x1={padding}
+          y1={yScale(deg)}
+          x2={width - padding}
+          y2={yScale(deg)}
+          stroke={colors.divider}
+          strokeWidth="1"
+          strokeDasharray="4,4"
+          opacity={0.3}
+        />
+      ))}
+      
+      {data.map((point, index) => {
+        const x = xScale(index);
+        const y = yScale(point.windDirection);
+        const arrowSize = 16;
+        
+        return (
+          <Svg key={index} x={x - arrowSize / 2} y={y - arrowSize / 2}>
+            <Polygon
+              points={`${arrowSize / 2},0 ${arrowSize},${arrowSize} ${arrowSize / 2},${arrowSize * 0.7} 0,${arrowSize}`}
+              fill={colors.wind}
+              rotation={point.windDirection}
+              origin={`${arrowSize / 2}, ${arrowSize / 2}`}
+              opacity={0.7}
+            />
+          </Svg>
+        );
+      })}
+    </Svg>
+  );
+});
+
+WindDirectionScatterPlot.displayName = 'WindDirectionScatterPlot';
+
+function WindBarGraphs({ hourlyData, unit }: Props) {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const dynamicStyles = getStyles(colors);
+
+  const validData = hourlyData.map(h => ({
+    time: h.time,
+    windSpeed: validateWindSpeed(h.windSpeed, unit),
+    windDirection: validateWindDirection(h.windDirection),
+    windGusts: validateWindSpeed(h.windGusts, unit),
+  }));
+
+  const speedData = validData.map(d => d.windSpeed);
+  const gustData = validData.map(d => d.windGusts);
+  const maxSpeed = Math.max(...speedData, ...gustData);
+  const speedUnit = unit === 'metric' ? 'km/h' : 'mph';
+
+  const generateSpeedYAxisLabels = () => {
+    const max = Math.ceil(maxSpeed / 10) * 10;
+    const step = max / 4;
+    return [0, step, step * 2, step * 3, max];
+  };
+
+  const generateTimeLabels = () => {
+    return validData.map((d, i) => formatTimeLabel(d.time, i, validData.length));
+  };
+
+  console.log('WindBarGraphs: Rendering with', validData.length, 'data points');
+
+  return (
+    <View style={dynamicStyles.card}>
+      <Text style={dynamicStyles.sectionTitle}>Enhanced Wind Analysis</Text>
+      <Text style={dynamicStyles.sectionSubtitle}>
+        24-hour wind speed and gust patterns
+      </Text>
+
+      <View style={styles.chartContainer}>
+        <Text style={dynamicStyles.chartTitle}>Wind Speed & Gusts</Text>
+        
+        <View style={styles.chartRow}>
+          <View style={styles.yAxisContainer}>
+            <YAxis
+              data={speedData}
+              contentInset={{ top: 10, bottom: 10 }}
+              svg={{ fontSize: 10, fill: colors.textMuted }}
+              numberOfTicks={5}
+              formatLabel={(value) => `${Math.round(value)}`}
+            />
+          </View>
+          
+          <View style={styles.chartContent}>
+            <BarChart
+              style={{ flex: 1 }}
+              data={speedData}
+              svg={{ fill: colors.wind }}
+              contentInset={{ top: 10, bottom: 10 }}
+              yAccessor={({ item }) => item}
+            >
+            </BarChart>
+            <BarChart
+              style={{ flex: 1, position: 'absolute', width: '100%', height: '100%' }}
+              data={gustData}
+              svg={{ fill: colors.windGust, opacity: 0.6 }}
+              contentInset={{ top: 10, bottom: 10 }}
+              yAccessor={({ item }) => item}
+            >
+            </BarChart>
+          </View>
+        </View>
+
+        <View style={styles.xAxisContainer}>
+          <XAxis
+            style={{ flex: 1 }}
+            data={validData}
+            formatLabel={(value, index) => generateTimeLabels()[index]}
+            contentInset={{ left: 10, right: 10 }}
+            svg={{ fontSize: 10, fill: colors.textMuted }}
+          />
+        </View>
+
+        <View style={styles.legendContainer}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendColor, { backgroundColor: colors.wind }]} />
+            <Text style={dynamicStyles.legendText}>Wind Speed</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendColor, { backgroundColor: colors.windGust, opacity: 0.6 }]} />
+            <Text style={dynamicStyles.legendText}>Wind Gusts</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.directionContainer}>
+        <Text style={dynamicStyles.directionTitle}>Accurate Wind Direction Arrows</Text>
+        <Text style={dynamicStyles.directionSubtitle}>
+          Visual representation of wind direction changes over time
+        </Text>
+        
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={{ flexDirection: 'row', gap: 16, paddingVertical: 8 }}>
+            {validData.map((d, index) => {
+              if (index % 3 !== 0 && validData.length > 24) return null;
+              
+              return (
+                <View key={d.time} style={{ alignItems: 'center', minWidth: 60 }}>
+                  <WindDirectionArrow direction={d.windDirection} size={24} colors={colors} />
+                  <Text style={[dynamicStyles.legendText, { marginTop: 4, fontSize: 11 }]}>
+                    {getWindDirectionLabel(d.windDirection)}
+                  </Text>
+                  <Text style={[dynamicStyles.legendText, { fontSize: 10, marginTop: 2 }]}>
+                    {formatHour(d.time)}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        </ScrollView>
+      </View>
+    </View>
+  );
+}
+
+export default memo(WindBarGraphs);

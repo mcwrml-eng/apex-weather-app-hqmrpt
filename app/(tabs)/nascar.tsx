@@ -165,7 +165,7 @@ export default function NascarScreen() {
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>36</Text>
-              <Text style={styles.statLabel}>Drivers</Text>
+              <Text style={styles.statLabel}>Teams</Text>
             </View>
           </View>
 
