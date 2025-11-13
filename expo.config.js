@@ -2,8 +2,8 @@
 module.exports = ({ config }) => {
   return {
     ...config,
-    name: 'RaceWeather Pro',
-    slug: 'raceweather-pro',
+    name: 'Grid Weather Pro',
+    slug: 'grid-weather-pro',
     version: '1.0.0',
     orientation: 'portrait',
     icon: './assets/images/natively-dark.png',
@@ -16,14 +16,14 @@ module.exports = ({ config }) => {
     },
     ios: {
       supportsTablet: true,
-      bundleIdentifier: 'com.raceweather.pro'
+      bundleIdentifier: 'com.gridweather.pro'
     },
     android: {
       adaptiveIcon: {
         foregroundImage: './assets/images/natively-dark.png',
         backgroundColor: '#0EA5E9'
       },
-      package: 'com.raceweather.pro'
+      package: 'com.gridweather.pro'
     },
     web: {
       favicon: './assets/images/final_quest_240x240.png',
@@ -39,7 +39,7 @@ module.exports = ({ config }) => {
         }
       ]
     ],
-    scheme: 'raceweather',
+    scheme: 'gridweather',
     experiments: {
       typedRoutes: true
     }
