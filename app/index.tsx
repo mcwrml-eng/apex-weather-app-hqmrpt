@@ -277,27 +277,32 @@ export default function CoverPage() {
               </Text>
               
               <View style={styles.languageGrid}>
-                {LANGUAGES.map((lang) => (
-                  <TouchableOpacity
-                    key={lang.code}
-                    style={[
-                      styles.languageButton,
-                      selectedLanguage === lang.code && styles.languageButtonSelected,
-                    ]}
-                    onPress={() => handleLanguageSelect(lang.code)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.languageFlag}>{lang.flag}</Text>
-                    <Text
+                {LANGUAGES.map((lang) => {
+                  const isSelected = selectedLanguage === lang.code;
+                  return (
+                    <TouchableOpacity
+                      key={lang.code}
                       style={[
-                        styles.languageName,
-                        selectedLanguage === lang.code && styles.languageNameSelected,
+                        styles.languageButton,
+                        isSelected && styles.languageButtonSelected,
                       ]}
+                      onPress={() => handleLanguageSelect(lang.code)}
+                      activeOpacity={0.7}
                     >
-                      {lang.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Text style={styles.languageFlag}>{lang.flag}</Text>
+                      <Text
+                        style={[
+                          styles.languageName,
+                          isSelected && styles.languageNameSelected,
+                          // Explicitly set color based on selection state to ensure visibility
+                          { color: isSelected ? '#FFFFFF' : colors.text }
+                        ]}
+                      >
+                        {lang.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
               
               <Text style={styles.copyrightText}>
