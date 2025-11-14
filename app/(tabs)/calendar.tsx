@@ -6,7 +6,6 @@ import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout }
 import { useTheme } from '../../state/ThemeContext';
 import { useLanguage } from '../../state/LanguageContext';
 import AppHeader from '../../components/AppHeader';
-import Footer from '../../components/Footer';
 import { f1Circuits, motogpCircuits, indycarCircuits, nascarCircuits } from '../../data/circuits';
 import { router } from 'expo-router';
 
@@ -86,7 +85,6 @@ export default function CalendarScreen() {
     },
     scrollContent: {
       padding: layout.screenPadding,
-      paddingBottom: spacing.xl,
     },
     monthSection: {
       marginBottom: spacing.xl,
@@ -286,7 +284,6 @@ export default function CalendarScreen() {
             </View>
           ))}
         </View>
-        <Footer />
       </ScrollView>
     </View>
   );

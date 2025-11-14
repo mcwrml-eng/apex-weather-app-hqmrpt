@@ -8,7 +8,6 @@ import CircuitCard from '../../components/CircuitCard';
 import FeaturedTrackCard from '../../components/FeaturedTrackCard';
 import AppHeader from '../../components/AppHeader';
 import NascarIcon from '../../components/NascarIcon';
-import Footer from '../../components/Footer';
 import { nascarCircuits } from '../../data/circuits';
 
 export default function NascarScreen() {
@@ -50,7 +49,6 @@ export default function NascarScreen() {
     },
     scrollContent: {
       padding: layout.screenPadding,
-      paddingBottom: spacing.xl,
     },
     sectionTitle: {
       fontSize: 20,
@@ -198,7 +196,6 @@ export default function NascarScreen() {
             </View>
           )}
         </View>
-        <Footer />
       </ScrollView>
     </View>
   );

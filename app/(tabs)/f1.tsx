@@ -10,7 +10,6 @@ import FeaturedTrackCard from '../../components/FeaturedTrackCard';
 import ChequeredFlag from '../../components/ChequeredFlag';
 import AppHeader from '../../components/AppHeader';
 import ErrorBoundary from '../../components/ErrorBoundary';
-import Footer from '../../components/Footer';
 import { f1Circuits } from '../../data/circuits';
 
 export default function F1Screen() {
@@ -53,7 +52,6 @@ export default function F1Screen() {
     },
     scrollContent: {
       padding: layout.screenPadding,
-      paddingBottom: spacing.xl,
     },
     sectionTitle: {
       fontSize: 20,
@@ -210,7 +208,6 @@ export default function F1Screen() {
               </View>
             )}
           </View>
-          <Footer />
         </ScrollView>
       </View>
     </ErrorBoundary>
