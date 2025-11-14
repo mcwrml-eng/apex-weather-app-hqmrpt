@@ -126,6 +126,14 @@ export default function CoverPage() {
       color: '#FFFFFF',
       fontWeight: '600',
     },
+    copyrightText: {
+      fontSize: 12,
+      color: colors.textMuted,
+      textAlign: 'center',
+      fontFamily: 'Roboto_400Regular',
+      marginTop: spacing.md,
+      opacity: 0.7,
+    },
     weatherContainer: {
       flexDirection: 'row',
       justifyContent: 'space-around',
@@ -291,6 +299,10 @@ export default function CoverPage() {
                   </TouchableOpacity>
                 ))}
               </View>
+              
+              <Text style={styles.copyrightText}>
+                © 2025-2026 GridWeather Pro. All rights reserved.
+              </Text>
             </View>
           ) : (
             <>
