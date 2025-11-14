@@ -10,6 +10,7 @@ import WeatherSymbol from '../components/WeatherSymbol';
 import { useTheme } from '../state/ThemeContext';
 import { useLanguage, Language } from '../state/LanguageContext';
 import ThemeToggle from '../components/ThemeToggle';
+import Footer from '../components/Footer';
 
 const LANGUAGES: { code: Language; name: string; flag: string }[] = [
   { code: 'en', name: 'English', flag: '🇬🇧' },
@@ -194,6 +195,12 @@ export default function CoverPage() {
       bottom: 0,
       opacity: isDark ? 0.03 : 0.02,
     },
+    footerContainer: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+    },
   });
 
   useEffect(() => {
@@ -332,6 +339,10 @@ export default function CoverPage() {
             </>
           )}
         </Animated.View>
+
+        <View style={styles.footerContainer}>
+          <Footer />
+        </View>
       </LinearGradient>
     </View>
   );

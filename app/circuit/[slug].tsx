@@ -1,242 +1,68 @@
 
-import React, { useMemo, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
-import { getColors, getButtonStyles, spacing, borderRadius, getShadows } from '../../styles/commonStyles';
-import { getCircuitBySlug } from '../../data/circuits';
-import { useWeather } from '../../hooks/useWeather';
-import ChartDoughnut from '../../components/ChartDoughnut';
-import WindBarGraphs from '../../components/WindBarGraphs';
-import WindRadarGraph from '../../components/WindRadarGraph';
-import WeatherChart from '../../components/WeatherChart';
-import WeatherSymbol from '../../components/WeatherSymbol';
-import EnhancedWeatherForecast from '../../components/EnhancedWeatherForecast';
-import WeatherTextForecast from '../../components/WeatherTextForecast';
-import WeatherAlerts from '../../components/WeatherAlerts';
-import TrackRainfallRadar from '../../components/TrackRainfallRadar';
-import WindyCloudRadar from '../../components/WindyCloudRadar';
-import WindParticleAnimation from '../../components/WindParticleAnimation';
-import BottomSheet, { BottomSheetView, BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import Icon from '../../components/Icon';
 import Button from '../../components/Button';
-import ErrorBoundary from '../../components/ErrorBoundary';
-import SafeComponent from '../../components/SafeComponent';
+import WindyCloudRadar from '../../components/WindyCloudRadar';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import Icon from '../../components/Icon';
 import { useUnit } from '../../state/UnitContext';
+import ErrorBoundary from '../../components/ErrorBoundary';
+import { useWeather } from '../../hooks/useWeather';
+import TrackRainfallRadar from '../../components/TrackRainfallRadar';
+import BottomSheet, { BottomSheetView, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import EnhancedWeatherForecast from '../../components/EnhancedWeatherForecast';
+import WeatherSymbol from '../../components/WeatherSymbol';
+import WeatherTextForecast from '../../components/WeatherTextForecast';
+import ChartDoughnut from '../../components/ChartDoughnut';
+import WeatherChart from '../../components/WeatherChart';
+import SafeComponent from '../../components/SafeComponent';
+import WindParticleAnimation from '../../components/WindParticleAnimation';
+import { getColors, getButtonStyles, spacing, borderRadius, getShadows } from '../../styles/commonStyles';
 import { useTheme } from '../../state/ThemeContext';
+import WeatherAlerts from '../../components/WeatherAlerts';
+import React, { useMemo, useRef, useCallback } from 'react';
+import { useLocalSearchParams, router } from 'expo-router';
+import WindRadarGraph from '../../components/WindRadarGraph';
+import { getCircuitBySlug } from '../../data/circuits';
+import WindBarGraphs from '../../components/WindBarGraphs';
+import Footer from '../../components/Footer';
 
-function DetailScreen() {
-  // Get theme first
+export default function DetailScreen() {
+  const { slug } = useLocalSearchParams<{ slug: string }>();
+  const { unit } = useUnit();
   const { isDark } = useTheme();
+  const bottomSheetRef = useRef<BottomSheet>(null);
+  
   const colors = getColors(isDark);
   const buttonStyles = getButtonStyles(isDark);
   const shadows = getShadows(isDark);
 
-  // Get params
-  const params = useLocalSearchParams<{ slug?: string; category?: 'f1' | 'motogp' | 'indycar' | 'nascar' }>();
-  const slug = params.slug as string;
-  const category = (params.category as 'f1' | 'motogp' | 'indycar' | 'nascar') || 'f1';
+  const circuit = useMemo(() => {
+    if (!slug) return null;
+    return getCircuitBySlug(slug);
+  }, [slug]);
 
-  console.log('DetailScreen: Loading circuit', slug, 'category', category, 'isDark:', isDark);
-
-  // Get circuit data
-  let circuit;
-  let circuitError = null;
-  try {
-    circuit = getCircuitBySlug(slug, category);
-  } catch (err) {
-    console.error('DetailScreen: Error getting circuit:', err);
-    circuitError = err;
-  }
-
-  // Call all hooks unconditionally at the top level
-  const { unit, toggleUnit } = useUnit();
-  
-  const { current, daily, hourly, alerts, loading, error, lastUpdated } = useWeather(
-    circuit?.latitude || 0, 
-    circuit?.longitude || 0, 
+  const { current, daily, hourly, alerts, loading, error } = useWeather(
+    circuit?.latitude || 0,
+    circuit?.longitude || 0,
     unit
   );
 
-  const settingsRef = useRef<BottomSheet>(null);
-  const chartsRef = useRef<BottomSheet>(null);
-  const forecastRef = useRef<BottomSheet>(null);
-  const settingsSnap = useMemo(() => ['32%', '60%'], []);
-  const chartsSnap = useMemo(() => ['50%', '90%'], []);
-  const forecastSnap = useMemo(() => ['60%', '95%'], []);
-  const openSettings = useCallback(() => settingsRef.current?.expand(), []);
-  const openCharts = useCallback(() => chartsRef.current?.expand(), []);
-  const openForecast = useCallback(() => forecastRef.current?.expand(), []);
-
-  // Convert hourly data for charts
-  const chartData = useMemo(() => {
-    try {
-      return hourly.map(h => ({
-        time: h.time,
-        temperature: h.temperature,
-        windSpeed: h.windSpeed,
-        humidity: h.humidity,
-        precipitation: h.precipitation,
-      }));
-    } catch (err) {
-      console.error('DetailScreen: Error creating chart data:', err);
-      return [];
-    }
-  }, [hourly]);
-
-  // Convert hourly data for wind graphs
-  const windData = useMemo(() => {
-    try {
-      return hourly.map(h => ({
-        time: h.time,
-        windSpeed: h.windSpeed,
-        windDirection: h.windDirection,
-        windGusts: h.windGusts,
-      }));
-    } catch (err) {
-      console.error('DetailScreen: Error creating wind data:', err);
-      return [];
-    }
-  }, [hourly]);
-
-  // Get 72-hour forecast data
-  const forecast72Hours = useMemo(() => {
-    try {
-      return hourly.slice(0, 72);
-    } catch (err) {
-      console.error('DetailScreen: Error creating 72h forecast:', err);
-      return [];
-    }
-  }, [hourly]);
-
-  // Get today's sunrise and sunset times
-  const todaySunTimes = useMemo(() => {
-    try {
-      if (!daily?.days || daily.days.length === 0) return null;
-      return {
-        sunrise: daily.days[0].sunrise,
-        sunset: daily.days[0].sunset,
-      };
-    } catch (err) {
-      console.error('DetailScreen: Error getting sun times:', err);
-      return null;
-    }
-  }, [daily]);
-
-  // Enhanced time parsing function
-  const parseTimeString = useCallback((timeStr: string): number => {
-    try {
-      if (!timeStr) return 0;
-
-      let cleanTimeStr = timeStr.trim();
-      
-      if (cleanTimeStr.includes('T')) {
-        const timePart = cleanTimeStr.split('T')[1];
-        if (timePart) {
-          cleanTimeStr = timePart.split('.')[0];
-          cleanTimeStr = cleanTimeStr.split('+')[0];
-          cleanTimeStr = cleanTimeStr.split('Z')[0];
-        }
-      }
-      
-      const timeParts = cleanTimeStr.split(':');
-      if (timeParts.length >= 2) {
-        const hours = parseInt(timeParts[0], 10) || 0;
-        const minutes = parseInt(timeParts[1], 10) || 0;
-        return hours * 60 + minutes;
-      }
-      
-      return 0;
-    } catch (err) {
-      console.error('DetailScreen: Error parsing time string:', err);
-      return 0;
-    }
+  const handleOpenBottomSheet = useCallback(() => {
+    console.log('DetailScreen: Opening bottom sheet');
+    bottomSheetRef.current?.expand();
   }, []);
 
-  // Calculate daylight duration
-  const daylightDuration = useMemo(() => {
-    try {
-      if (!todaySunTimes) return null;
-      
-      const sunriseMinutes = parseTimeString(todaySunTimes.sunrise);
-      const sunsetMinutes = parseTimeString(todaySunTimes.sunset);
-      
-      if (sunriseMinutes === 0 && sunsetMinutes === 0) return null;
-      
-      let durationMinutes = sunsetMinutes - sunriseMinutes;
-      
-      if (durationMinutes < 0) {
-        durationMinutes += 24 * 60;
-      }
-      
-      if (durationMinutes < 0 || durationMinutes > 24 * 60) return null;
-      
-      const hours = Math.floor(durationMinutes / 60);
-      const minutes = durationMinutes % 60;
-      
-      return `${hours}h ${minutes}m`;
-    } catch (err) {
-      console.error('DetailScreen: Error calculating daylight duration:', err);
-      return null;
-    }
-  }, [todaySunTimes, parseTimeString]);
-
-  // Get current time status
-  const currentTimeStatus = useMemo(() => {
-    try {
-      if (!todaySunTimes) return 'unknown';
-      
-      const now = new Date();
-      const currentTime = now.getHours() * 60 + now.getMinutes();
-      
-      const sunriseMinutes = parseTimeString(todaySunTimes.sunrise);
-      const sunsetMinutes = parseTimeString(todaySunTimes.sunset);
-      
-      if (sunriseMinutes === 0 && sunsetMinutes === 0) return 'unknown';
-      
-      if (currentTime < sunriseMinutes) return 'night';
-      if (currentTime > sunsetMinutes) return 'night';
-      return 'day';
-    } catch (err) {
-      console.error('DetailScreen: Error getting time status:', err);
-      return 'unknown';
-    }
-  }, [todaySunTimes, parseTimeString]);
-
-  // Format time for display
-  const formatTimeForDisplay = useCallback((timeStr: string): string => {
-    try {
-      if (!timeStr) return '--:--';
-      
-      let cleanTimeStr = timeStr.trim();
-      if (cleanTimeStr.includes('T')) {
-        const timePart = cleanTimeStr.split('T')[1];
-        if (timePart) {
-          cleanTimeStr = timePart.split('.')[0];
-          cleanTimeStr = cleanTimeStr.split('+')[0];
-          cleanTimeStr = cleanTimeStr.split('Z')[0];
-        }
-      }
-      
-      const timeParts = cleanTimeStr.split(':');
-      if (timeParts.length >= 2) {
-        return `${timeParts[0]}:${timeParts[1]}`;
-      }
-      
-      return timeStr;
-    } catch (err) {
-      console.error('DetailScreen: Error formatting time:', err);
-      return '--:--';
-    }
+  const handleCloseBottomSheet = useCallback(() => {
+    console.log('DetailScreen: Closing bottom sheet');
+    bottomSheetRef.current?.close();
   }, []);
 
-  // Get weather condition description
   const getWeatherDescription = (code: number): string => {
     const descriptions: { [key: number]: string } = {
       0: 'Clear sky',
       1: 'Mainly clear',
       2: 'Partly cloudy',
       3: 'Overcast',
-      45: 'Fog',
+      45: 'Foggy',
       48: 'Depositing rime fog',
       51: 'Light drizzle',
       53: 'Moderate drizzle',
@@ -247,1122 +73,364 @@ function DetailScreen() {
       71: 'Slight snow',
       73: 'Moderate snow',
       75: 'Heavy snow',
+      77: 'Snow grains',
       80: 'Slight rain showers',
       81: 'Moderate rain showers',
       82: 'Violent rain showers',
+      85: 'Slight snow showers',
+      86: 'Heavy snow showers',
       95: 'Thunderstorm',
-      96: 'Thunderstorm with hail',
+      96: 'Thunderstorm with slight hail',
       99: 'Thunderstorm with heavy hail',
     };
-    return descriptions[code] || 'Unknown conditions';
+    return descriptions[code] || 'Unknown';
   };
 
-  // Get wind direction label
-  const getWindDirectionLabel = useCallback((degrees: number): string => {
-    const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-    const index = Math.round(degrees / 22.5) % 16;
-    return directions[index];
-  }, []);
-
-  // Helper function to create a daytime timestamp for a given date
-  const getDaytimeTimestamp = useCallback((dateString: string): string => {
-    // Create a timestamp at 12:00 (noon) for the given date to ensure daytime symbol
-    const date = new Date(dateString);
-    date.setHours(12, 0, 0, 0);
-    return date.toISOString();
-  }, []);
-
-  // Create dynamic styles based on theme
-  const styles = useMemo(() => StyleSheet.create({
-    wrapper: { flex: 1, backgroundColor: colors.background },
-    header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
-    backBtn: {
-      flexDirection: 'row',
-      alignSelf: 'flex-start',
-      backgroundColor: colors.primary,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      borderRadius: 12,
-      alignItems: 'center',
-      gap: 6,
-      boxShadow: shadows.md,
-    },
-    backText: { color: '#fff', fontWeight: '700', fontFamily: 'Roboto_700Bold' },
-    title: { fontSize: 26, fontWeight: '700', marginTop: 10, color: colors.text, fontFamily: 'Roboto_700Bold' },
-    subtitle: { color: colors.textMuted, marginTop: 4, fontFamily: 'Roboto_400Regular' },
-    actions: { position: 'absolute', right: 16, top: 8, flexDirection: 'row', gap: 4 },
-    actionBtn: { padding: 8, borderRadius: 10 },
-    content: { paddingHorizontal: 16, paddingTop: 8 },
-    updateInfo: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      backgroundColor: colors.backgroundAlt,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      borderRadius: 8,
-      marginBottom: 12,
-    },
-    updateText: {
-      fontSize: 12,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-    },
-    sunTimesBar: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: colors.card,
-      borderRadius: 14,
-      padding: 16,
-      marginBottom: 16,
-      borderWidth: 1,
-      borderColor: colors.divider,
-      boxShadow: shadows.md,
-    },
-    sunTimeItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-    },
-    sunTimeText: {
-      fontSize: 16,
-      fontWeight: '700',
-      color: colors.text,
-      fontFamily: 'Roboto_700Bold',
-    },
-    sunTimeLabel: {
-      fontSize: 12,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-    },
-    sunTimeDivider: {
-      width: 1,
-      height: 40,
-      backgroundColor: colors.divider,
-    },
-    daylightInfo: {
-      alignItems: 'center',
-    },
-    daylightDuration: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: colors.text,
-      fontFamily: 'Roboto_600SemiBold',
-    },
-    daylightLabel: {
-      fontSize: 11,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      marginTop: 2,
-    },
-    windAnimationCard: {
-      backgroundColor: colors.card,
-      borderRadius: 14,
-      padding: 16,
-      borderWidth: 1,
-      borderColor: colors.divider,
-      boxShadow: shadows.md,
-      marginBottom: 16,
-    },
-    windAnimationHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: 12,
-    },
-    windAnimationTitleContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-    },
-    windAnimationTitle: {
-      fontSize: 18,
-      fontWeight: '700',
-      color: colors.text,
-      fontFamily: 'Roboto_700Bold',
-    },
-    windAnimationSubtitle: {
-      fontSize: 14,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      marginBottom: 12,
-    },
-    windAnimationContainer: {
-      alignItems: 'center',
-      marginBottom: 12,
-    },
-    windStatsContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-around',
-      marginTop: 12,
-      paddingTop: 12,
-      borderTopWidth: 1,
-      borderTopColor: colors.divider,
-    },
-    windStatItem: {
-      alignItems: 'center',
-    },
-    windStatLabel: {
-      fontSize: 12,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      marginBottom: 4,
-    },
-    windStatValue: {
-      fontSize: 18,
-      fontWeight: '700',
-      color: colors.text,
-      fontFamily: 'Roboto_700Bold',
-    },
-    windStatUnit: {
-      fontSize: 11,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      marginTop: 2,
-    },
-    next12HoursCard: {
-      backgroundColor: colors.card,
-      borderRadius: 14,
-      padding: 16,
-      borderWidth: 1,
-      borderColor: colors.divider,
-      boxShadow: shadows.md,
-      marginBottom: 16,
-    },
-    next12HoursHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      marginBottom: 16,
-    },
-    next12HoursTitle: {
-      fontSize: 18,
-      fontWeight: '700',
-      color: colors.text,
-      fontFamily: 'Roboto_700Bold',
-    },
-    next12HoursScroll: {
-      paddingHorizontal: 4,
-      gap: 12,
-    },
-    next12HourCard: {
-      backgroundColor: colors.backgroundAlt,
-      borderRadius: 12,
-      padding: 12,
-      alignItems: 'center',
-      minWidth: 80,
-      borderWidth: 1,
-      borderColor: colors.divider,
-    },
-    next12HourTime: {
-      fontSize: 11,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      marginBottom: 8,
-    },
-    next12HourTemp: {
-      fontSize: 16,
-      fontWeight: '700',
-      color: colors.text,
-      fontFamily: 'Roboto_700Bold',
-      marginTop: 8,
-      marginBottom: 4,
-    },
-    next12HourRain: {
-      fontSize: 11,
-      color: colors.precipitation,
-      fontFamily: 'Roboto_500Medium',
-      marginBottom: 4,
-    },
-    next12HourWind: {
-      fontSize: 10,
-      color: colors.wind,
-      fontFamily: 'Roboto_400Regular',
-    },
-    card: {
+  const styles = StyleSheet.create({
+    container: {
       flex: 1,
-      backgroundColor: colors.card,
-      borderRadius: 14,
-      padding: 14,
-      borderWidth: 1,
-      borderColor: colors.divider,
-      boxShadow: shadows.md,
-      marginBottom: 12,
+      backgroundColor: colors.background,
     },
-    chartCard: {
-      alignItems: 'center',
-      justifyContent: 'center',
+    scrollContent: {
+      paddingBottom: spacing.massive,
+    },
+    header: {
+      padding: spacing.xl,
+      paddingTop: spacing.huge,
       backgroundColor: colors.card,
-      borderRadius: 14,
-      padding: 14,
-      borderWidth: 1,
-      borderColor: colors.divider,
-      marginBottom: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.borderLight,
       boxShadow: shadows.md,
     },
-    forecast72Card: {
-      backgroundColor: colors.card,
-      borderRadius: 14,
-      padding: 16,
-      borderWidth: 1,
-      borderColor: colors.divider,
-      boxShadow: shadows.md,
-      marginBottom: 16,
-      marginTop: 8,
-    },
-    forecast72Header: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 8,
-    },
-    forecast72TitleContainer: {
+    backButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      marginBottom: spacing.lg,
     },
-    forecast72Title: {
-      fontSize: 18,
-      fontWeight: '700',
-      color: colors.text,
-      fontFamily: 'Roboto_700Bold',
-    },
-    forecast72Subtitle: {
-      fontSize: 14,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      marginBottom: 16,
-    },
-    viewDetailedBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      backgroundColor: colors.backgroundAlt,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 8,
-    },
-    viewDetailedText: {
-      fontSize: 13,
+    backText: {
+      fontSize: 16,
       color: colors.primary,
+      marginLeft: spacing.sm,
       fontFamily: 'Roboto_500Medium',
     },
-    chartPreviewContainer: {
-      marginBottom: 16,
-    },
-    chartPreviewLabel: {
-      fontSize: 14,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_500Medium',
-      marginBottom: 8,
-    },
-    forecast72Highlights: {
-      marginBottom: 16,
-    },
-    highlightsTitle: {
-      fontSize: 15,
-      fontWeight: '600',
+    circuitName: {
+      fontSize: 28,
+      fontWeight: '700',
       color: colors.text,
-      fontFamily: 'Roboto_500Medium',
-      marginBottom: 12,
+      marginBottom: spacing.xs,
+      fontFamily: 'Roboto_700Bold',
     },
-    highlightsGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 12,
-    },
-    highlightItem: {
-      flex: 1,
-      minWidth: '45%',
-      backgroundColor: colors.backgroundAlt,
-      borderRadius: 10,
-      padding: 12,
-      alignItems: 'center',
-      borderWidth: 1,
-      borderColor: colors.divider,
-    },
-    highlightLabel: {
-      fontSize: 11,
-      color: colors.textMuted,
+    circuitCountry: {
+      fontSize: 16,
+      color: colors.textSecondary,
       fontFamily: 'Roboto_400Regular',
-      marginTop: 4,
-      marginBottom: 2,
     },
-    highlightValue: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: colors.text,
-      fontFamily: 'Roboto_500Medium',
-    },
-    metricsGrid: {
-      flexDirection: 'row',
-      gap: 12,
-      marginBottom: 12,
-    },
-    metricCard: {
-      flex: 1,
+    currentWeather: {
+      padding: spacing.xl,
       backgroundColor: colors.card,
-      borderRadius: 14,
-      padding: 14,
+      margin: spacing.lg,
+      borderRadius: borderRadius.lg,
       borderWidth: 1,
-      borderColor: colors.divider,
-      alignItems: 'center',
+      borderColor: colors.borderLight,
       boxShadow: shadows.md,
     },
-    metricLabel: {
-      fontSize: 14,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_500Medium',
-      marginBottom: 8,
-    },
-    currentWeatherContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 16,
-      marginTop: 12,
-    },
-    currentWeatherText: {
-      flex: 1,
-    },
-    feelsLike: {
-      fontSize: 14,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      marginTop: 2,
-    },
-    weatherDescription: {
-      fontSize: 13,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      marginTop: 4,
-      fontStyle: 'italic',
-    },
-    detailsGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 12,
-      marginBottom: 12,
-    },
-    detailCard: {
-      flex: 1,
-      minWidth: '45%',
-      backgroundColor: colors.card,
-      borderRadius: 12,
-      padding: 12,
-      borderWidth: 1,
-      borderColor: colors.divider,
-      alignItems: 'center',
-      boxShadow: shadows.sm,
-    },
-    detailLabel: {
-      fontSize: 12,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      marginTop: 6,
-      marginBottom: 4,
-    },
-    detailValue: {
-      fontSize: 18,
+    currentTemp: {
+      fontSize: 48,
       fontWeight: '700',
       color: colors.text,
       fontFamily: 'Roboto_700Bold',
     },
-    detailSub: {
-      fontSize: 10,
-      color: colors.textMuted,
+    currentCondition: {
+      fontSize: 18,
+      color: colors.textSecondary,
+      marginTop: spacing.sm,
       fontFamily: 'Roboto_400Regular',
-      marginTop: 2,
     },
-    cardLabel: { color: colors.textMuted, fontFamily: 'Roboto_500Medium' },
-    cardValue: { fontSize: 28, color: colors.text, fontWeight: '700', marginTop: 6, fontFamily: 'Roboto_700Bold' },
-    dayPill: {
+    weatherDetails: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      marginTop: spacing.lg,
+      gap: spacing.md,
+    },
+    detailItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
       backgroundColor: colors.backgroundAlt,
-      paddingVertical: 12,
-      paddingHorizontal: 14,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.divider,
-      minWidth: 110,
-      alignItems: 'center',
+      padding: spacing.md,
+      borderRadius: borderRadius.md,
+      minWidth: '45%',
     },
-    dayText: { 
-      color: colors.text, 
-      fontFamily: 'Roboto_500Medium',
-      fontSize: 13,
-      marginBottom: 6,
-    },
-    daySymbolContainer: {
-      height: 28,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginBottom: 6,
-    },
-    dayTemp: { 
-      color: colors.textMuted, 
+    detailText: {
+      fontSize: 14,
+      color: colors.text,
+      marginLeft: spacing.sm,
       fontFamily: 'Roboto_400Regular',
-      fontSize: 12,
-      marginBottom: 2,
     },
-    dayRain: {
-      color: colors.precipitation,
-      fontFamily: 'Roboto_500Medium',
-      fontSize: 11,
+    section: {
+      padding: spacing.lg,
+      marginBottom: spacing.md,
+    },
+    sectionTitle: {
+      fontSize: 20,
       fontWeight: '600',
-      marginBottom: 2,
+      color: colors.text,
+      marginBottom: spacing.lg,
+      fontFamily: 'Roboto_500Medium',
     },
-    dayRainProb: {
-      color: colors.textMuted,
+    errorContainer: {
+      padding: spacing.xl,
+      alignItems: 'center',
+    },
+    errorText: {
+      fontSize: 16,
+      color: colors.error,
+      textAlign: 'center',
       fontFamily: 'Roboto_400Regular',
-      fontSize: 10,
     },
-    muted: { color: colors.textMuted, fontFamily: 'Roboto_400Regular' },
-    error: { color: colors.error, fontWeight: '600', fontFamily: 'Roboto_500Medium' },
-    bottomSheetBackground: {
-      backgroundColor: colors.background,
+    loadingContainer: {
+      padding: spacing.xl,
+      alignItems: 'center',
     },
-    bottomSheetHandle: {
-      backgroundColor: colors.divider,
+    loadingText: {
+      fontSize: 16,
+      color: colors.textMuted,
+      marginTop: spacing.md,
+      fontFamily: 'Roboto_400Regular',
     },
-    sheet: { 
-      padding: 16,
-      backgroundColor: colors.background,
+    bottomSheetContent: {
+      padding: spacing.xl,
     },
-    sheetTitle: { fontSize: 18, fontWeight: '700', color: colors.text, fontFamily: 'Roboto_700Bold', marginBottom: 12 },
-    sheetScrollContent: {
-      paddingBottom: 40,
+    bottomSheetTitle: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: spacing.lg,
+      fontFamily: 'Roboto_700Bold',
     },
-  }), [colors, shadows]);
+  });
 
-  // Handle errors after all hooks are called
-  if (circuitError || !circuit) {
+  if (!circuit) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: colors.background }}>
-        <Text style={{ fontSize: 18, color: colors.error, marginBottom: 10 }}>Error Loading Circuit</Text>
-        <Text style={{ fontSize: 14, color: colors.textMuted, textAlign: 'center' }}>
-          {circuitError instanceof Error ? circuitError.message : 'Circuit not found'}
-        </Text>
-        <TouchableOpacity 
-          onPress={() => router.back()} 
-          style={{ marginTop: 20, backgroundColor: colors.primary, padding: 12, borderRadius: 8 }}
-        >
-          <Text style={{ color: '#fff', fontWeight: '600' }}>Go Back</Text>
-        </TouchableOpacity>
+      <View style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Circuit not found</Text>
+        </View>
       </View>
     );
   }
 
+  console.log('DetailScreen: Rendering circuit:', circuit.name, 'with theme:', isDark ? 'dark' : 'light');
+
   return (
     <ErrorBoundary>
-      <View style={styles.wrapper}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            accessibilityRole="button"
-            onPress={() => router.back()}
-            style={styles.backBtn}
-            activeOpacity={0.8}
-          >
-            <Icon name="chevron-back" size={22} color="#fff" />
-            <Text style={styles.backText}>Back</Text>
-          </TouchableOpacity>
-
-          <Text style={styles.title}>{circuit.name}</Text>
-          <Text style={styles.subtitle}>{circuit.country} • {category.toUpperCase()}</Text>
-
-          <View style={styles.actions}>
-            <TouchableOpacity onPress={openForecast} style={styles.actionBtn} activeOpacity={0.8}>
-              <Icon name="time-outline" size={22} color={colors.text} />
+      <View style={styles.container}>
+        <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollContent}>
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+              <Icon name="arrow-back" size={24} color={colors.primary} />
+              <Text style={styles.backText}>Back</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={openCharts} style={styles.actionBtn} activeOpacity={0.8}>
-              <Icon name="analytics-outline" size={22} color={colors.text} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={openSettings} style={styles.actionBtn} activeOpacity={0.8}>
-              <Icon name="settings-outline" size={22} color={colors.text} />
-            </TouchableOpacity>
+            
+            <Text style={styles.circuitName}>{circuit.name}</Text>
+            <Text style={styles.circuitCountry}>{circuit.country}</Text>
           </View>
-        </View>
 
-        <ScrollView contentContainerStyle={styles.content}>
-          {loading && <Text style={styles.muted}>Loading enhanced weather data…</Text>}
-          {error && <Text style={styles.error}>Failed to load weather data. Please try again.</Text>}
-
-          {/* Simplified Sunrise/Sunset Bar - Now at the top */}
-          {!loading && todaySunTimes && (
-            <SafeComponent componentName="SunriseSunsetBar">
-              <View style={styles.sunTimesBar}>
-                <View style={styles.sunTimeItem}>
-                  <Icon name="sunny" size={24} color="#FFA726" />
-                  <View>
-                    <Text style={styles.sunTimeLabel}>Sunrise</Text>
-                    <Text style={styles.sunTimeText}>{formatTimeForDisplay(todaySunTimes.sunrise)}</Text>
-                  </View>
-                </View>
-                
-                <View style={styles.sunTimeDivider} />
-                
-                {daylightDuration && (
-                  <View style={styles.daylightInfo}>
-                    <Text style={styles.daylightDuration}>{daylightDuration}</Text>
-                    <Text style={styles.daylightLabel}>Daylight</Text>
-                  </View>
-                )}
-                
-                <View style={styles.sunTimeDivider} />
-                
-                <View style={styles.sunTimeItem}>
-                  <Icon name="moon" size={24} color="#5C6BC0" />
-                  <View>
-                    <Text style={styles.sunTimeLabel}>Sunset</Text>
-                    <Text style={styles.sunTimeText}>{formatTimeForDisplay(todaySunTimes.sunset)}</Text>
-                  </View>
-                </View>
-              </View>
-            </SafeComponent>
-          )}
-
-          {/* Weather Alerts */}
-          {!loading && alerts && alerts.length > 0 && (
-            <SafeComponent componentName="WeatherAlerts">
-              <WeatherAlerts alerts={alerts} />
-            </SafeComponent>
-          )}
-
-          {/* Last Updated Info */}
-          {!loading && lastUpdated && (
-            <View style={styles.updateInfo}>
-              <Icon name="refresh" size={14} color={colors.textMuted} />
-              <Text style={styles.updateText}>
-                Updated {lastUpdated.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-              </Text>
+          {loading && (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Loading weather data...</Text>
             </View>
           )}
 
-          {/* Windy Cloud & Radar Imagery */}
-          {!loading && circuit && (
-            <SafeComponent componentName="WindyCloudRadar">
-              <WindyCloudRadar
-                latitude={circuit.latitude}
-                longitude={circuit.longitude}
-                circuitName={circuit.name}
-                zoom={8}
-                width={340}
-                height={340}
-                compact={false}
-              />
-            </SafeComponent>
+          {error && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
           )}
 
-          {/* Rainfall Radar */}
-          {!loading && circuit && (
-            <SafeComponent componentName="TrackRainfallRadar">
-              <TrackRainfallRadar
-                latitude={circuit.latitude}
-                longitude={circuit.longitude}
-                circuitName={circuit.name}
-                country={circuit.country}
-                category={category}
-                compact={false}
-                showControls={true}
-                autoStartAnimation={false}
-                radarOpacity={0.6}
-              />
-            </SafeComponent>
-          )}
-
-          {/* Next 12 Hours Forecast */}
-          {!loading && forecast72Hours.length > 0 && (
-            <SafeComponent componentName="Next12Hours">
-              <View style={styles.next12HoursCard}>
-                <View style={styles.next12HoursHeader}>
-                  <Icon name="time" size={20} color={colors.primary} />
-                  <Text style={styles.next12HoursTitle}>Next 12 Hours</Text>
+          {current && (
+            <View style={styles.currentWeather}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View>
+                  <Text style={styles.currentTemp}>
+                    {Math.round(current.temperature)}°{unit === 'metric' ? 'C' : 'F'}
+                  </Text>
+                  <Text style={styles.currentCondition}>
+                    {getWeatherDescription(current.weather_code)}
+                  </Text>
                 </View>
-                <ScrollView 
-                  horizontal 
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.next12HoursScroll}
-                >
-                  {forecast72Hours.slice(0, 12).map((hour, index) => (
-                    <View key={hour.time} style={styles.next12HourCard}>
-                      <Text style={styles.next12HourTime}>
-                        {new Date(hour.time).toLocaleTimeString([], { hour: 'numeric' })}
-                      </Text>
-                      <WeatherSymbol 
-                        weatherCode={hour.weatherCode}
-                        size={28}
-                        latitude={circuit.latitude}
-                        longitude={circuit.longitude}
-                        time={hour.time}
-                        sunrise={todaySunTimes?.sunrise}
-                        sunset={todaySunTimes?.sunset}
-                      />
-                      <Text style={styles.next12HourTemp}>
-                        {Math.round(hour.temperature)}°
-                      </Text>
-                      <Text style={styles.next12HourRain}>
-                        {Math.round(hour.precipitationProbability)}%
-                      </Text>
-                      <Text style={styles.next12HourWind}>
-                        {Math.round(hour.windSpeed)} {unit === 'metric' ? 'km/h' : 'mph'}
-                      </Text>
-                    </View>
-                  ))}
-                </ScrollView>
+                <WeatherSymbol 
+                  weatherCode={current.weather_code} 
+                  size={64}
+                  latitude={circuit.latitude}
+                  longitude={circuit.longitude}
+                />
               </View>
-            </SafeComponent>
-          )}
 
-          {/* 7-Day Forecast - MOVED HERE (after Next 12 Hours) */}
-          {!loading && daily && (
-            <SafeComponent componentName="7DayForecast">
-              <View style={styles.card}>
-                <Text style={styles.cardLabel}>7-Day Forecast</Text>
-                <View style={{ height: 8 }} />
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-                  {daily.days.map((d) => (
-                    <View key={d.date} style={styles.dayPill}>
-                      <Text style={styles.dayText}>{d.weekday}</Text>
-                      <View style={styles.daySymbolContainer}>
-                        <WeatherSymbol 
-                          weatherCode={d.weather_code} 
-                          size={24}
-                          latitude={circuit.latitude}
-                          longitude={circuit.longitude}
-                          time={getDaytimeTimestamp(d.date)}
-                          sunrise={d.sunrise}
-                          sunset={d.sunset}
-                        />
-                      </View>
-                      <Text style={styles.dayTemp}>
-                        {Math.round(d.max)}° / {Math.round(d.min)}°
-                      </Text>
-                      <Text style={[styles.dayRain, { 
-                        color: d.precipitation_sum > 0 ? colors.precipitation : colors.textMuted 
-                      }]}>
-                        {d.precipitation_sum === 0 ? '0' : 
-                         unit === 'imperial' ? 
-                           (d.precipitation_sum < 0.01 ? '<0.01' : Math.round(d.precipitation_sum * 100) / 100) :
-                           (d.precipitation_sum < 0.1 ? '<0.1' : Math.round(d.precipitation_sum * 10) / 10)
-                        }{unit === 'metric' ? 'mm' : 'in'}
-                      </Text>
-                      {d.precipitation_probability > 0 && (
-                        <Text style={styles.dayRainProb}>
-                          {d.precipitation_probability}%
-                        </Text>
-                      )}
-                    </View>
-                  ))}
-                </ScrollView>
+              <View style={styles.weatherDetails}>
+                <View style={styles.detailItem}>
+                  <Icon name="water" size={20} color={colors.info} />
+                  <Text style={styles.detailText}>Humidity: {current.humidity}%</Text>
+                </View>
+                <View style={styles.detailItem}>
+                  <Icon name="speedometer" size={20} color={colors.warning} />
+                  <Text style={styles.detailText}>
+                    Wind: {Math.round(current.wind_speed)} {unit === 'metric' ? 'km/h' : 'mph'}
+                  </Text>
+                </View>
+                <View style={styles.detailItem}>
+                  <Icon name="eye" size={20} color={colors.accent} />
+                  <Text style={styles.detailText}>
+                    Visibility: {Math.round(current.visibility / 1000)} km
+                  </Text>
+                </View>
+                <View style={styles.detailItem}>
+                  <Icon name="thermometer" size={20} color={colors.primary} />
+                  <Text style={styles.detailText}>
+                    Feels like: {Math.round(current.apparent_temperature)}°
+                  </Text>
+                </View>
               </View>
-            </SafeComponent>
+            </View>
           )}
 
-          {/* Written Text Weather Forecast */}
-          {!loading && current && hourly.length > 0 && (
-            <SafeComponent componentName="WeatherTextForecast">
-              <WeatherTextForecast
-                current={current}
-                hourlyData={hourly}
-                unit={unit}
-                circuitName={circuit.name}
-                latitude={circuit.latitude}
-                longitude={circuit.longitude}
-              />
+          <ErrorBoundary>
+            <SafeComponent>
+              <WeatherAlerts alerts={alerts} />
             </SafeComponent>
-          )}
+          </ErrorBoundary>
 
-          {/* Enhanced Current Weather Display */}
-          {!loading && current && (
-            <SafeComponent componentName="CurrentWeather">
-              <View style={styles.card}>
-                <Text style={styles.cardLabel}>Current Conditions</Text>
-                <View style={styles.currentWeatherContainer}>
-                  <WeatherSymbol 
-                    weatherCode={current.weather_code} 
-                    size={56}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Track Rainfall Radar</Text>
+            <ErrorBoundary>
+              <SafeComponent>
+                <TrackRainfallRadar
+                  latitude={circuit.latitude}
+                  longitude={circuit.longitude}
+                  circuitName={circuit.name}
+                  country={circuit.country}
+                  category={circuit.category || 'f1'}
+                  compact={false}
+                  showControls={true}
+                  autoStartAnimation={true}
+                />
+              </SafeComponent>
+            </ErrorBoundary>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Wind Conditions</Text>
+            <ErrorBoundary>
+              <SafeComponent>
+                {current && (
+                  <WindParticleAnimation
+                    windSpeed={current.wind_speed}
+                    windDirection={current.wind_direction}
+                    width={350}
+                    height={300}
+                    particleCount={100}
+                    showGrid={true}
+                    unit={unit}
                     latitude={circuit.latitude}
                     longitude={circuit.longitude}
-                    sunrise={todaySunTimes?.sunrise}
-                    sunset={todaySunTimes?.sunset}
                   />
-                  <View style={styles.currentWeatherText}>
-                    <Text style={styles.cardValue}>{Math.round(current.temperature)}°{unit === 'metric' ? 'C' : 'F'}</Text>
-                    <Text style={styles.feelsLike}>Feels {Math.round(current.apparent_temperature)}°</Text>
-                    <Text style={styles.weatherDescription}>
-                      {getWeatherDescription(current.weather_code)}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </SafeComponent>
-          )}
-
-          {/* Enhanced Weather Details Grid */}
-          {!loading && current && (
-            <SafeComponent componentName="WeatherDetails">
-              <View style={styles.detailsGrid}>
-                <View style={styles.detailCard}>
-                  <Icon name="thermometer" size={20} color={colors.temperature} />
-                  <Text style={styles.detailLabel}>Temperature</Text>
-                  <Text style={styles.detailValue}>{Math.round(current.temperature)}°{unit === 'metric' ? 'C' : 'F'}</Text>
-                  <Text style={styles.detailSub}>Dew point: {Math.round(current.dew_point)}°</Text>
-                </View>
-
-                <View style={styles.detailCard}>
-                  <Icon name="flag" size={20} color={colors.wind} />
-                  <Text style={styles.detailLabel}>Wind & Gusts</Text>
-                  <Text style={styles.detailValue}>{Math.round(current.wind_speed)} / {Math.round(current.wind_gusts)}</Text>
-                  <Text style={styles.detailSub}>{unit === 'metric' ? 'km/h' : 'mph'} • {Math.round(current.wind_direction)}°</Text>
-                </View>
-
-                <View style={styles.detailCard}>
-                  <Icon name="eye" size={20} color={colors.wind} />
-                  <Text style={styles.detailLabel}>Visibility</Text>
-                  <Text style={styles.detailValue}>{Math.round(current.visibility / 1000)}km</Text>
-                  <Text style={styles.detailSub}>Cloud cover: {current.cloud_cover}%</Text>
-                </View>
-
-                <View style={styles.detailCard}>
-                  <Icon name="speedometer" size={20} color={colors.textMuted} />
-                  <Text style={styles.detailLabel}>Pressure</Text>
-                  <Text style={styles.detailValue}>{Math.round(current.pressure)} hPa</Text>
-                  <Text style={styles.detailSub}>Sea level</Text>
-                </View>
-
-                {current.uv_index > 0 && (
-                  <View style={styles.detailCard}>
-                    <Icon name="sunny" size={20} color={colors.warning} />
-                    <Text style={styles.detailLabel}>UV Index</Text>
-                    <Text style={styles.detailValue}>{Math.round(current.uv_index)}</Text>
-                    <Text style={styles.detailSub}>
-                      {current.uv_index <= 2 ? 'Low' : 
-                       current.uv_index <= 5 ? 'Moderate' : 
-                       current.uv_index <= 7 ? 'High' : 'Very High'}
-                    </Text>
-                  </View>
                 )}
-              </View>
-            </SafeComponent>
-          )}
-
-          {!loading && daily && (
-            <>
-              <SafeComponent componentName="PrecipitationChart">
-                <View style={styles.chartCard}>
-                  <Text style={styles.cardLabel}>Precipitation Forecast</Text>
-                  <ChartDoughnut
-                    size={140}
-                    strokeWidth={18}
-                    progress={(daily.precipitation_probability_max ?? 0) / 100}
-                    color={colors.precipitation}
-                    backgroundColor={colors.divider}
-                    centerText={`${daily.precipitation_probability_max ?? 0}%`}
-                    subText="chance today"
-                    showScale={true}
-                    maxValue={100}
-                    unit="%"
-                  />
-                </View>
               </SafeComponent>
+            </ErrorBoundary>
+          </View>
 
-              {/* Additional Weather Metrics */}
-              {current && (
-                <SafeComponent componentName="WeatherMetrics">
-                  <View style={styles.metricsGrid}>
-                    <View style={styles.metricCard}>
-                      <Text style={styles.metricLabel}>Humidity</Text>
-                      <ChartDoughnut
-                        size={100}
-                        strokeWidth={12}
-                        progress={current.humidity / 100}
-                        color={colors.humidity}
-                        backgroundColor={colors.divider}
-                        centerText={`${current.humidity}%`}
-                        showScale={false}
-                      />
-                    </View>
-
-                    <View style={styles.metricCard}>
-                      <Text style={styles.metricLabel}>Cloud Cover</Text>
-                      <ChartDoughnut
-                        size={100}
-                        strokeWidth={12}
-                        progress={current.cloud_cover / 100}
-                        color={colors.textMuted}
-                        backgroundColor={colors.divider}
-                        centerText={`${current.cloud_cover}%`}
-                        showScale={false}
-                      />
-                    </View>
-                  </View>
-                </SafeComponent>
-              )}
-
-              {/* 72-Hour Forecast Section */}
-              {forecast72Hours.length > 0 && (
-                <SafeComponent componentName="72HourForecast">
-                  <View style={styles.forecast72Card}>
-                    <View style={styles.forecast72Header}>
-                      <View style={styles.forecast72TitleContainer}>
-                        <Icon name="time" size={20} color={colors.primary} />
-                        <Text style={styles.forecast72Title}>72-Hour Forecast</Text>
-                      </View>
-                      <TouchableOpacity onPress={openForecast} style={styles.viewDetailedBtn}>
-                        <Text style={styles.viewDetailedText}>View Detailed</Text>
-                        <Icon name="chevron-forward" size={16} color={colors.primary} />
-                      </TouchableOpacity>
-                    </View>
-                    
-                    <Text style={styles.forecast72Subtitle}>
-                      Next 3 days
-                    </Text>
-
-                    {/* Temperature Chart Preview */}
-                    <View style={styles.chartPreviewContainer}>
-                      <Text style={styles.chartPreviewLabel}>Temperature Trend</Text>
-                      <WeatherChart
-                        data={chartData.slice(0, 72)}
-                        type="temperature"
-                        unit={unit}
-                        height={120}
-                      />
-                    </View>
-
-                    {/* Key Highlights */}
-                    <View style={styles.forecast72Highlights}>
-                      <Text style={styles.highlightsTitle}>Key Highlights</Text>
-                      <View style={styles.highlightsGrid}>
-                        <View style={styles.highlightItem}>
-                          <Icon name="thermometer" size={16} color={colors.temperature} />
-                          <Text style={styles.highlightLabel}>Temp Range</Text>
-                          <Text style={styles.highlightValue}>
-                            {Math.round(Math.min(...forecast72Hours.map(h => h.temperature)))}° - {Math.round(Math.max(...forecast72Hours.map(h => h.temperature)))}°
-                          </Text>
-                        </View>
-                        
-                        <View style={styles.highlightItem}>
-                          <Icon name="rainy" size={16} color={colors.precipitation} />
-                          <Text style={styles.highlightLabel}>Max Rain</Text>
-                          <Text style={styles.highlightValue}>
-                            {Math.round(Math.max(...forecast72Hours.map(h => h.precipitationProbability)))}%
-                          </Text>
-                        </View>
-                        
-                        <View style={styles.highlightItem}>
-                          <Icon name="flag" size={16} color={colors.wind} />
-                          <Text style={styles.highlightLabel}>Max Wind</Text>
-                          <Text style={styles.highlightValue}>
-                            {Math.round(Math.max(...forecast72Hours.map(h => h.windSpeed)))} {unit === 'metric' ? 'km/h' : 'mph'}
-                          </Text>
-                        </View>
-                        
-                        <View style={styles.highlightItem}>
-                          <Icon name="water" size={16} color={colors.humidity} />
-                          <Text style={styles.highlightLabel}>Humidity</Text>
-                          <Text style={styles.highlightValue}>
-                            {Math.round(forecast72Hours.reduce((sum, h) => sum + h.humidity, 0) / forecast72Hours.length)}%
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-                </SafeComponent>
-              )}
-            </>
-          )}
-
-          {/* Wind Analysis */}
-          {!loading && windData.length > 0 && (
-            <>
-              <SafeComponent componentName="WindBarGraphs">
-                <WindBarGraphs
-                  hourlyData={windData}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Weather Forecast</Text>
+            <ErrorBoundary>
+              <SafeComponent>
+                <WeatherTextForecast
+                  current={current}
+                  hourlyData={hourly}
                   unit={unit}
+                  circuitName={circuit.name}
+                  latitude={circuit.latitude}
+                  longitude={circuit.longitude}
                 />
               </SafeComponent>
+            </ErrorBoundary>
+          </View>
 
-              {/* Animated Wind Visualization with Map Underlay - MOVED HERE */}
-              {current && (
-                <SafeComponent componentName="WindParticleAnimation">
-                  <View style={styles.windAnimationCard}>
-                    <View style={styles.windAnimationHeader}>
-                      <View style={styles.windAnimationTitleContainer}>
-                        <Icon name="flag" size={20} color={colors.wind} />
-                        <Text style={styles.windAnimationTitle}>Live Wind Flow</Text>
-                      </View>
-                    </View>
-                    <Text style={styles.windAnimationSubtitle}>
-                      Real-time wind visualisation
-                    </Text>
-                    
-                    <View style={styles.windAnimationContainer}>
-                      <WindParticleAnimation
-                        windSpeed={current.wind_speed}
-                        windDirection={current.wind_direction}
-                        width={320}
-                        height={280}
-                        particleCount={450}
-                        showGrid={true}
-                        unit={unit}
-                        latitude={circuit.latitude}
-                        longitude={circuit.longitude}
-                      />
-                    </View>
-                    
-                    <View style={styles.windStatsContainer}>
-                      <View style={styles.windStatItem}>
-                        <Text style={styles.windStatLabel}>Speed</Text>
-                        <Text style={styles.windStatValue}>{Math.round(current.wind_speed)}</Text>
-                        <Text style={styles.windStatUnit}>{unit === 'metric' ? 'km/h' : 'mph'}</Text>
-                      </View>
-                      
-                      <View style={styles.windStatItem}>
-                        <Text style={styles.windStatLabel}>Direction</Text>
-                        <Text style={styles.windStatValue}>{getWindDirectionLabel(current.wind_direction)}</Text>
-                        <Text style={styles.windStatUnit}>{Math.round(current.wind_direction)}°</Text>
-                      </View>
-                      
-                      <View style={styles.windStatItem}>
-                        <Text style={styles.windStatLabel}>Gusts</Text>
-                        <Text style={styles.windStatValue}>{Math.round(current.wind_gusts)}</Text>
-                        <Text style={styles.windStatUnit}>{unit === 'metric' ? 'km/h' : 'mph'}</Text>
-                      </View>
-                    </View>
-                  </View>
-                </SafeComponent>
-              )}
-
-              <SafeComponent componentName="WindRadarGraph">
-                <WindRadarGraph
-                  hourlyData={windData}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Hourly Forecast</Text>
+            <ErrorBoundary>
+              <SafeComponent>
+                <EnhancedWeatherForecast
+                  hourlyData={hourly}
                   unit={unit}
+                  latitude={circuit.latitude}
+                  longitude={circuit.longitude}
+                  showExtended={true}
                 />
               </SafeComponent>
-            </>
-          )}
+            </ErrorBoundary>
+          </View>
 
-          <View style={{ height: 40 }} />
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Wind Analysis</Text>
+            <ErrorBoundary>
+              <SafeComponent>
+                <WindRadarGraph hourlyData={hourly} unit={unit} />
+              </SafeComponent>
+            </ErrorBoundary>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Wind Speed & Gusts</Text>
+            <ErrorBoundary>
+              <SafeComponent>
+                <WindBarGraphs hourlyData={hourly} unit={unit} />
+              </SafeComponent>
+            </ErrorBoundary>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Satellite & Radar</Text>
+            <ErrorBoundary>
+              <SafeComponent>
+                <WindyCloudRadar
+                  latitude={circuit.latitude}
+                  longitude={circuit.longitude}
+                  circuitName={circuit.name}
+                  zoom={8}
+                  width={350}
+                  height={300}
+                  compact={false}
+                />
+              </SafeComponent>
+            </ErrorBoundary>
+          </View>
+
+          <Footer />
         </ScrollView>
 
-        {/* Settings Bottom Sheet */}
-        <BottomSheet 
-          ref={settingsRef} 
-          index={-1} 
-          snapPoints={settingsSnap} 
-          enablePanDownToClose
-          backgroundStyle={styles.bottomSheetBackground}
-          handleIndicatorStyle={styles.bottomSheetHandle}
+        <BottomSheet
+          ref={bottomSheetRef}
+          index={-1}
+          snapPoints={['50%', '90%']}
+          enablePanDownToClose={true}
+          backgroundStyle={{ backgroundColor: colors.card }}
+          handleIndicatorStyle={{ backgroundColor: colors.textMuted }}
         >
-          <BottomSheetView style={styles.sheet}>
-            <Text style={styles.sheetTitle}>Settings</Text>
-            <Text style={styles.muted}>Units</Text>
-            <View style={{ height: 10 }} />
-            <Button
-              text={`Switch to ${unit === 'metric' ? 'Imperial' : 'Metric'}`}
-              onPress={toggleUnit}
-              style={buttonStyles.secondary}
-            />
-            <View style={{ height: 18 }} />
-            <Text style={styles.muted}>
-              Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, written text summaries, animated wind visualization with map underlay, and sunrise/sunset times for each track location.
-              Data updates every 10 minutes for accuracy.
-            </Text>
-          </BottomSheetView>
-        </BottomSheet>
-
-        {/* Enhanced Weather Charts Bottom Sheet */}
-        <BottomSheet 
-          ref={chartsRef} 
-          index={-1} 
-          snapPoints={chartsSnap} 
-          enablePanDownToClose
-          backgroundStyle={styles.bottomSheetBackground}
-          handleIndicatorStyle={styles.bottomSheetHandle}
-        >
-          <BottomSheetScrollView 
-            style={styles.sheet}
-            contentContainerStyle={styles.sheetScrollContent}
-          >
-            <Text style={styles.sheetTitle}>Weather Analysis</Text>
-            {chartData.length > 0 && (
-              <>
-                <SafeComponent componentName="TemperatureChart">
-                  <WeatherChart
-                    data={chartData}
-                    type="temperature"
-                    unit={unit}
-                    height={120}
-                  />
-                </SafeComponent>
-                <SafeComponent componentName="WindChart">
-                  <WeatherChart
-                    data={chartData}
-                    type="wind"
-                    unit={unit}
-                    height={120}
-                  />
-                </SafeComponent>
-                <SafeComponent componentName="HumidityChart">
-                  <WeatherChart
-                    data={chartData}
-                    type="humidity"
-                    unit={unit}
-                    height={120}
-                  />
-                </SafeComponent>
-                <SafeComponent componentName="PrecipitationChart">
-                  <WeatherChart
-                    data={chartData}
-                    type="precipitation"
-                    unit={unit}
-                    height={120}
-                  />
-                </SafeComponent>
-              </>
-            )}
-            
-            {windData.length > 0 && (
-              <SafeComponent componentName="WindRadarAnalysis">
-                <WindRadarGraph
-                  hourlyData={windData}
+          <BottomSheetScrollView style={styles.bottomSheetContent}>
+            <Text style={styles.bottomSheetTitle}>Detailed Forecast</Text>
+            <ErrorBoundary>
+              <SafeComponent>
+                <EnhancedWeatherForecast
+                  hourlyData={hourly}
                   unit={unit}
+                  latitude={circuit.latitude}
+                  longitude={circuit.longitude}
+                  showExtended={true}
                 />
               </SafeComponent>
-            )}
-            
-            <Text style={styles.muted}>
-              72-hour enhanced forecast data with number scales for precise readings. Charts update every 10 minutes with detailed atmospheric conditions. Wind radar analysis shows directional patterns and frequency distribution.
-            </Text>
+            </ErrorBoundary>
           </BottomSheetScrollView>
-        </BottomSheet>
-
-        {/* Enhanced Forecast Bottom Sheet */}
-        <BottomSheet 
-          ref={forecastRef} 
-          index={-1} 
-          snapPoints={forecastSnap} 
-          enablePanDownToClose
-          backgroundStyle={styles.bottomSheetBackground}
-          handleIndicatorStyle={styles.bottomSheetHandle}
-        >
-          <BottomSheetView style={styles.sheet}>
-            <Text style={styles.sheetTitle}>Detailed Forecast</Text>
-            <SafeComponent componentName="EnhancedWeatherForecast">
-              <EnhancedWeatherForecast
-                hourlyData={hourly}
-                unit={unit}
-                latitude={circuit.latitude}
-                longitude={circuit.longitude}
-                showExtended={true}
-                sunrise={todaySunTimes?.sunrise}
-                sunset={todaySunTimes?.sunset}
-              />
-            </SafeComponent>
-          </BottomSheetView>
         </BottomSheet>
       </View>
     </ErrorBoundary>
   );
 }
-
-export default DetailScreen;

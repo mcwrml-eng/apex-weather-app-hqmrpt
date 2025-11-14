@@ -4,15 +4,18 @@ import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout } from '../../styles/commonStyles';
 import { useTheme } from '../../state/ThemeContext';
+import { useLanguage } from '../../state/LanguageContext';
 import CircuitCard from '../../components/CircuitCard';
 import FeaturedTrackCard from '../../components/FeaturedTrackCard';
 import AppHeader from '../../components/AppHeader';
 import ErrorBoundary from '../../components/ErrorBoundary';
+import Footer from '../../components/Footer';
 import { motogpCircuits } from '../../data/circuits';
 
 export default function MotoGPScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   
   const colors = getColors(isDark);
   const commonStyles = getCommonStyles(isDark);
@@ -49,6 +52,7 @@ export default function MotoGPScreen() {
     },
     scrollContent: {
       padding: layout.screenPadding,
+      paddingBottom: spacing.xl,
     },
     sectionTitle: {
       fontSize: 20,
@@ -81,7 +85,7 @@ export default function MotoGPScreen() {
     statNumber: {
       fontSize: 24,
       fontWeight: '700',
-      color: colors.motogpBlue,
+      color: colors.motogpOrange,
       fontFamily: 'Roboto_700Bold',
     },
     statLabel: {
@@ -127,9 +131,9 @@ export default function MotoGPScreen() {
     <ErrorBoundary>
       <View style={styles.container}>
         <AppHeader
-          title="MotoGP"
-          subtitle={`2026 Championship Calendar • ${motogpCircuits.length} Circuits`}
-          icon={<Ionicons name="bicycle" size={32} color={colors.motogpBlue} />}
+          title={t('motogp')}
+          subtitle={`${t('championship_calendar')} • ${motogpCircuits.length} ${t('circuits')}`}
+          icon={<Ionicons name="bicycle" size={32} color={colors.motogpOrange} />}
         />
 
         <View style={styles.searchContainer}>
@@ -141,7 +145,7 @@ export default function MotoGPScreen() {
           />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search circuits or countries..."
+            placeholder={t('search_circuits')}
             placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -165,20 +169,20 @@ export default function MotoGPScreen() {
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
                 <Text style={styles.statNumber}>{motogpCircuits.length}</Text>
-                <Text style={styles.statLabel}>Circuits</Text>
+                <Text style={styles.statLabel}>{t('circuits')}</Text>
               </View>
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>22</Text>
-                <Text style={styles.statLabel}>Races</Text>
+                <Text style={styles.statNumber}>20</Text>
+                <Text style={styles.statLabel}>{t('races')}</Text>
               </View>
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>11</Text>
-                <Text style={styles.statLabel}>Teams</Text>
+                <Text style={styles.statNumber}>6</Text>
+                <Text style={styles.statLabel}>{t('teams')}</Text>
               </View>
             </View>
 
             <Text style={styles.sectionTitle}>
-              All Circuits ({filteredCircuits.length})
+              {t('all_circuits')} ({filteredCircuits.length})
             </Text>
 
             {filteredCircuits.length > 0 ? (
@@ -200,11 +204,12 @@ export default function MotoGPScreen() {
                   color={colors.textMuted} 
                 />
                 <Text style={styles.emptyText}>
-                  No circuits found matching &quot;{searchQuery}&quot;
+                  {t('no_circuits_found')} &quot;{searchQuery}&quot;
                 </Text>
               </View>
             )}
           </View>
+          <Footer />
         </ScrollView>
       </View>
     </ErrorBoundary>

@@ -8,6 +8,7 @@ import CircuitCard from '../../components/CircuitCard';
 import FeaturedTrackCard from '../../components/FeaturedTrackCard';
 import AppHeader from '../../components/AppHeader';
 import IndyCarIcon from '../../components/IndyCarIcon';
+import Footer from '../../components/Footer';
 import { indycarCircuits } from '../../data/circuits';
 
 export default function IndyCarScreen() {
@@ -49,6 +50,7 @@ export default function IndyCarScreen() {
     },
     scrollContent: {
       padding: layout.screenPadding,
+      paddingBottom: spacing.xl,
     },
     sectionTitle: {
       fontSize: 20,
@@ -191,11 +193,12 @@ export default function IndyCarScreen() {
                 color={colors.textMuted} 
               />
               <Text style={styles.emptyText}>
-                No circuits found matching "{searchQuery}"
+                No circuits found matching &quot;{searchQuery}&quot;
               </Text>
             </View>
           )}
         </View>
+        <Footer />
       </ScrollView>
     </View>
   );

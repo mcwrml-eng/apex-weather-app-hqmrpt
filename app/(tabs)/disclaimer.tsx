@@ -7,6 +7,7 @@ import { useTheme } from '../../state/ThemeContext';
 import { useLanguage } from '../../state/LanguageContext';
 import AppHeader from '../../components/AppHeader';
 import Logo from '../../components/Logo';
+import Footer from '../../components/Footer';
 
 export default function DisclaimerScreen() {
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -27,6 +28,7 @@ export default function DisclaimerScreen() {
     },
     scrollContent: {
       padding: layout.screenPadding,
+      paddingBottom: spacing.xl,
     },
     logoContainer: {
       alignItems: 'center',
@@ -200,6 +202,7 @@ export default function DisclaimerScreen() {
             {t('version_info')}
           </Text>
         </View>
+        <Footer />
       </ScrollView>
     </View>
   );
