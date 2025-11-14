@@ -11,17 +11,17 @@ import { useTheme } from '../state/ThemeContext';
 import { useLanguage, Language } from '../state/LanguageContext';
 import ThemeToggle from '../components/ThemeToggle';
 
-const LANGUAGES: { code: Language; name: string; flag: string }[] = [
-  { code: 'en', name: 'English', flag: '🇬🇧' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-  { code: 'it', name: 'Italiano', flag: '🇮🇹' },
-  { code: 'pt', name: 'Português', flag: '🇵🇹' },
-  { code: 'ja', name: '日本語', flag: '🇯🇵' },
-  { code: 'zh', name: '中文', flag: '🇨🇳' },
-  { code: 'ar', name: 'العربية', flag: '🇸🇦' },
-  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+const LANGUAGES: { code: Language; name: string; flag: string; countryCode: string }[] = [
+  { code: 'en', name: 'English', flag: '🇬🇧', countryCode: 'GB' },
+  { code: 'es', name: 'Español', flag: '🇪🇸', countryCode: 'ES' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷', countryCode: 'FR' },
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪', countryCode: 'DE' },
+  { code: 'it', name: 'Italiano', flag: '🇮🇹', countryCode: 'IT' },
+  { code: 'pt', name: 'Português', flag: '🇵🇹', countryCode: 'PT' },
+  { code: 'ja', name: '日本語', flag: '🇯🇵', countryCode: 'JP' },
+  { code: 'zh', name: '中文', flag: '🇨🇳', countryCode: 'CN' },
+  { code: 'ar', name: 'العربية', flag: '🇸🇦', countryCode: 'SA' },
+  { code: 'ru', name: 'Русский', flag: '🇷🇺', countryCode: 'RU' },
 ];
 
 export default function CoverPage() {
@@ -125,6 +125,19 @@ export default function CoverPage() {
     languageNameSelected: {
       color: '#FFFFFF',
       fontWeight: '600',
+    },
+    languageCode: {
+      fontSize: 10,
+      color: isDark ? '#FFFFFF' : colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: spacing.xs,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+      opacity: 0.8,
+    },
+    languageCodeSelected: {
+      color: '#FFFFFF',
+      opacity: 0.9,
     },
     copyrightText: {
       fontSize: 12,
@@ -299,6 +312,14 @@ export default function CoverPage() {
                         ]}
                       >
                         {lang.name}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.languageCode,
+                          isSelected && styles.languageCodeSelected,
+                        ]}
+                      >
+                        {lang.countryCode}
                       </Text>
                     </TouchableOpacity>
                   );
