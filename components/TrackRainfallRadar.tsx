@@ -1534,6 +1534,12 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         </View>
         
         <Text style={styles.infoText}>
+          Powered by Rainviewer
+        </Text>
+        <Text style={styles.infoText}>
+          Adjust pan and zoom to correct area of map
+        </Text>
+        <Text style={styles.infoText}>
           Center of radar shows circuit location at Lat: {latitude.toFixed(4)}°, Lon: {longitude.toFixed(4)}° • Distance rings: {distanceRings.join('km, ')}km
           {radarData.hasRain && ` • Frame ${currentFrame + 1}/${radarData.gridData.length}`}
         </Text>

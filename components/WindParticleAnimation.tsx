@@ -1025,6 +1025,10 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
         }
       </Text>
       
+      <Text style={styles.infoText}>
+        Adjust pan and zoom to correct area of map
+      </Text>
+      
       {mapError && (
         <Text style={[styles.infoText, { color: colors.error, marginTop: 4 }]}>
           Map tiles failed to load. Showing visualization only.
