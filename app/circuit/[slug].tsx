@@ -16,6 +16,7 @@ import WeatherAlerts from '../../components/WeatherAlerts';
 import TrackRainfallRadar from '../../components/TrackRainfallRadar';
 import WindyCloudRadar from '../../components/WindyCloudRadar';
 import WindParticleAnimation from '../../components/WindParticleAnimation';
+import TrackTemperatureAnalysis from '../../components/TrackTemperatureAnalysis';
 import BottomSheet, { BottomSheetView, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
@@ -104,6 +105,22 @@ function DetailScreen() {
       return hourly.slice(0, 72);
     } catch (err) {
       console.error('DetailScreen: Error creating 72h forecast:', err);
+      return [];
+    }
+  }, [hourly]);
+
+  // Prepare data for track temperature analysis
+  const trackTempData = useMemo(() => {
+    try {
+      return hourly.map(h => ({
+        time: h.time,
+        temperature: h.temperature,
+        uvIndex: h.uvIndex,
+        cloudCover: h.cloudCover,
+        windSpeed: h.windSpeed,
+      }));
+    } catch (err) {
+      console.error('DetailScreen: Error creating track temp data:', err);
       return [];
     }
   }, [hourly]);
@@ -837,6 +854,20 @@ function DetailScreen() {
             </View>
           )}
 
+          {/* Track Temperature Analysis - NEW COMPONENT */}
+          {!loading && trackTempData.length > 0 && (
+            <SafeComponent componentName="TrackTemperatureAnalysis">
+              <TrackTemperatureAnalysis
+                hourlyData={trackTempData}
+                unit={unit}
+                circuitName={circuit.name}
+                sunrise={todaySunTimes?.sunrise}
+                sunset={todaySunTimes?.sunset}
+                compact={false}
+              />
+            </SafeComponent>
+          )}
+
           {/* Windy Cloud & Radar Imagery */}
           {!loading && circuit && (
             <SafeComponent componentName="WindyCloudRadar">
@@ -1264,8 +1295,9 @@ function DetailScreen() {
             />
             <View style={{ height: 18 }} />
             <Text style={styles.muted}>
-              Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, written text summaries, animated wind visualization with map underlay, and sunrise/sunset times for each track location.
-              Data updates every 10 minutes for accuracy.
+              Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, 
+              written text summaries, animated wind visualization with map underlay, track temperature analysis, and sunrise/sunset times 
+              for each track location. Data updates every 10 minutes for accuracy.
             </Text>
           </BottomSheetView>
         </BottomSheet>
@@ -1331,7 +1363,8 @@ function DetailScreen() {
             )}
             
             <Text style={styles.muted}>
-              72-hour enhanced forecast data with number scales for precise readings. Charts update every 10 minutes with detailed atmospheric conditions. Wind radar analysis shows directional patterns and frequency distribution.
+              72-hour enhanced forecast data with number scales for precise readings. Charts update every 10 minutes with detailed 
+              atmospheric conditions. Wind radar analysis shows directional patterns and frequency distribution.
             </Text>
           </BottomSheetScrollView>
         </BottomSheet>
