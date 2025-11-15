@@ -20,8 +20,6 @@ const LANGUAGES: { code: Language; name: string; flag: string; countryCode: stri
   { code: 'pt', name: 'Português', flag: '🇵🇹', countryCode: 'PT' },
   { code: 'ja', name: '日本語', flag: '🇯🇵', countryCode: 'JP' },
   { code: 'zh', name: '中文', flag: '🇨🇳', countryCode: 'CN' },
-  { code: 'ar', name: 'العربية', flag: '🇸🇦', countryCode: 'SA' },
-  { code: 'ru', name: 'Русский', flag: '🇷🇺', countryCode: 'RU' },
 ];
 
 export default function CoverPage() {
