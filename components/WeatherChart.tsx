@@ -142,50 +142,101 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
     return value.toFixed(1);
   };
 
-  // Enhanced time formatting with dynamic scaling based on data length and screen width
+  // Get day name from date
+  const getDayName = (date: Date) => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return days[date.getDay()];
+  };
+
+  // Get month name from date
+  const getMonthName = (date: Date) => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[date.getMonth()];
+  };
+
+  // Enhanced time formatting with better date context and clearer labeling
   const formatTimeLabel = (timeString: string, index: number, totalPoints: number) => {
     const date = new Date(timeString);
     const hour = date.getHours();
     const day = date.getDate();
     const month = date.getMonth() + 1;
+    const dayName = getDayName(date);
+    const monthName = getMonthName(date);
+    
+    // Check if this is a new day compared to previous point
+    let isNewDay = false;
+    if (index > 0) {
+      const prevDate = new Date(validData[index - 1].time);
+      isNewDay = prevDate.getDate() !== date.getDate();
+    }
     
     // Get screen width to determine how many labels we can fit
     const screenWidth = Dimensions.get('window').width;
     const availableWidth = screenWidth - 100; // Account for Y-axis and padding
-    const maxLabels = Math.floor(availableWidth / 45); // Minimum 45px per label to prevent overlap
+    const maxLabels = Math.floor(availableWidth / 50); // Minimum 50px per label to prevent overlap
     
     // Determine optimal label frequency based on data length and screen space
     let labelFrequency: number;
     
     if (totalPoints <= 12) {
-      // For 12 hours or less, show every hour if space allows
-      labelFrequency = Math.max(1, Math.ceil(totalPoints / maxLabels));
+      // For 12 hours or less, show every 2-3 hours
+      labelFrequency = Math.max(2, Math.ceil(totalPoints / maxLabels));
     } else if (totalPoints <= 24) {
       // For 24 hours, show every 3-4 hours
       labelFrequency = Math.max(3, Math.ceil(totalPoints / maxLabels));
     } else if (totalPoints <= 48) {
       // For 48 hours, show every 6 hours
       labelFrequency = Math.max(6, Math.ceil(totalPoints / maxLabels));
-    } else {
-      // For 72+ hours, show every 8-12 hours
+    } else if (totalPoints <= 72) {
+      // For 72 hours, show every 8 hours
       labelFrequency = Math.max(8, Math.ceil(totalPoints / maxLabels));
+    } else {
+      // For 96+ hours, show every 12 hours
+      labelFrequency = Math.max(12, Math.ceil(totalPoints / maxLabels));
     }
     
-    // Always show first and last labels
+    // Always show first and last labels, plus key intervals and day transitions
     const isFirstOrLast = index === 0 || index === totalPoints - 1;
     const isKeyInterval = index % labelFrequency === 0;
-    const isNewDay = hour === 0 && index > 0;
+    const isMidnight = hour === 0;
+    const isNoon = hour === 12;
     
-    if (isFirstOrLast || isKeyInterval || isNewDay) {
+    // Show labels at strategic points
+    if (isFirstOrLast || isKeyInterval || (isNewDay && isMidnight)) {
       if (totalPoints <= 24) {
-        // For shorter periods, show just the hour
-        return `${hour.toString().padStart(2, '0')}h`;
-      } else {
-        // For longer periods, show hour with day context for new days
-        if (isNewDay || index === 0) {
-          return `${hour.toString().padStart(2, '0')}h\n${day}/${month}`;
+        // For single day view, show time with AM/PM
+        const period = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+        
+        if (index === 0) {
+          // First label: show day and time
+          return `${dayName}\n${displayHour}${period}`;
         } else {
-          return `${hour.toString().padStart(2, '0')}h`;
+          return `${displayHour}${period}`;
+        }
+      } else if (totalPoints <= 48) {
+        // For 2-day view, show time and indicate day changes
+        const period = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+        
+        if (isNewDay || index === 0) {
+          return `${dayName}\n${displayHour}${period}`;
+        } else {
+          return `${displayHour}${period}`;
+        }
+      } else {
+        // For 3+ day view, show day name and time for clarity
+        const period = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+        
+        if (isNewDay || index === 0) {
+          // Show full date context at day boundaries
+          return `${dayName} ${day}\n${displayHour}${period}`;
+        } else if (isMidnight || isNoon) {
+          // Show time at midnight and noon
+          return `${displayHour}${period}`;
+        } else {
+          return `${displayHour}${period}`;
         }
       }
     }
@@ -208,6 +259,12 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
   const unitLabel = getUnit();
   const title = getTitle();
   const timeLabels = generateTimeLabels();
+
+  // Calculate time range for better context
+  const firstDate = new Date(validData[0].time);
+  const lastDate = new Date(validData[validData.length - 1].time);
+  const hoursDiff = Math.round((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60));
+  const daysDiff = Math.ceil(hoursDiff / 24);
 
   // Enhanced statistical calculations
   const minValue = Math.min(...chartData);
@@ -274,6 +331,17 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
   const sumXX = chartData.reduce((sum, _, i) => sum + i * i, 0);
   const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
   const trend = slope > 0.1 ? 'Rising' : slope < -0.1 ? 'Falling' : 'Stable';
+
+  // Generate time range description
+  const getTimeRangeDescription = () => {
+    if (daysDiff === 1) {
+      return `${hoursDiff} hours`;
+    } else if (daysDiff <= 3) {
+      return `${daysDiff} days`;
+    } else {
+      return `${daysDiff} days (${validData.length} data points)`;
+    }
+  };
 
   const styles = getStyles(colors);
 
@@ -363,7 +431,7 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
               <View key={index} style={[
                 styles.xAxisLabelWrapper,
                 { 
-                  minWidth: label ? 40 : 20,
+                  minWidth: label ? 45 : 20,
                   opacity: label ? 1 : 0
                 }
               ]}>
@@ -371,7 +439,7 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
                   styles.xAxisLabel,
                   { 
                     fontSize: validData.length > 48 ? 9 : 10,
-                    fontWeight: label ? '500' : '400',
+                    fontWeight: label.includes('\n') ? '600' : '500',
                     textAlign: 'center',
                     lineHeight: validData.length > 48 ? 11 : 12,
                   }
@@ -383,7 +451,7 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
           </View>
         </ScrollView>
         <Text style={styles.xAxisTitle}>
-          Time Scale ({validData.length <= 24 ? 'Hourly' : validData.length <= 48 ? '6-hour intervals' : '8-12 hour intervals'})
+          Time Period: {getTimeRangeDescription()} • {getDayName(firstDate)} {firstDate.getDate()} {getMonthName(firstDate)} - {getDayName(lastDate)} {lastDate.getDate()} {getMonthName(lastDate)}
         </Text>
       </View>
 
@@ -488,7 +556,7 @@ function getStyles(colors: any) {
     xAxisLabelsContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      minHeight: 24,
+      minHeight: 28,
       gap: 2,
     },
     xAxisLabelWrapper: {
@@ -503,12 +571,13 @@ function getStyles(colors: any) {
       textAlign: 'center',
     },
     xAxisTitle: {
-      fontSize: 11,
+      fontSize: 10,
       color: colors.textMuted,
       fontFamily: 'Roboto_500Medium',
       textAlign: 'center',
       marginTop: 8,
       fontWeight: '500',
+      lineHeight: 14,
     },
     statsPanel: {
       flexDirection: 'row',
