@@ -66,66 +66,93 @@ function calculateTrackTemperature(
     const season = getSeason(date, latitude);
     const hour = date.getHours();
     
-    // Seasonal heating ranges (in Celsius)
-    // Summer: 15-25°C higher than ambient
-    // Autumn/Winter/Spring: 5-15°C higher than ambient
-    let minHeating: number;
-    let maxHeating: number;
+    // Seasonal base heating (in Celsius)
+    // These are the BASE increases before any factors are applied
+    // Summer: Much higher base heating due to intense sun
+    // Other seasons: Moderate base heating
+    let baseHeating: number;
     
     if (season === 'summer') {
-      minHeating = 15; // 15°C minimum
-      maxHeating = 25; // 25°C maximum
+      baseHeating = 25; // Start with 25°C base increase in summer
+    } else if (season === 'spring' || season === 'autumn') {
+      baseHeating = 15; // 15°C base increase in transitional seasons
     } else {
-      // Autumn, Winter, Spring
-      minHeating = 5;   // 5°C minimum
-      maxHeating = 15;  // 15°C maximum
+      // Winter
+      baseHeating = 8; // 8°C base increase in winter
     }
     
     // Time of day factor (peak heating at midday)
-    // Morning (6-10): 0.5-0.8, Midday (10-15): 0.8-1.0, Afternoon (15-19): 0.7-0.9, Evening (19-21): 0.4-0.6
+    // This multiplier ranges from 0.3 to 1.2 depending on time
     let timeOfDayFactor = 0.5;
-    if (hour >= 10 && hour < 15) {
-      // Peak sun hours
-      timeOfDayFactor = 0.9 + (Math.sin((hour - 10) / 5 * Math.PI) * 0.1);
-    } else if (hour >= 6 && hour < 10) {
-      // Morning
-      timeOfDayFactor = 0.5 + ((hour - 6) / 4) * 0.3;
-    } else if (hour >= 15 && hour < 19) {
-      // Afternoon
-      timeOfDayFactor = 0.9 - ((hour - 15) / 4) * 0.2;
-    } else if (hour >= 19 && hour < 21) {
+    if (hour >= 11 && hour <= 14) {
+      // Peak sun hours (11 AM - 2 PM) - maximum heating
+      timeOfDayFactor = 1.2;
+    } else if (hour >= 10 && hour < 11) {
+      // Late morning
+      timeOfDayFactor = 1.0;
+    } else if (hour >= 14 && hour < 16) {
+      // Early afternoon
+      timeOfDayFactor = 1.1;
+    } else if (hour >= 9 && hour < 10) {
+      // Mid morning
+      timeOfDayFactor = 0.8;
+    } else if (hour >= 16 && hour < 18) {
+      // Late afternoon
+      timeOfDayFactor = 0.9;
+    } else if (hour >= 7 && hour < 9) {
+      // Early morning
+      timeOfDayFactor = 0.5;
+    } else if (hour >= 18 && hour < 20) {
       // Evening
-      timeOfDayFactor = 0.5 - ((hour - 19) / 2) * 0.1;
+      timeOfDayFactor = 0.6;
+    } else {
+      // Very early morning or late evening
+      timeOfDayFactor = 0.3;
     }
     
-    // UV factor (normalized 0-1)
-    // UV index typically ranges from 0-11+, we'll use 0-10 as our scale
-    // Even with low UV, we want significant heating
-    const uvFactor = Math.max(0.4, Math.min(uvIndex / 10, 1)); // Minimum 0.4 to ensure heating
+    // UV factor (normalized 0-1, but with a higher minimum)
+    // UV index typically ranges from 0-11+
+    // Even with low UV, asphalt absorbs significant heat
+    const normalizedUV = Math.min(uvIndex / 11, 1);
+    const uvFactor = 0.6 + (normalizedUV * 0.4); // Range: 0.6 to 1.0
     
-    // Cloud cover reduces solar heating (0% clouds = full heating, 100% clouds = reduced heating)
-    // Even with full cloud cover, track still heats up significantly
-    const cloudFactor = 1 - (cloudCover / 100) * 0.5; // Clouds reduce heating by up to 50% (not 70%)
+    // Cloud cover reduces solar heating but not as much as you'd think
+    // Asphalt is dark and absorbs heat even through clouds
+    // 0% clouds = full heating (1.0), 100% clouds = 70% heating (0.7)
+    const cloudFactor = 1.0 - (cloudCover / 100) * 0.3; // Range: 0.7 to 1.0
     
-    // Calculate base solar heating within seasonal range
-    const baseHeating = minHeating + (maxHeating - minHeating) * uvFactor;
-    
-    // Apply all factors
-    const solarHeating = baseHeating * cloudFactor * timeOfDayFactor;
+    // Calculate solar heating with all factors
+    const solarHeating = baseHeating * timeOfDayFactor * uvFactor * cloudFactor;
     
     // Wind cooling effect (higher wind speeds cool the track surface)
     // Convert wind speed to m/s if needed
     const windSpeedMS = unit === 'metric' ? windSpeed / 3.6 : windSpeed / 2.237;
-    const windCoolingFactor = Math.min(windSpeedMS * 0.8, 4); // Max 4°C cooling from wind
+    // Wind cooling is less effective on hot asphalt
+    const windCoolingFactor = Math.min(windSpeedMS * 0.5, 3); // Max 3°C cooling from wind
     
     // Calculate track temperature with all factors
     trackTempC = airTempC + solarHeating - windCoolingFactor;
     
-    // Ensure minimum difference during daytime
-    const minDifference = season === 'summer' ? 12 : 4;
+    // Ensure minimum difference during daytime based on season
+    let minDifference: number;
+    if (season === 'summer') {
+      minDifference = 18; // Minimum 18°C higher in summer
+    } else if (season === 'spring' || season === 'autumn') {
+      minDifference = 10; // Minimum 10°C higher in transitional seasons
+    } else {
+      minDifference = 5; // Minimum 5°C higher in winter
+    }
+    
     if (trackTempC - airTempC < minDifference) {
       trackTempC = airTempC + minDifference;
     }
+    
+    // Additional boost for very sunny conditions (high UV, low clouds)
+    if (uvIndex > 7 && cloudCover < 30) {
+      const sunnyBoost = 5; // Extra 5°C for very sunny conditions
+      trackTempC += sunnyBoost;
+    }
+    
   } else {
     // At night, track cools down but retains some heat initially, then becomes cooler
     // Track is typically 2-4°C cooler than air at night due to radiation cooling
@@ -141,15 +168,6 @@ function calculateTrackTemperature(
   const maxTemp = unit === 'metric' ? 70 : 158;
   
   trackTemp = Math.max(minTemp, Math.min(maxTemp, trackTemp));
-  
-  // Final safety check: ensure track is warmer than air during day
-  if (isDaytime && trackTemp < airTemp) {
-    const season = getSeason(new Date(timeString), latitude);
-    const minIncrease = season === 'summer' ? 
-      (unit === 'metric' ? 15 : 27) : 
-      (unit === 'metric' ? 5 : 9);
-    trackTemp = airTemp + minIncrease;
-  }
   
   return trackTemp;
 }
@@ -522,12 +540,13 @@ export default function TrackTemperatureAnalysis({
         <Text style={styles.infoTitle}>ℹ️ About Track Temperature</Text>
         <Text style={styles.infoText}>
           Track surface temperature is estimated based on air temperature, solar radiation (UV index), 
-          cloud cover, wind speed, and seasonal variations. Track surfaces can be significantly hotter 
-          than air temperature in direct sunlight.
+          cloud cover, wind speed, and seasonal variations. Asphalt surfaces absorb significant heat 
+          and can be much hotter than air temperature in direct sunlight.
         </Text>
         <Text style={styles.infoText}>
-          • <Text style={styles.infoBold}>Summer:</Text> Track typically 15-25°C (27-45°F) above ambient{'\n'}
-          • <Text style={styles.infoBold}>Autumn/Winter:</Text> Track typically 5-15°C (9-27°F) above ambient{'\n'}
+          • <Text style={styles.infoBold}>Summer:</Text> Track typically 18-30°C (32-54°F) above ambient{'\n'}
+          • <Text style={styles.infoBold}>Spring/Autumn:</Text> Track typically 10-20°C (18-36°F) above ambient{'\n'}
+          • <Text style={styles.infoBold}>Winter:</Text> Track typically 5-12°C (9-22°F) above ambient{'\n'}
           • <Text style={styles.infoBold}>Optimal:</Text> 20-30°C (68-86°F) - Best grip and tire performance
         </Text>
       </View>
