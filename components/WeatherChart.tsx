@@ -172,26 +172,26 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
     // Get screen width to determine how many labels we can fit
     const screenWidth = Dimensions.get('window').width;
     const availableWidth = screenWidth - 100; // Account for Y-axis and padding
-    const maxLabels = Math.floor(availableWidth / 50); // Minimum 50px per label to prevent overlap
+    const maxLabels = Math.floor(availableWidth / 60); // Minimum 60px per label to prevent overlap
     
     // Determine optimal label frequency based on data length and screen space
     let labelFrequency: number;
     
     if (totalPoints <= 12) {
       // For 12 hours or less, show every 2-3 hours
-      labelFrequency = Math.max(2, Math.ceil(totalPoints / maxLabels));
+      labelFrequency = Math.max(2, Math.ceil(totalPoints / Math.min(maxLabels, 6)));
     } else if (totalPoints <= 24) {
-      // For 24 hours, show every 3-4 hours
-      labelFrequency = Math.max(3, Math.ceil(totalPoints / maxLabels));
+      // For 24 hours, show every 4-6 hours
+      labelFrequency = Math.max(4, Math.ceil(totalPoints / Math.min(maxLabels, 5)));
     } else if (totalPoints <= 48) {
-      // For 48 hours, show every 6 hours
-      labelFrequency = Math.max(6, Math.ceil(totalPoints / maxLabels));
+      // For 48 hours, show every 8-12 hours
+      labelFrequency = Math.max(8, Math.ceil(totalPoints / Math.min(maxLabels, 4)));
     } else if (totalPoints <= 72) {
-      // For 72 hours, show every 8 hours
-      labelFrequency = Math.max(8, Math.ceil(totalPoints / maxLabels));
+      // For 72 hours, show every 12 hours
+      labelFrequency = Math.max(12, Math.ceil(totalPoints / Math.min(maxLabels, 4)));
     } else {
-      // For 96+ hours, show every 12 hours
-      labelFrequency = Math.max(12, Math.ceil(totalPoints / maxLabels));
+      // For 96+ hours, show every 12-24 hours
+      labelFrequency = Math.max(12, Math.ceil(totalPoints / Math.min(maxLabels, 4)));
     }
     
     // Always show first and last labels, plus key intervals and day transitions
@@ -208,7 +208,7 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
         
         if (index === 0) {
           // First label: show day and time
-          return `${dayName}\n${displayHour}${period}`;
+          return `${dayName} ${displayHour}${period}`;
         } else {
           return `${displayHour}${period}`;
         }
@@ -218,7 +218,7 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
         const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
         
         if (isNewDay || index === 0) {
-          return `${dayName}\n${displayHour}${period}`;
+          return `${dayName} ${displayHour}${period}`;
         } else {
           return `${displayHour}${period}`;
         }
@@ -229,7 +229,7 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
         
         if (isNewDay || index === 0) {
           // Show full date context at day boundaries
-          return `${dayName} ${day}\n${displayHour}${period}`;
+          return `${dayName} ${day}`;
         } else if (isMidnight) {
           // Show time at midnight
           return `${displayHour}${period}`;
@@ -261,6 +261,7 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
   const timeLabels = generateTimeLabels();
 
   console.log('WeatherChart: Chart data length:', chartData.length, 'Time labels length:', timeLabels.length);
+  console.log('WeatherChart: Non-empty labels:', timeLabels.filter(l => l !== '').length);
 
   // Calculate time range for better context
   const firstDate = new Date(validData[0].time);
@@ -432,7 +433,7 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
             contentInset={{ left: 10, right: 10 }}
             svg={{
               fill: colors.textMuted,
-              fontSize: 10,
+              fontSize: 9,
               fontFamily: 'Roboto_400Regular',
               rotation: 0,
               originY: 0,
