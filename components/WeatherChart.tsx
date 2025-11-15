@@ -154,13 +154,12 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
     return months[date.getMonth()];
   };
 
-  // Enhanced time formatting with better date context and clearer labeling
+  // Enhanced time formatting with aggressive label reduction to prevent overlap
   const formatTimeLabel = (timeString: string, index: number, totalPoints: number) => {
     const date = new Date(timeString);
     const hour = date.getHours();
     const day = date.getDate();
     const dayName = getDayName(date);
-    const monthName = getMonthName(date);
     
     // Check if this is a new day compared to previous point
     let isNewDay = false;
@@ -172,43 +171,51 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
     // Get screen width to determine how many labels we can fit
     const screenWidth = Dimensions.get('window').width;
     const availableWidth = screenWidth - 100; // Account for Y-axis and padding
-    const maxLabels = Math.floor(availableWidth / 60); // Minimum 60px per label to prevent overlap
     
-    // Determine optimal label frequency based on data length and screen space
+    // Calculate maximum number of labels that can fit without overlapping
+    // Each label needs approximately 70-80px of space to be readable
+    const minSpacingPerLabel = 75;
+    const maxLabels = Math.floor(availableWidth / minSpacingPerLabel);
+    
+    // Determine optimal label frequency - be more aggressive to prevent overlap
     let labelFrequency: number;
     
     if (totalPoints <= 12) {
-      // For 12 hours or less, show every 2-3 hours
-      labelFrequency = Math.max(2, Math.ceil(totalPoints / Math.min(maxLabels, 6)));
+      // For 12 hours or less, show 3-4 labels max
+      labelFrequency = Math.ceil(totalPoints / Math.min(maxLabels, 4));
     } else if (totalPoints <= 24) {
-      // For 24 hours, show every 4-6 hours
-      labelFrequency = Math.max(4, Math.ceil(totalPoints / Math.min(maxLabels, 5)));
+      // For 24 hours, show 4-5 labels max
+      labelFrequency = Math.ceil(totalPoints / Math.min(maxLabels, 4));
     } else if (totalPoints <= 48) {
-      // For 48 hours, show every 8-12 hours
-      labelFrequency = Math.max(8, Math.ceil(totalPoints / Math.min(maxLabels, 4)));
+      // For 48 hours, show 4-5 labels max
+      labelFrequency = Math.ceil(totalPoints / Math.min(maxLabels, 4));
     } else if (totalPoints <= 72) {
-      // For 72 hours, show every 12 hours
-      labelFrequency = Math.max(12, Math.ceil(totalPoints / Math.min(maxLabels, 4)));
+      // For 72 hours, show 4 labels max
+      labelFrequency = Math.ceil(totalPoints / Math.min(maxLabels, 4));
     } else {
-      // For 96+ hours, show every 12-24 hours
-      labelFrequency = Math.max(12, Math.ceil(totalPoints / Math.min(maxLabels, 4)));
+      // For 96+ hours, show 4 labels max
+      labelFrequency = Math.ceil(totalPoints / Math.min(maxLabels, 4));
     }
     
-    // Always show first and last labels, plus key intervals and day transitions
+    // Ensure minimum frequency to prevent too many labels
+    labelFrequency = Math.max(labelFrequency, Math.ceil(totalPoints / 5));
+    
+    // Only show labels at strategic points
     const isFirstOrLast = index === 0 || index === totalPoints - 1;
     const isKeyInterval = index % labelFrequency === 0;
     const isMidnight = hour === 0;
+    const isNoon = hour === 12;
     
-    // Show labels at strategic points
+    // Show labels only at very specific points to prevent overlap
     if (isFirstOrLast || isKeyInterval || (isNewDay && isMidnight)) {
       if (totalPoints <= 24) {
-        // For single day view, show time with AM/PM
+        // For single day view, show concise time
         const period = hour >= 12 ? 'PM' : 'AM';
         const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
         
         if (index === 0) {
-          // First label: show day and time
-          return `${dayName} ${displayHour}${period}`;
+          // First label: show day abbreviation and time
+          return `${dayName.substring(0, 2)} ${displayHour}${period}`;
         } else {
           return `${displayHour}${period}`;
         }
@@ -218,23 +225,24 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
         const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
         
         if (isNewDay || index === 0) {
-          return `${dayName} ${displayHour}${period}`;
-        } else {
+          return `${dayName.substring(0, 2)} ${displayHour}${period}`;
+        } else if (isNoon || hour === 6 || hour === 18) {
           return `${displayHour}${period}`;
+        } else {
+          return '';
         }
       } else {
-        // For 3+ day view, show day name and time for clarity
-        const period = hour >= 12 ? 'PM' : 'AM';
-        const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-        
-        if (isNewDay || index === 0) {
-          // Show full date context at day boundaries
-          return `${dayName} ${day}`;
-        } else if (isMidnight) {
-          // Show time at midnight
+        // For 3+ day view, show day name primarily
+        if (isNewDay || index === 0 || isFirstOrLast) {
+          // Show day and date at boundaries
+          return `${dayName.substring(0, 2)} ${day}`;
+        } else if (isMidnight || isNoon) {
+          // Show time at key hours
+          const period = hour >= 12 ? 'PM' : 'AM';
+          const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
           return `${displayHour}${period}`;
         } else {
-          return `${displayHour}${period}`;
+          return '';
         }
       }
     }
@@ -249,9 +257,15 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
     
     // Create an array with the same length as data points
     // Each position corresponds to its data point
-    return validData.map((point, index) => {
+    const labels = validData.map((point, index) => {
       return formatTimeLabel(point.time, index, totalPoints);
     });
+    
+    // Count non-empty labels
+    const nonEmptyCount = labels.filter(l => l !== '').length;
+    console.log('WeatherChart: Generated', nonEmptyCount, 'non-empty labels out of', totalPoints, 'points');
+    
+    return labels;
   };
 
   const chartData = getChartData();
@@ -422,7 +436,7 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
         </View>
       </View>
       
-      {/* Enhanced X-axis using XAxis component for proper alignment */}
+      {/* Enhanced X-axis with better spacing to prevent overlap */}
       <View style={styles.xAxisContainer}>
         <View style={styles.xAxisWrapper}>
           <View style={styles.yAxisSpacer} />
@@ -430,7 +444,7 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
             style={styles.xAxis}
             data={chartData}
             formatLabel={(value, index) => timeLabels[index] || ''}
-            contentInset={{ left: 10, right: 10 }}
+            contentInset={{ left: 15, right: 15 }}
             svg={{
               fill: colors.textMuted,
               fontSize: 9,
