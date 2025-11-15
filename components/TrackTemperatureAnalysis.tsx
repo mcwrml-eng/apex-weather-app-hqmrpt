@@ -71,84 +71,135 @@ function calculateTrackTemperature(
     
     console.log(`  Season: ${season}, Hour: ${hour}`);
     
-    // Base heating values - these are the MINIMUM increases before any multipliers
-    // Asphalt absorbs significantly more heat than air temperature suggests
-    let baseHeating: number;
+    // REVISED APPROACH: Start with a strong base increase that represents
+    // the fundamental heat absorption of dark asphalt
+    let baseIncrease: number;
     
     if (season === 'summer') {
-      baseHeating = 35; // Summer: Start with 35°C base increase (increased from 30)
+      // Summer: Asphalt can easily be 20-25°C hotter even before peak sun
+      baseIncrease = 22;
     } else if (season === 'spring' || season === 'autumn') {
-      baseHeating = 22; // Transitional seasons: 22°C base increase (increased from 18)
+      // Transitional seasons: Still significant heating
+      baseIncrease = 16;
     } else {
-      // Winter
-      baseHeating = 12; // Winter: 12°C base increase (increased from 10)
+      // Winter: Reduced but still present
+      baseIncrease = 10;
     }
     
-    // Time of day multiplier - peak heating occurs at midday
-    // This represents how effectively the sun heats the track at different times
+    // Time of day multiplier - this is the PRIMARY driver of track heating
+    // Peak hours should add substantial additional heat
     let timeMultiplier = 1.0;
-    if (hour >= 11 && hour <= 14) {
-      // Peak sun hours (11 AM - 2 PM) - maximum heating
-      timeMultiplier = 1.6; // Increased from 1.5
+    let peakBonus = 0; // Additional flat bonus for peak hours
+    
+    if (hour >= 12 && hour <= 15) {
+      // Peak sun hours (12 PM - 3 PM) - maximum heating
+      // This is when track temps should be 40-50°C when air is 30°C
+      timeMultiplier = 2.2;
+      peakBonus = 12; // Extra flat bonus
+    } else if (hour >= 11 && hour < 12) {
+      // Late morning - strong heating building up
+      timeMultiplier = 1.9;
+      peakBonus = 8;
+    } else if (hour >= 15 && hour < 16) {
+      // Mid afternoon - still very hot
+      timeMultiplier = 2.0;
+      peakBonus = 10;
     } else if (hour >= 10 && hour < 11) {
-      // Late morning - strong heating
-      timeMultiplier = 1.4; // Increased from 1.3
-    } else if (hour >= 14 && hour < 16) {
-      // Early afternoon - still strong
-      timeMultiplier = 1.5; // Increased from 1.4
-    } else if (hour >= 9 && hour < 10) {
       // Mid morning - moderate heating
-      timeMultiplier = 1.2; // Increased from 1.1
-    } else if (hour >= 16 && hour < 18) {
-      // Late afternoon - declining
-      timeMultiplier = 1.3; // Increased from 1.2
+      timeMultiplier = 1.6;
+      peakBonus = 5;
+    } else if (hour >= 16 && hour < 17) {
+      // Late afternoon - declining but still warm
+      timeMultiplier = 1.7;
+      peakBonus = 6;
+    } else if (hour >= 9 && hour < 10) {
+      // Early-mid morning
+      timeMultiplier = 1.3;
+      peakBonus = 3;
+    } else if (hour >= 17 && hour < 19) {
+      // Evening - cooling down
+      timeMultiplier = 1.4;
+      peakBonus = 2;
     } else if (hour >= 7 && hour < 9) {
-      // Early morning - low heating
-      timeMultiplier = 0.8; // Increased from 0.7
-    } else if (hour >= 18 && hour < 20) {
-      // Evening - minimal heating
-      timeMultiplier = 0.9; // Increased from 0.8
+      // Early morning - minimal heating
+      timeMultiplier = 0.9;
+      peakBonus = 0;
     } else {
-      // Very early morning or late evening
-      timeMultiplier = 0.6; // Increased from 0.5
+      // Very early or late - minimal
+      timeMultiplier = 0.7;
+      peakBonus = 0;
     }
     
-    // UV factor - even low UV contributes to asphalt heating
-    // UV index typically ranges from 0-11+
-    // Asphalt is dark and absorbs UV radiation very efficiently
+    // UV factor - represents solar radiation intensity
+    // Even moderate UV (5-6) should contribute significantly
+    // High UV (8+) should add substantial heat
     const normalizedUV = Math.min(uvIndex / 11, 1);
-    const uvMultiplier = 0.8 + (normalizedUV * 0.6); // Range: 0.8 to 1.4 (increased from 0.7-1.2)
+    const uvBonus = normalizedUV * 15; // Can add up to 15°C for maximum UV
     
-    // Cloud cover factor - clouds reduce solar heating but not as much as you'd think
-    // Dark asphalt still absorbs significant heat even through clouds
-    // 0% clouds = full heating (1.0), 100% clouds = 70% heating (0.70)
-    const cloudMultiplier = 1.0 - (cloudCover / 100) * 0.30; // Range: 0.70 to 1.0 (improved from 0.65-1.0)
+    // Cloud cover factor - clouds reduce heating but asphalt still absorbs heat
+    // Even with 50% clouds, track should still be much hotter than air
+    const cloudReduction = (cloudCover / 100) * 8; // Max 8°C reduction at 100% clouds
     
-    // Calculate total solar heating with all multipliers
-    const solarHeating = baseHeating * timeMultiplier * uvMultiplier * cloudMultiplier;
-    
-    console.log(`  Base: ${baseHeating}°C, Time: ${timeMultiplier.toFixed(2)}x, UV: ${uvMultiplier.toFixed(2)}x, Cloud: ${cloudMultiplier.toFixed(2)}x`);
-    console.log(`  Solar Heating: ${solarHeating.toFixed(1)}°C`);
-    
-    // Wind cooling effect - wind removes heat from the track surface
-    // Convert wind speed to m/s if needed for consistent calculation
+    // Wind cooling - wind does cool the track but effect is limited
+    // Convert to m/s for consistent calculation
     const windSpeedMS = unit === 'metric' ? windSpeed / 3.6 : windSpeed / 2.237;
-    // Wind cooling is less effective on hot asphalt but still significant
-    const windCooling = Math.min(windSpeedMS * 0.6, 4); // Max 4°C cooling from wind (reduced from 5°C and 0.8 factor)
+    const windCooling = Math.min(windSpeedMS * 0.4, 3); // Max 3°C cooling, reduced factor
     
-    console.log(`  Wind Cooling: ${windCooling.toFixed(1)}°C`);
+    // Calculate total heating
+    const totalHeating = (baseIncrease * timeMultiplier) + peakBonus + uvBonus - cloudReduction - windCooling;
     
-    // Calculate track temperature
-    trackTempC = airTempC + solarHeating - windCooling;
+    console.log(`  Base: ${baseIncrease}°C, Time: ${timeMultiplier.toFixed(2)}x, Peak: +${peakBonus}°C`);
+    console.log(`  UV Bonus: +${uvBonus.toFixed(1)}°C, Cloud: -${cloudReduction.toFixed(1)}°C, Wind: -${windCooling.toFixed(1)}°C`);
+    console.log(`  Total Heating: ${totalHeating.toFixed(1)}°C`);
     
-    // Ensure realistic minimum differences during daytime based on season
+    // Apply heating to air temperature
+    trackTempC = airTempC + totalHeating;
+    
+    // CRITICAL: Enforce realistic minimum differences based on conditions
+    // These are absolute minimums that must be met
     let minDifference: number;
-    if (season === 'summer') {
-      minDifference = 25; // Minimum 25°C higher in summer (increased from 20)
-    } else if (season === 'spring' || season === 'autumn') {
-      minDifference = 15; // Minimum 15°C higher in transitional seasons (increased from 12)
+    
+    if (hour >= 11 && hour <= 16) {
+      // Peak and near-peak hours: Track MUST be significantly hotter
+      if (season === 'summer') {
+        minDifference = 18; // Minimum 18°C hotter in summer peak hours
+      } else if (season === 'spring' || season === 'autumn') {
+        minDifference = 14; // Minimum 14°C hotter in transitional seasons
+      } else {
+        minDifference = 10; // Minimum 10°C hotter in winter
+      }
+      
+      // Additional boost for very sunny conditions during peak hours
+      if (uvIndex > 6 && cloudCover < 40) {
+        minDifference += 8; // Add 8°C for excellent sun conditions
+      }
+    } else if (hour >= 9 && hour < 11) {
+      // Morning hours
+      if (season === 'summer') {
+        minDifference = 12;
+      } else if (season === 'spring' || season === 'autumn') {
+        minDifference = 10;
+      } else {
+        minDifference = 7;
+      }
+    } else if (hour >= 16 && hour < 19) {
+      // Afternoon/evening hours
+      if (season === 'summer') {
+        minDifference = 14;
+      } else if (season === 'spring' || season === 'autumn') {
+        minDifference = 11;
+      } else {
+        minDifference = 8;
+      }
     } else {
-      minDifference = 8; // Minimum 8°C higher in winter (increased from 6)
+      // Early morning or late evening
+      if (season === 'summer') {
+        minDifference = 8;
+      } else if (season === 'spring' || season === 'autumn') {
+        minDifference = 6;
+      } else {
+        minDifference = 4;
+      }
     }
     
     // Apply minimum difference guarantee
@@ -157,18 +208,12 @@ function calculateTrackTemperature(
       trackTempC = airTempC + minDifference;
     }
     
-    // Additional boost for very sunny conditions (high UV, low clouds)
-    if (uvIndex > 7 && cloudCover < 30) {
-      const sunnyBoost = 10; // Extra 10°C for very sunny conditions (increased from 8)
-      console.log(`  Sunny boost: +${sunnyBoost}°C`);
-      trackTempC += sunnyBoost;
-    }
-    
-    // Peak hour boost - asphalt retains and accumulates heat during peak hours
-    if (hour >= 12 && hour <= 15) {
-      const peakBoost = 7; // Extra 7°C during peak heating hours (increased from 5)
-      console.log(`  Peak hour boost: +${peakBoost}°C`);
-      trackTempC += peakBoost;
+    // Additional boost for high air temperatures (heat accumulation effect)
+    // When air temp is already high (25°C+), track heats up even more
+    if (airTempC >= 25 && hour >= 11 && hour <= 16) {
+      const heatAccumulationBonus = (airTempC - 25) * 0.5; // 0.5°C per degree above 25°C
+      console.log(`  Heat accumulation bonus: +${heatAccumulationBonus.toFixed(1)}°C`);
+      trackTempC += heatAccumulationBonus;
     }
     
   } else {
@@ -607,9 +652,9 @@ export default function TrackTemperatureAnalysis({
           significant heat and are typically much hotter than air temperature in direct sunlight.
         </Text>
         <Text style={styles.infoText}>
-          • <Text style={styles.infoBold}>Summer:</Text> Track typically 25-45°C (45-81°F) above ambient{'\n'}
-          • <Text style={styles.infoBold}>Spring/Autumn:</Text> Track typically 15-30°C (27-54°F) above ambient{'\n'}
-          • <Text style={styles.infoBold}>Winter:</Text> Track typically 8-18°C (14-32°F) above ambient{'\n'}
+          • <Text style={styles.infoBold}>Peak Hours (12-3 PM):</Text> Track typically 18-30°C (32-54°F) above ambient{'\n'}
+          • <Text style={styles.infoBold}>Morning/Evening:</Text> Track typically 10-18°C (18-32°F) above ambient{'\n'}
+          • <Text style={styles.infoBold}>Example:</Text> 30°C air at 2 PM → 45-50°C track temperature{'\n'}
           • <Text style={styles.infoBold}>Optimal:</Text> 20-30°C (68-86°F) - Best grip and tire performance
         </Text>
       </View>
