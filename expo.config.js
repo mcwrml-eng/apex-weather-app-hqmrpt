@@ -16,14 +16,19 @@ module.exports = ({ config }) => {
     },
     ios: {
       supportsTablet: true,
-      bundleIdentifier: 'com.gridweather.pro'
+      bundleIdentifier: 'com.gridweather.pro',
+      buildNumber: '1',
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false
+      }
     },
     android: {
       adaptiveIcon: {
         foregroundImage: './assets/images/natively-dark.png',
         backgroundColor: '#0EA5E9'
       },
-      package: 'com.gridweather.pro'
+      package: 'com.gridweather.pro',
+      versionCode: 1
     },
     web: {
       favicon: './assets/images/final_quest_240x240.png',
