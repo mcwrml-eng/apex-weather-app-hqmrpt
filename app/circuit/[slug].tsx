@@ -854,20 +854,6 @@ function DetailScreen() {
             </View>
           )}
 
-          {/* Track Temperature Analysis - NEW COMPONENT */}
-          {!loading && trackTempData.length > 0 && (
-            <SafeComponent componentName="TrackTemperatureAnalysis">
-              <TrackTemperatureAnalysis
-                hourlyData={trackTempData}
-                unit={unit}
-                circuitName={circuit.name}
-                sunrise={todaySunTimes?.sunrise}
-                sunset={todaySunTimes?.sunset}
-                compact={false}
-              />
-            </SafeComponent>
-          )}
-
           {/* Windy Cloud & Radar Imagery */}
           {!loading && circuit && (
             <SafeComponent componentName="WindyCloudRadar">
@@ -1197,6 +1183,20 @@ function DetailScreen() {
                       </View>
                     </View>
                   </View>
+                </SafeComponent>
+              )}
+
+              {/* Track Temperature Analysis - MOVED HERE (after 72-Hour Forecast) */}
+              {trackTempData.length > 0 && (
+                <SafeComponent componentName="TrackTemperatureAnalysis">
+                  <TrackTemperatureAnalysis
+                    hourlyData={trackTempData}
+                    unit={unit}
+                    circuitName={circuit.name}
+                    sunrise={todaySunTimes?.sunrise}
+                    sunset={todaySunTimes?.sunset}
+                    compact={false}
+                  />
                 </SafeComponent>
               )}
             </>
