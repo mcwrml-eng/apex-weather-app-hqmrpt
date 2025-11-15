@@ -44,9 +44,9 @@
         }
       ]
     ],
-    "scheme": "gridweather",
     "experiments": {
       "typedRoutes": true
     }
-  }
+  },
+  "scheme": "gridweather"
 }
