@@ -60,23 +60,28 @@ function calculateTrackTemperature(
   const airTempC = unit === 'metric' ? airTemp : (airTemp - 32) * 5 / 9;
   let trackTempC = airTempC;
   
+  // Log input values for debugging
+  console.log(`Track Temp Calc - Time: ${timeString}, Air: ${airTempC.toFixed(1)}°C, UV: ${uvIndex}, Cloud: ${cloudCover}%, Wind: ${windSpeed}, Daytime: ${isDaytime}`);
+  
   if (isDaytime) {
     // Determine season and time of day for realistic adjustments
     const date = new Date(timeString);
     const season = getSeason(date, latitude);
     const hour = date.getHours();
     
+    console.log(`  Season: ${season}, Hour: ${hour}`);
+    
     // Base heating values - these are the MINIMUM increases before any multipliers
     // Asphalt absorbs significantly more heat than air temperature suggests
     let baseHeating: number;
     
     if (season === 'summer') {
-      baseHeating = 30; // Summer: Start with 30°C base increase
+      baseHeating = 35; // Summer: Start with 35°C base increase (increased from 30)
     } else if (season === 'spring' || season === 'autumn') {
-      baseHeating = 18; // Transitional seasons: 18°C base increase
+      baseHeating = 22; // Transitional seasons: 22°C base increase (increased from 18)
     } else {
       // Winter
-      baseHeating = 10; // Winter: 10°C base increase
+      baseHeating = 12; // Winter: 12°C base increase (increased from 10)
     }
     
     // Time of day multiplier - peak heating occurs at midday
@@ -84,49 +89,54 @@ function calculateTrackTemperature(
     let timeMultiplier = 1.0;
     if (hour >= 11 && hour <= 14) {
       // Peak sun hours (11 AM - 2 PM) - maximum heating
-      timeMultiplier = 1.5;
+      timeMultiplier = 1.6; // Increased from 1.5
     } else if (hour >= 10 && hour < 11) {
       // Late morning - strong heating
-      timeMultiplier = 1.3;
+      timeMultiplier = 1.4; // Increased from 1.3
     } else if (hour >= 14 && hour < 16) {
       // Early afternoon - still strong
-      timeMultiplier = 1.4;
+      timeMultiplier = 1.5; // Increased from 1.4
     } else if (hour >= 9 && hour < 10) {
       // Mid morning - moderate heating
-      timeMultiplier = 1.1;
+      timeMultiplier = 1.2; // Increased from 1.1
     } else if (hour >= 16 && hour < 18) {
       // Late afternoon - declining
-      timeMultiplier = 1.2;
+      timeMultiplier = 1.3; // Increased from 1.2
     } else if (hour >= 7 && hour < 9) {
       // Early morning - low heating
-      timeMultiplier = 0.7;
+      timeMultiplier = 0.8; // Increased from 0.7
     } else if (hour >= 18 && hour < 20) {
       // Evening - minimal heating
-      timeMultiplier = 0.8;
+      timeMultiplier = 0.9; // Increased from 0.8
     } else {
       // Very early morning or late evening
-      timeMultiplier = 0.5;
+      timeMultiplier = 0.6; // Increased from 0.5
     }
     
     // UV factor - even low UV contributes to asphalt heating
     // UV index typically ranges from 0-11+
     // Asphalt is dark and absorbs UV radiation very efficiently
     const normalizedUV = Math.min(uvIndex / 11, 1);
-    const uvMultiplier = 0.7 + (normalizedUV * 0.5); // Range: 0.7 to 1.2
+    const uvMultiplier = 0.8 + (normalizedUV * 0.6); // Range: 0.8 to 1.4 (increased from 0.7-1.2)
     
     // Cloud cover factor - clouds reduce solar heating but not as much as you'd think
     // Dark asphalt still absorbs significant heat even through clouds
-    // 0% clouds = full heating (1.0), 100% clouds = 65% heating (0.65)
-    const cloudMultiplier = 1.0 - (cloudCover / 100) * 0.35; // Range: 0.65 to 1.0
+    // 0% clouds = full heating (1.0), 100% clouds = 70% heating (0.70)
+    const cloudMultiplier = 1.0 - (cloudCover / 100) * 0.30; // Range: 0.70 to 1.0 (improved from 0.65-1.0)
     
     // Calculate total solar heating with all multipliers
     const solarHeating = baseHeating * timeMultiplier * uvMultiplier * cloudMultiplier;
+    
+    console.log(`  Base: ${baseHeating}°C, Time: ${timeMultiplier.toFixed(2)}x, UV: ${uvMultiplier.toFixed(2)}x, Cloud: ${cloudMultiplier.toFixed(2)}x`);
+    console.log(`  Solar Heating: ${solarHeating.toFixed(1)}°C`);
     
     // Wind cooling effect - wind removes heat from the track surface
     // Convert wind speed to m/s if needed for consistent calculation
     const windSpeedMS = unit === 'metric' ? windSpeed / 3.6 : windSpeed / 2.237;
     // Wind cooling is less effective on hot asphalt but still significant
-    const windCooling = Math.min(windSpeedMS * 0.8, 5); // Max 5°C cooling from wind
+    const windCooling = Math.min(windSpeedMS * 0.6, 4); // Max 4°C cooling from wind (reduced from 5°C and 0.8 factor)
+    
+    console.log(`  Wind Cooling: ${windCooling.toFixed(1)}°C`);
     
     // Calculate track temperature
     trackTempC = airTempC + solarHeating - windCooling;
@@ -134,27 +144,30 @@ function calculateTrackTemperature(
     // Ensure realistic minimum differences during daytime based on season
     let minDifference: number;
     if (season === 'summer') {
-      minDifference = 20; // Minimum 20°C higher in summer
+      minDifference = 25; // Minimum 25°C higher in summer (increased from 20)
     } else if (season === 'spring' || season === 'autumn') {
-      minDifference = 12; // Minimum 12°C higher in transitional seasons
+      minDifference = 15; // Minimum 15°C higher in transitional seasons (increased from 12)
     } else {
-      minDifference = 6; // Minimum 6°C higher in winter
+      minDifference = 8; // Minimum 8°C higher in winter (increased from 6)
     }
     
     // Apply minimum difference guarantee
     if (trackTempC - airTempC < minDifference) {
+      console.log(`  Applying minimum difference: ${minDifference}°C (was ${(trackTempC - airTempC).toFixed(1)}°C)`);
       trackTempC = airTempC + minDifference;
     }
     
     // Additional boost for very sunny conditions (high UV, low clouds)
     if (uvIndex > 7 && cloudCover < 30) {
-      const sunnyBoost = 8; // Extra 8°C for very sunny conditions
+      const sunnyBoost = 10; // Extra 10°C for very sunny conditions (increased from 8)
+      console.log(`  Sunny boost: +${sunnyBoost}°C`);
       trackTempC += sunnyBoost;
     }
     
     // Peak hour boost - asphalt retains and accumulates heat during peak hours
     if (hour >= 12 && hour <= 15) {
-      const peakBoost = 5; // Extra 5°C during peak heating hours
+      const peakBoost = 7; // Extra 7°C during peak heating hours (increased from 5)
+      console.log(`  Peak hour boost: +${peakBoost}°C`);
       trackTempC += peakBoost;
     }
     
@@ -163,6 +176,7 @@ function calculateTrackTemperature(
     // Track is typically 2-4°C cooler than air at night due to radiation cooling
     const nightCoolingFactor = 3;
     trackTempC = airTempC - nightCoolingFactor;
+    console.log(`  Night time - cooling by ${nightCoolingFactor}°C`);
   }
   
   // Convert back to Fahrenheit if needed
@@ -173,6 +187,8 @@ function calculateTrackTemperature(
   const maxTemp = unit === 'metric' ? 75 : 167;
   
   trackTemp = Math.max(minTemp, Math.min(maxTemp, trackTemp));
+  
+  console.log(`  Final Track Temp: ${trackTemp.toFixed(1)}°${unit === 'metric' ? 'C' : 'F'}, Difference: +${(trackTemp - airTemp).toFixed(1)}°`);
   
   return trackTemp;
 }
@@ -185,11 +201,38 @@ function isDaytime(timeString: string, sunrise?: string, sunset?: string): boole
     return hour >= 6 && hour < 20;
   }
   
-  const time = new Date(timeString);
-  const sunriseTime = new Date(time.toDateString() + ' ' + sunrise);
-  const sunsetTime = new Date(time.toDateString() + ' ' + sunset);
-  
-  return time >= sunriseTime && time < sunsetTime;
+  try {
+    const time = new Date(timeString);
+    const timeDate = time.toDateString();
+    
+    // Parse sunrise and sunset times
+    // They might be in format "HH:MM" or full ISO string
+    let sunriseTime: Date;
+    let sunsetTime: Date;
+    
+    if (sunrise.includes('T')) {
+      // Full ISO string
+      sunriseTime = new Date(sunrise);
+    } else {
+      // Just time string like "06:30"
+      sunriseTime = new Date(timeDate + ' ' + sunrise);
+    }
+    
+    if (sunset.includes('T')) {
+      // Full ISO string
+      sunsetTime = new Date(sunset);
+    } else {
+      // Just time string like "18:45"
+      sunsetTime = new Date(timeDate + ' ' + sunset);
+    }
+    
+    return time >= sunriseTime && time < sunsetTime;
+  } catch (err) {
+    console.error('Error determining daytime:', err);
+    // Fallback
+    const hour = new Date(timeString).getHours();
+    return hour >= 6 && hour < 20;
+  }
 }
 
 // Get track condition based on temperature
@@ -283,7 +326,12 @@ export default function TrackTemperatureAnalysis({
   
   // Calculate track temperatures for all hours
   const trackTemperatures = useMemo(() => {
-    return hourlyData.map(hour => {
+    console.log('=== Track Temperature Analysis ===');
+    console.log(`Circuit: ${circuitName}, Latitude: ${latitude}`);
+    console.log(`Sunrise: ${sunrise}, Sunset: ${sunset}`);
+    console.log(`Processing ${hourlyData.length} hours of data`);
+    
+    return hourlyData.map((hour, index) => {
       const isDay = isDaytime(hour.time, sunrise, sunset);
       const trackTemp = calculateTrackTemperature(
         hour.temperature,
@@ -295,6 +343,10 @@ export default function TrackTemperatureAnalysis({
         hour.time,
         latitude
       );
+      
+      if (index < 3) {
+        console.log(`Hour ${index}: Air ${hour.temperature}°, Track ${trackTemp.toFixed(1)}°, Diff: +${(trackTemp - hour.temperature).toFixed(1)}°`);
+      }
       
       return {
         time: hour.time,
@@ -309,14 +361,14 @@ export default function TrackTemperatureAnalysis({
         season: getSeason(new Date(hour.time), latitude)
       };
     });
-  }, [hourlyData, unit, sunrise, sunset, latitude]);
+  }, [hourlyData, unit, sunrise, sunset, latitude, circuitName]);
   
   // Calculate statistics
   const stats = useMemo(() => {
     const trackTemps = trackTemperatures.map(t => t.trackTemp);
     const differences = trackTemperatures.map(t => t.difference);
     
-    return {
+    const statsData = {
       minTrackTemp: Math.min(...trackTemps),
       maxTrackTemp: Math.max(...trackTemps),
       avgTrackTemp: trackTemps.reduce((sum, t) => sum + t, 0) / trackTemps.length,
@@ -328,6 +380,12 @@ export default function TrackTemperatureAnalysis({
         t.condition.condition === 'Hot' || t.condition.condition === 'Very Hot'
       ).length
     };
+    
+    console.log('=== Statistics ===');
+    console.log(`Avg Difference: ${statsData.avgDifference.toFixed(1)}°`);
+    console.log(`Min/Max Difference: ${statsData.minDifference.toFixed(1)}° / ${statsData.maxDifference.toFixed(1)}°`);
+    
+    return statsData;
   }, [trackTemperatures]);
   
   // Group by day for better organization
@@ -549,9 +607,9 @@ export default function TrackTemperatureAnalysis({
           significant heat and are typically much hotter than air temperature in direct sunlight.
         </Text>
         <Text style={styles.infoText}>
-          • <Text style={styles.infoBold}>Summer:</Text> Track typically 20-40°C (36-72°F) above ambient{'\n'}
-          • <Text style={styles.infoBold}>Spring/Autumn:</Text> Track typically 12-25°C (22-45°F) above ambient{'\n'}
-          • <Text style={styles.infoBold}>Winter:</Text> Track typically 6-15°C (11-27°F) above ambient{'\n'}
+          • <Text style={styles.infoBold}>Summer:</Text> Track typically 25-45°C (45-81°F) above ambient{'\n'}
+          • <Text style={styles.infoBold}>Spring/Autumn:</Text> Track typically 15-30°C (27-54°F) above ambient{'\n'}
+          • <Text style={styles.infoBold}>Winter:</Text> Track typically 8-18°C (14-32°F) above ambient{'\n'}
           • <Text style={styles.infoBold}>Optimal:</Text> 20-30°C (68-86°F) - Best grip and tire performance
         </Text>
       </View>
