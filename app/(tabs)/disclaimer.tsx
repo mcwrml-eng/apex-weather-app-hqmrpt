@@ -85,6 +85,30 @@ export default function DisclaimerScreen() {
       fontWeight: '600',
       fontFamily: 'Roboto_500Medium',
     },
+    copyrightSection: {
+      backgroundColor: colors.card,
+      borderRadius: borderRadius.lg,
+      padding: spacing.xl,
+      marginBottom: spacing.lg,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+      boxShadow: shadows.sm,
+      alignItems: 'center',
+    },
+    copyrightText: {
+      fontSize: 15,
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+      textAlign: 'center',
+      marginBottom: spacing.sm,
+    },
+    copyrightSubtext: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      fontFamily: 'Roboto_400Regular',
+      textAlign: 'center',
+      lineHeight: 20,
+    },
     versionText: {
       fontSize: 14,
       color: colors.textMuted,
@@ -181,6 +205,16 @@ export default function DisclaimerScreen() {
             <Text style={styles.bulletPoint}>• {t('weather_source_2')}</Text>
             <Text style={styles.bulletPoint}>• {t('weather_source_3')}</Text>
             <Text style={styles.bulletPoint}>• {t('weather_source_4')}</Text>
+          </View>
+
+          <View style={styles.copyrightSection}>
+            <Ionicons name="shield-checkmark-outline" size={32} color={colors.primary} style={{ marginBottom: spacing.md }} />
+            <Text style={styles.copyrightText}>
+              {t('copyright_title')}
+            </Text>
+            <Text style={styles.copyrightSubtext}>
+              {t('copyright_text')}
+            </Text>
           </View>
 
           <View style={styles.section}>
