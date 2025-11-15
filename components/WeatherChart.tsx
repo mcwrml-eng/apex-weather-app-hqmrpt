@@ -26,7 +26,7 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
   const { isDark } = useTheme();
   const colors = getColors(isDark);
   
-  console.log('WeatherChart: Rendering accurate', type, 'chart with', data.length, 'data points, unit:', unit);
+  console.log('WeatherChart: Rendering', type, 'chart with', data.length, 'data points, unit:', unit);
 
   if (!data || data.length === 0) {
     return (
@@ -159,7 +159,6 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
     const date = new Date(timeString);
     const hour = date.getHours();
     const day = date.getDate();
-    const month = date.getMonth() + 1;
     const dayName = getDayName(date);
     const monthName = getMonthName(date);
     
@@ -199,7 +198,6 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
     const isFirstOrLast = index === 0 || index === totalPoints - 1;
     const isKeyInterval = index % labelFrequency === 0;
     const isMidnight = hour === 0;
-    const isNoon = hour === 12;
     
     // Show labels at strategic points
     if (isFirstOrLast || isKeyInterval || (isNewDay && isMidnight)) {
@@ -232,8 +230,8 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
         if (isNewDay || index === 0) {
           // Show full date context at day boundaries
           return `${dayName} ${day}\n${displayHour}${period}`;
-        } else if (isMidnight || isNoon) {
-          // Show time at midnight and noon
+        } else if (isMidnight) {
+          // Show time at midnight
           return `${displayHour}${period}`;
         } else {
           return `${displayHour}${period}`;
@@ -244,11 +242,13 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
     return '';
   };
 
-  // Generate optimized time labels that fit within screen bounds
+  // Generate time labels array that matches data points exactly
   const generateTimeLabels = () => {
     const totalPoints = validData.length;
-    console.log('WeatherChart: Generating optimized time labels for', totalPoints, 'data points');
+    console.log('WeatherChart: Generating time labels for', totalPoints, 'data points');
     
+    // Create an array with the same length as data points
+    // Each position corresponds to its data point
     return validData.map((point, index) => {
       return formatTimeLabel(point.time, index, totalPoints);
     });
@@ -259,6 +259,8 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
   const unitLabel = getUnit();
   const title = getTitle();
   const timeLabels = generateTimeLabels();
+
+  console.log('WeatherChart: Chart data length:', chartData.length, 'Time labels length:', timeLabels.length);
 
   // Calculate time range for better context
   const firstDate = new Date(validData[0].time);
@@ -419,37 +421,25 @@ export default function WeatherChart({ data, type, unit, height = 140 }: Props) 
         </View>
       </View>
       
-      {/* Enhanced X-axis with responsive time scales that prevent overflow */}
+      {/* Enhanced X-axis using XAxis component for proper alignment */}
       <View style={styles.xAxisContainer}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.xAxisScrollContent}
-        >
-          <View style={styles.xAxisLabelsContainer}>
-            {timeLabels.map((label, index) => (
-              <View key={index} style={[
-                styles.xAxisLabelWrapper,
-                { 
-                  minWidth: label ? 45 : 20,
-                  opacity: label ? 1 : 0
-                }
-              ]}>
-                <Text style={[
-                  styles.xAxisLabel,
-                  { 
-                    fontSize: validData.length > 48 ? 9 : 10,
-                    fontWeight: label.includes('\n') ? '600' : '500',
-                    textAlign: 'center',
-                    lineHeight: validData.length > 48 ? 11 : 12,
-                  }
-                ]}>
-                  {label}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </ScrollView>
+        <View style={styles.xAxisWrapper}>
+          <View style={styles.yAxisSpacer} />
+          <XAxis
+            style={styles.xAxis}
+            data={chartData}
+            formatLabel={(value, index) => timeLabels[index] || ''}
+            contentInset={{ left: 10, right: 10 }}
+            svg={{
+              fill: colors.textMuted,
+              fontSize: 10,
+              fontFamily: 'Roboto_400Regular',
+              rotation: 0,
+              originY: 0,
+              y: 5,
+            }}
+          />
+        </View>
         <Text style={styles.xAxisTitle}>
           Time Period: {getTimeRangeDescription()} • {getDayName(firstDate)} {firstDate.getDate()} {getMonthName(firstDate)} - {getDayName(lastDate)} {lastDate.getDate()} {getMonthName(lastDate)}
         </Text>
@@ -548,27 +538,18 @@ function getStyles(colors: any) {
     },
     xAxisContainer: {
       marginTop: 8,
-      paddingLeft: 55,
     },
-    xAxisScrollContent: {
-      paddingHorizontal: 4,
-    },
-    xAxisLabelsContainer: {
+    xAxisWrapper: {
       flexDirection: 'row',
-      alignItems: 'center',
-      minHeight: 28,
-      gap: 2,
+      height: 40,
     },
-    xAxisLabelWrapper: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: 2,
+    yAxisSpacer: {
+      width: 55,
     },
-    xAxisLabel: {
-      fontSize: 10,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
-      textAlign: 'center',
+    xAxis: {
+      flex: 1,
+      marginLeft: 8,
+      height: 40,
     },
     xAxisTitle: {
       fontSize: 10,
