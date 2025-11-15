@@ -56,58 +56,102 @@ function calculateTrackTemperature(
   timeString: string,
   latitude: number = 0
 ): number {
-  // Base track temperature starts from air temperature
-  let trackTemp = airTemp;
+  // Convert to Celsius for calculations if needed
+  const airTempC = unit === 'metric' ? airTemp : (airTemp - 32) * 5 / 9;
+  let trackTempC = airTempC;
   
   if (isDaytime) {
     // Determine season for seasonal adjustments
     const date = new Date(timeString);
     const season = getSeason(date, latitude);
+    const hour = date.getHours();
     
     // Seasonal heating ranges (in Celsius)
     // Summer: 15-25°C higher than ambient
-    // Autumn/Winter: 5-15°C higher than ambient
+    // Autumn/Winter/Spring: 5-15°C higher than ambient
     let minHeating: number;
     let maxHeating: number;
     
     if (season === 'summer') {
-      minHeating = unit === 'metric' ? 15 : 27; // 15°C or 27°F
-      maxHeating = unit === 'metric' ? 25 : 45; // 25°C or 45°F
+      minHeating = 15; // 15°C minimum
+      maxHeating = 25; // 25°C maximum
     } else {
       // Autumn, Winter, Spring
-      minHeating = unit === 'metric' ? 5 : 9;   // 5°C or 9°F
-      maxHeating = unit === 'metric' ? 15 : 27; // 15°C or 27°F
+      minHeating = 5;   // 5°C minimum
+      maxHeating = 15;  // 15°C maximum
     }
     
-    // Calculate heating based on UV index (normalized 0-1)
+    // Time of day factor (peak heating at midday)
+    // Morning (6-10): 0.5-0.8, Midday (10-15): 0.8-1.0, Afternoon (15-19): 0.7-0.9, Evening (19-21): 0.4-0.6
+    let timeOfDayFactor = 0.5;
+    if (hour >= 10 && hour < 15) {
+      // Peak sun hours
+      timeOfDayFactor = 0.9 + (Math.sin((hour - 10) / 5 * Math.PI) * 0.1);
+    } else if (hour >= 6 && hour < 10) {
+      // Morning
+      timeOfDayFactor = 0.5 + ((hour - 6) / 4) * 0.3;
+    } else if (hour >= 15 && hour < 19) {
+      // Afternoon
+      timeOfDayFactor = 0.9 - ((hour - 15) / 4) * 0.2;
+    } else if (hour >= 19 && hour < 21) {
+      // Evening
+      timeOfDayFactor = 0.5 - ((hour - 19) / 2) * 0.1;
+    }
+    
+    // UV factor (normalized 0-1)
     // UV index typically ranges from 0-11+, we'll use 0-10 as our scale
-    const uvFactor = Math.min(uvIndex / 10, 1);
+    // Even with low UV, we want significant heating
+    const uvFactor = Math.max(0.4, Math.min(uvIndex / 10, 1)); // Minimum 0.4 to ensure heating
     
-    // Cloud cover reduces solar heating (0% clouds = full heating, 100% clouds = minimal heating)
-    const cloudFactor = 1 - (cloudCover / 100) * 0.7; // Clouds reduce heating by up to 70%
+    // Cloud cover reduces solar heating (0% clouds = full heating, 100% clouds = reduced heating)
+    // Even with full cloud cover, track still heats up significantly
+    const cloudFactor = 1 - (cloudCover / 100) * 0.5; // Clouds reduce heating by up to 50% (not 70%)
     
-    // Calculate solar heating within seasonal range
-    const solarHeating = minHeating + (maxHeating - minHeating) * uvFactor * cloudFactor;
+    // Calculate base solar heating within seasonal range
+    const baseHeating = minHeating + (maxHeating - minHeating) * uvFactor;
+    
+    // Apply all factors
+    const solarHeating = baseHeating * cloudFactor * timeOfDayFactor;
     
     // Wind cooling effect (higher wind speeds cool the track surface)
-    const windCoolingFactor = unit === 'metric' ?
-      Math.min(windSpeed * 0.15, 5) : // Max 5°C cooling from wind
-      Math.min(windSpeed * 0.27, 9);  // Max 9°F cooling from wind
+    // Convert wind speed to m/s if needed
+    const windSpeedMS = unit === 'metric' ? windSpeed / 3.6 : windSpeed / 2.237;
+    const windCoolingFactor = Math.min(windSpeedMS * 0.8, 4); // Max 4°C cooling from wind
     
     // Calculate track temperature with all factors
-    trackTemp = airTemp + solarHeating - windCoolingFactor;
+    trackTempC = airTempC + solarHeating - windCoolingFactor;
+    
+    // Ensure minimum difference during daytime
+    const minDifference = season === 'summer' ? 12 : 4;
+    if (trackTempC - airTempC < minDifference) {
+      trackTempC = airTempC + minDifference;
+    }
   } else {
-    // At night, track cools down but retains some heat
-    // Track is typically 2-5°C (3.6-9°F) cooler than air at night due to radiation cooling
-    const nightCoolingFactor = unit === 'metric' ? 3 : 5.4;
-    trackTemp = airTemp - nightCoolingFactor;
+    // At night, track cools down but retains some heat initially, then becomes cooler
+    // Track is typically 2-4°C cooler than air at night due to radiation cooling
+    const nightCoolingFactor = 2.5;
+    trackTempC = airTempC - nightCoolingFactor;
   }
+  
+  // Convert back to Fahrenheit if needed
+  let trackTemp = unit === 'metric' ? trackTempC : (trackTempC * 9 / 5) + 32;
   
   // Ensure track temperature is within realistic bounds
   const minTemp = unit === 'metric' ? -20 : -4;
   const maxTemp = unit === 'metric' ? 70 : 158;
   
-  return Math.max(minTemp, Math.min(maxTemp, trackTemp));
+  trackTemp = Math.max(minTemp, Math.min(maxTemp, trackTemp));
+  
+  // Final safety check: ensure track is warmer than air during day
+  if (isDaytime && trackTemp < airTemp) {
+    const season = getSeason(new Date(timeString), latitude);
+    const minIncrease = season === 'summer' ? 
+      (unit === 'metric' ? 15 : 27) : 
+      (unit === 'metric' ? 5 : 9);
+    trackTemp = airTemp + minIncrease;
+  }
+  
+  return trackTemp;
 }
 
 // Determine if it's daytime based on time and sun times
@@ -435,6 +479,9 @@ export default function TrackTemperatureAnalysis({
                       <Text style={styles.hourAirTemp}>
                         Air: {Math.round(temp.airTemp)}{tempUnit}
                       </Text>
+                      <Text style={styles.hourDifference}>
+                        Δ {temp.difference > 0 ? '+' : ''}{Math.round(temp.difference)}{tempUnit}
+                      </Text>
                     </View>
                     
                     <View style={[styles.conditionBadge, { backgroundColor: temp.condition.color + '20' }]}>
@@ -701,6 +748,12 @@ function getStyles(colors: any, shadows: any) {
       fontSize: 11,
       color: colors.textMuted,
       fontFamily: 'Roboto_400Regular',
+      marginTop: 2,
+    },
+    hourDifference: {
+      fontSize: 11,
+      color: colors.accent,
+      fontFamily: 'Roboto_500Medium',
       marginTop: 2,
     },
     conditionBadge: {
