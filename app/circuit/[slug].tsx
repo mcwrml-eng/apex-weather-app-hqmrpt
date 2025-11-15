@@ -1195,6 +1195,7 @@ function DetailScreen() {
                     circuitName={circuit.name}
                     sunrise={todaySunTimes?.sunrise}
                     sunset={todaySunTimes?.sunset}
+                    latitude={circuit.latitude}
                     compact={false}
                   />
                 </SafeComponent>
@@ -1296,8 +1297,8 @@ function DetailScreen() {
             <View style={{ height: 18 }} />
             <Text style={styles.muted}>
               Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, 
-              written text summaries, animated wind visualization with map underlay, track temperature analysis, and sunrise/sunset times 
-              for each track location. Data updates every 10 minutes for accuracy.
+              written text summaries, animated wind visualization with map underlay, track temperature analysis with seasonal adjustments, 
+              and sunrise/sunset times for each track location. Data updates every 10 minutes for accuracy.
             </Text>
           </BottomSheetView>
         </BottomSheet>

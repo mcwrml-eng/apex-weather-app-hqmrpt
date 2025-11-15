@@ -22,29 +22,72 @@ interface TrackTemperatureAnalysisProps {
   sunrise?: string;
   sunset?: string;
   compact?: boolean;
+  latitude?: number;
 }
 
-// Calculate estimated track surface temperature
+// Determine season based on month and hemisphere
+function getSeason(date: Date, latitude: number): 'summer' | 'autumn' | 'winter' | 'spring' {
+  const month = date.getMonth(); // 0-11
+  const isNorthernHemisphere = latitude >= 0;
+  
+  if (isNorthernHemisphere) {
+    // Northern Hemisphere
+    if (month >= 5 && month <= 7) return 'summer'; // Jun, Jul, Aug
+    if (month >= 8 && month <= 10) return 'autumn'; // Sep, Oct, Nov
+    if (month === 11 || month <= 1) return 'winter'; // Dec, Jan, Feb
+    return 'spring'; // Mar, Apr, May
+  } else {
+    // Southern Hemisphere (seasons are reversed)
+    if (month >= 11 || month <= 1) return 'summer'; // Dec, Jan, Feb
+    if (month >= 2 && month <= 4) return 'autumn'; // Mar, Apr, May
+    if (month >= 5 && month <= 7) return 'winter'; // Jun, Jul, Aug
+    return 'spring'; // Sep, Oct, Nov
+  }
+}
+
+// Calculate estimated track surface temperature with seasonal adjustments
 function calculateTrackTemperature(
   airTemp: number,
   uvIndex: number,
   cloudCover: number,
   windSpeed: number,
   isDaytime: boolean,
-  unit: 'metric' | 'imperial'
+  unit: 'metric' | 'imperial',
+  timeString: string,
+  latitude: number = 0
 ): number {
   // Base track temperature starts from air temperature
   let trackTemp = airTemp;
   
   if (isDaytime) {
-    // Solar heating factor based on UV index
-    // Track surfaces can be 10-30°C (18-54°F) hotter than air in direct sunlight
-    const solarHeatingFactor = unit === 'metric' ? 
-      (uvIndex * 3.5) : // Celsius: ~3.5°C per UV index point
-      (uvIndex * 6.3);  // Fahrenheit: ~6.3°F per UV index point
+    // Determine season for seasonal adjustments
+    const date = new Date(timeString);
+    const season = getSeason(date, latitude);
+    
+    // Seasonal heating ranges (in Celsius)
+    // Summer: 15-25°C higher than ambient
+    // Autumn/Winter: 5-15°C higher than ambient
+    let minHeating: number;
+    let maxHeating: number;
+    
+    if (season === 'summer') {
+      minHeating = unit === 'metric' ? 15 : 27; // 15°C or 27°F
+      maxHeating = unit === 'metric' ? 25 : 45; // 25°C or 45°F
+    } else {
+      // Autumn, Winter, Spring
+      minHeating = unit === 'metric' ? 5 : 9;   // 5°C or 9°F
+      maxHeating = unit === 'metric' ? 15 : 27; // 15°C or 27°F
+    }
+    
+    // Calculate heating based on UV index (normalized 0-1)
+    // UV index typically ranges from 0-11+, we'll use 0-10 as our scale
+    const uvFactor = Math.min(uvIndex / 10, 1);
     
     // Cloud cover reduces solar heating (0% clouds = full heating, 100% clouds = minimal heating)
     const cloudFactor = 1 - (cloudCover / 100) * 0.7; // Clouds reduce heating by up to 70%
+    
+    // Calculate solar heating within seasonal range
+    const solarHeating = minHeating + (maxHeating - minHeating) * uvFactor * cloudFactor;
     
     // Wind cooling effect (higher wind speeds cool the track surface)
     const windCoolingFactor = unit === 'metric' ?
@@ -52,7 +95,7 @@ function calculateTrackTemperature(
       Math.min(windSpeed * 0.27, 9);  // Max 9°F cooling from wind
     
     // Calculate track temperature with all factors
-    trackTemp = airTemp + (solarHeatingFactor * cloudFactor) - windCoolingFactor;
+    trackTemp = airTemp + solarHeating - windCoolingFactor;
   } else {
     // At night, track cools down but retains some heat
     // Track is typically 2-5°C (3.6-9°F) cooler than air at night due to radiation cooling
@@ -164,7 +207,8 @@ export default function TrackTemperatureAnalysis({
   circuitName,
   sunrise,
   sunset,
-  compact = false
+  compact = false,
+  latitude = 0
 }: TrackTemperatureAnalysisProps) {
   const { isDark } = useTheme();
   const colors = getColors(isDark);
@@ -180,7 +224,9 @@ export default function TrackTemperatureAnalysis({
         hour.cloudCover,
         hour.windSpeed,
         isDay,
-        unit
+        unit,
+        hour.time,
+        latitude
       );
       
       return {
@@ -192,10 +238,11 @@ export default function TrackTemperatureAnalysis({
         isDaytime: isDay,
         uvIndex: hour.uvIndex,
         cloudCover: hour.cloudCover,
-        windSpeed: hour.windSpeed
+        windSpeed: hour.windSpeed,
+        season: getSeason(new Date(hour.time), latitude)
       };
     });
-  }, [hourlyData, unit, sunrise, sunset]);
+  }, [hourlyData, unit, sunrise, sunset, latitude]);
   
   // Calculate statistics
   const stats = useMemo(() => {
@@ -428,13 +475,13 @@ export default function TrackTemperatureAnalysis({
         <Text style={styles.infoTitle}>ℹ️ About Track Temperature</Text>
         <Text style={styles.infoText}>
           Track surface temperature is estimated based on air temperature, solar radiation (UV index), 
-          cloud cover, and wind speed. Track surfaces can be significantly hotter than air temperature 
-          in direct sunlight, affecting tire performance and grip levels.
+          cloud cover, wind speed, and seasonal variations. Track surfaces can be significantly hotter 
+          than air temperature in direct sunlight.
         </Text>
         <Text style={styles.infoText}>
-          • <Text style={styles.infoBold}>Optimal:</Text> 20-30°C (68-86°F) - Best grip and tire performance{'\n'}
-          • <Text style={styles.infoBold}>Hot:</Text> 40-50°C (104-122°F) - Increased tire wear{'\n'}
-          • <Text style={styles.infoBold}>Very Hot:</Text> &gt;50°C (&gt;122°F) - Extreme degradation risk
+          • <Text style={styles.infoBold}>Summer:</Text> Track typically 15-25°C (27-45°F) above ambient{'\n'}
+          • <Text style={styles.infoBold}>Autumn/Winter:</Text> Track typically 5-15°C (9-27°F) above ambient{'\n'}
+          • <Text style={styles.infoBold}>Optimal:</Text> 20-30°C (68-86°F) - Best grip and tire performance
         </Text>
       </View>
     </View>
