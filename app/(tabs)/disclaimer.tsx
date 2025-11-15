@@ -177,6 +177,7 @@ export default function DisclaimerScreen() {
             <Text style={styles.bulletPoint}>• {t('terms_point_2')}</Text>
             <Text style={styles.bulletPoint}>• {t('terms_point_3')}</Text>
             <Text style={styles.bulletPoint}>• {t('terms_point_4')}</Text>
+            <Text style={styles.bulletPoint}>• {t('terms_point_5')}</Text>
           </View>
 
           <View style={styles.section}>
