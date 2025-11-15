@@ -1,7 +1,7 @@
 
 import React, { Component, ReactNode } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { colors } from '../styles/commonStyles';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { getColors } from '../styles/commonStyles';
 import Icon from './Icon';
 
 interface Props {
@@ -67,16 +67,27 @@ class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
+      const colors = getColors(false);
+      const styles = getStyles(colors);
+
       return (
         <View style={styles.container}>
-          <Icon name="warning" size={32} color={colors.error} />
-          <Text style={styles.title}>Something went wrong</Text>
-          <Text style={styles.message}>
-            {this.state.error?.message || 'An unexpected error occurred'}
-          </Text>
-          <TouchableOpacity onPress={this.handleRetry} style={styles.retryButton}>
-            <Text style={styles.retryText}>Try Again</Text>
-          </TouchableOpacity>
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            <Icon name="warning" size={48} color={colors.error} />
+            <Text style={styles.title}>Oops! Something went wrong</Text>
+            <Text style={styles.message}>
+              {this.state.error?.message || 'An unexpected error occurred'}
+            </Text>
+            {__DEV__ && this.state.error?.stack && (
+              <View style={styles.debugContainer}>
+                <Text style={styles.debugTitle}>Debug Info:</Text>
+                <Text style={styles.debugText}>{this.state.error.stack}</Text>
+              </View>
+            )}
+            <TouchableOpacity onPress={this.handleRetry} style={styles.retryButton}>
+              <Text style={styles.retryText}>Try Again</Text>
+            </TouchableOpacity>
+          </ScrollView>
         </View>
       );
     }
@@ -85,37 +96,65 @@ class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: colors.backgroundAlt,
+    padding: 24,
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: colors.text,
-    marginTop: 12,
-    marginBottom: 8,
+    marginTop: 16,
+    marginBottom: 12,
+    textAlign: 'center',
   },
   message: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textMuted,
     textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 20,
+    marginBottom: 24,
+    lineHeight: 22,
+    paddingHorizontal: 16,
+  },
+  debugContainer: {
+    backgroundColor: colors.backgroundAlt,
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 24,
+    maxWidth: '100%',
+  },
+  debugTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  debugText: {
+    fontSize: 10,
+    color: colors.textMuted,
+    fontFamily: 'monospace',
   },
   retryButton: {
     backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   retryText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
 });

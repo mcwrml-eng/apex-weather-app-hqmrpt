@@ -2,11 +2,9 @@
 import React, { Component, ReactNode } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { getColors } from '../styles/commonStyles';
-import Icon from './Icon';
 
 interface Props {
   children: ReactNode;
-  fallback?: ReactNode;
   componentName?: string;
 }
 
@@ -25,6 +23,7 @@ class SafeComponent extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): State {
+    console.log('SafeComponent: Caught error in', error);
     return {
       hasError: true,
       error,
@@ -32,8 +31,7 @@ class SafeComponent extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    const componentName = this.props.componentName || 'Unknown Component';
-    console.error(`SafeComponent: Error in ${componentName}:`, {
+    console.error('SafeComponent: Error in component:', this.props.componentName || 'Unknown', {
       error: error.message,
       stack: error.stack,
       componentStack: errorInfo.componentStack,
@@ -42,17 +40,17 @@ class SafeComponent extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
-
-      // Return a minimal error indicator
+      const colors = getColors(false);
+      const styles = getStyles(colors);
+      
       return (
         <View style={styles.errorContainer}>
-          <Icon name="alert-circle" size={16} color="#ff6b6b" />
           <Text style={styles.errorText}>
             {this.props.componentName || 'Component'} failed to load
           </Text>
+          {__DEV__ && this.state.error && (
+            <Text style={styles.errorDetails}>{this.state.error.message}</Text>
+          )}
         </View>
       );
     }
@@ -61,19 +59,23 @@ class SafeComponent extends Component<Props, State> {
   }
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 8,
-    backgroundColor: '#fff3cd',
-    borderRadius: 6,
-    marginVertical: 4,
-    gap: 6,
+    padding: 16,
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 8,
+    margin: 8,
   },
   errorText: {
+    color: colors.error,
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  errorDetails: {
+    color: colors.textMuted,
     fontSize: 12,
-    color: '#856404',
+    fontFamily: 'monospace',
   },
 });
 
