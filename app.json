@@ -1,8 +1,8 @@
 
 {
   "expo": {
-    "name": "Meteorological Services",
-    "slug": "Meteorological Services",
+    "name": "Grid Weather Pro",
+    "slug": "grid-weather-pro",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/c84e183c-9c73-456c-a90b-f3be78ef7b8b.png",
@@ -16,9 +16,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gridweather.pro",
-      "buildNumber": "3",
+      "buildNumber": "4",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": []
       }
     },
     "android": {
@@ -28,7 +29,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.gridweather.pro",
-      "versionCode": 3
+      "versionCode": 4
     },
     "web": {
       "favicon": "./assets/images/c84e183c-9c73-456c-a90b-f3be78ef7b8b.png",
@@ -46,7 +47,7 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
-  },
-  "scheme": "Meteorological Services"
+    },
+    "scheme": "gridweatherpro"
+  }
 }

@@ -17,4 +17,10 @@ config.transformer = {
   }),
 };
 
+// Add resolver configuration for better module resolution
+config.resolver = {
+  ...config.resolver,
+  resolverMainFields: ['react-native', 'browser', 'main'],
+};
+
 module.exports = config;

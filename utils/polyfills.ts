@@ -1,5 +1,5 @@
 
-// Polyfills for compatibility with React Native 0.80.0 and React 19
+// Polyfills for compatibility with React Native 0.79.2 and React 19
 
 // Ensure global is defined
 if (typeof global === 'undefined') {
@@ -132,8 +132,9 @@ if (originalApply) {
   };
 }
 
-// Add global error handler to catch any uncaught errors
+// iOS-specific fixes for React Native 0.79.2
 if (typeof global !== 'undefined') {
+  // Add global error handler to catch any uncaught errors
   const originalErrorHandler = (global as any).ErrorUtils?.getGlobalHandler?.();
   
   if ((global as any).ErrorUtils && (global as any).ErrorUtils.setGlobalHandler) {
@@ -141,6 +142,7 @@ if (typeof global !== 'undefined') {
       if (__DEV__) {
         console.error('[Polyfills] Global error caught:', {
           error: error.toString(),
+          message: error.message,
           stack: error.stack,
           isFatal,
           timestamp: new Date().toISOString(),
@@ -159,6 +161,29 @@ if (typeof global !== 'undefined') {
       }
     });
   }
+
+  // Handle unhandled promise rejections
+  const originalRejectionHandler = (global as any).onunhandledrejection;
+  
+  (global as any).onunhandledrejection = function(event: any) {
+    if (__DEV__) {
+      console.error('[Polyfills] Unhandled promise rejection:', {
+        reason: event?.reason,
+        promise: event?.promise,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    
+    if (originalRejectionHandler && typeof originalRejectionHandler === 'function') {
+      try {
+        originalRejectionHandler(event);
+      } catch (handlerError) {
+        if (__DEV__) {
+          console.error('[Polyfills] Error in original rejection handler:', handlerError);
+        }
+      }
+    }
+  };
 }
 
 // Patch console methods to catch errors in logging
@@ -189,7 +214,7 @@ console.warn = function(...args: any[]) {
 
 // Log polyfills loaded
 if (__DEV__) {
-  console.log('[Polyfills] Compatibility polyfills loaded for React 19 + React Native 0.80');
+  console.log('[Polyfills] Compatibility polyfills loaded for React 19 + React Native 0.79.2');
 }
 
 export {};

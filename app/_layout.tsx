@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Platform, SafeAreaView, View, Text, ActivityIndicator } from 'react-native';
 import { getCommonStyles, getColors } from '../styles/commonStyles';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { setupErrorLogging } from '../utils/errorLogger';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, Roboto_400Regular, Roboto_500Medium, Roboto_700Bold } from '@expo-google-fonts/roboto';
@@ -17,10 +17,14 @@ import * as SplashScreen from 'expo-splash-screen';
 
 const STORAGE_KEY = 'emulated_device';
 
-// Keep the splash screen visible while we fetch resources
-SplashScreen.preventAutoHideAsync().catch((error) => {
-  console.warn('SplashScreen.preventAutoHideAsync error:', error);
-});
+// Prevent auto-hide of splash screen with error handling
+try {
+  SplashScreen.preventAutoHideAsync().catch((error) => {
+    console.warn('SplashScreen.preventAutoHideAsync error:', error);
+  });
+} catch (error) {
+  console.warn('SplashScreen.preventAutoHideAsync failed:', error);
+}
 
 function LoadingScreen() {
   const colors = getColors(false);
@@ -43,10 +47,12 @@ function AppContent() {
   });
   const { isDark } = useTheme();
   const [appIsReady, setAppIsReady] = useState(false);
+  const [splashHidden, setSplashHidden] = useState(false);
   
   const colors = getColors(isDark);
   const commonStyles = getCommonStyles(isDark);
 
+  // Setup error logging once
   useEffect(() => {
     console.log('AppContent: Setting up error logging');
     try {
@@ -54,7 +60,10 @@ function AppContent() {
     } catch (error) {
       console.error('AppContent: Error setting up error logging:', error);
     }
+  }, []);
 
+  // Handle web-specific emulation
+  useEffect(() => {
     if (Platform.OS === 'web') {
       try {
         if (emulate) {
@@ -72,29 +81,57 @@ function AppContent() {
     }
   }, [emulate]);
 
+  // Hide splash screen with proper error handling
+  const hideSplash = useCallback(async () => {
+    if (splashHidden) {
+      return;
+    }
+
+    try {
+      console.log('AppContent: Attempting to hide splash screen');
+      await SplashScreen.hideAsync();
+      setSplashHidden(true);
+      console.log('AppContent: Splash screen hidden successfully');
+    } catch (error) {
+      console.error('AppContent: Error hiding splash screen:', error);
+      setSplashHidden(true); // Mark as hidden anyway to prevent blocking
+    }
+  }, [splashHidden]);
+
+  // Prepare app and hide splash screen
   useEffect(() => {
     async function prepare() {
       try {
-        console.log('AppContent: Preparing app...');
+        console.log('AppContent: Preparing app...', {
+          fontsLoaded,
+          fontError: fontError?.message,
+          platform: Platform.OS
+        });
         
-        // Wait for fonts to load
+        // Wait for fonts to load or error
         if (fontsLoaded || fontError) {
-          console.log('AppContent: Fonts loaded or error occurred');
+          console.log('AppContent: Fonts ready, marking app as ready');
+          
+          // Small delay to ensure everything is mounted (especially important on iOS)
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
           setAppIsReady(true);
           
-          // Hide splash screen
-          await SplashScreen.hideAsync();
-          console.log('AppContent: Splash screen hidden');
+          // Hide splash screen after app is ready
+          await hideSplash();
         }
       } catch (error) {
         console.error('AppContent: Error during preparation:', error);
-        setAppIsReady(true); // Continue anyway
+        // Continue anyway to prevent app from being stuck
+        setAppIsReady(true);
+        await hideSplash();
       }
     }
 
     prepare();
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, hideSplash]);
 
+  // Calculate insets
   let insetsToUse = actualInsets;
 
   if (Platform.OS === 'web') {
@@ -107,6 +144,7 @@ function AppContent() {
     insetsToUse = deviceToEmulate ? (simulatedInsets as any)[deviceToEmulate as keyof typeof simulatedInsets] || actualInsets : actualInsets;
   }
 
+  // Show loading screen while app is not ready
   if (!appIsReady) {
     console.log('AppContent: App not ready yet, showing loading screen');
     return <LoadingScreen />;
@@ -117,7 +155,7 @@ function AppContent() {
     // Continue with system fonts
   }
 
-  console.log('AppContent: Rendering app with theme:', isDark ? 'dark' : 'light', 'and insets:', insetsToUse);
+  console.log('AppContent: Rendering app with theme:', isDark ? 'dark' : 'light');
 
   return (
     <SafeAreaProvider>
@@ -133,6 +171,7 @@ function AppContent() {
             screenOptions={{
               headerShown: false,
               animation: 'default',
+              contentStyle: { backgroundColor: colors.background }
             }}
           />
         </SafeAreaView>
@@ -142,7 +181,11 @@ function AppContent() {
 }
 
 export default function RootLayout() {
-  console.log('RootLayout: Initializing app');
+  console.log('RootLayout: Initializing app', {
+    platform: Platform.OS,
+    version: Platform.Version,
+    isDev: __DEV__
+  });
   
   return (
     <ErrorBoundary>
