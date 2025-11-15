@@ -5,33 +5,33 @@
     "slug": "grid-weather-pro",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/natively-dark.png",
+    "icon": "./assets/images/c84e183c-9c73-456c-a90b-f3be78ef7b8b.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/natively-dark.png",
+      "image": "./assets/images/c84e183c-9c73-456c-a90b-f3be78ef7b8b.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0EA5E9"
+      "backgroundColor": "#374151"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gridweather.pro",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/natively-dark.png",
-        "backgroundColor": "#0EA5E9"
+        "foregroundImage": "./assets/images/c84e183c-9c73-456c-a90b-f3be78ef7b8b.png",
+        "backgroundColor": "#374151"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.gridweather.pro",
-      "versionCode": 1
+      "versionCode": 2
     },
     "web": {
-      "favicon": "./assets/images/final_quest_240x240.png",
+      "favicon": "./assets/images/c84e183c-9c73-456c-a90b-f3be78ef7b8b.png",
       "bundler": "metro"
     },
     "plugins": [
@@ -40,13 +40,12 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0EA5E9"
+          "backgroundColor": "#374151"
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true
     }
-  },
-  "scheme": "gridweather"
+  }
 }
