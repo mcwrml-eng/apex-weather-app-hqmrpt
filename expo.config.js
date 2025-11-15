@@ -8,6 +8,7 @@ module.exports = ({ config }) => {
     orientation: 'portrait',
     icon: './assets/images/natively-dark.png',
     userInterfaceStyle: 'automatic',
+    newArchEnabled: true,
     platforms: ['ios', 'android', 'web'],
     splash: {
       image: './assets/images/natively-dark.png',
@@ -27,6 +28,7 @@ module.exports = ({ config }) => {
         foregroundImage: './assets/images/natively-dark.png',
         backgroundColor: '#0EA5E9'
       },
+      edgeToEdgeEnabled: true,
       package: 'com.gridweather.pro',
       versionCode: 1
     },
