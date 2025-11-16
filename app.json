@@ -1,8 +1,7 @@
-
 {
   "expo": {
-    "name": "Grid Weather Pro",
-    "slug": "grid-weather-pro",
+    "name": "Meteorological Services",
+    "slug": "Meteorological Services",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/c84e183c-9c73-456c-a90b-f3be78ef7b8b.png",
@@ -49,5 +48,6 @@
       "typedRoutes": true
     },
     "scheme": "gridweatherpro"
-  }
+  },
+  "scheme": "Meteorological Services"
 }

@@ -917,8 +917,9 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       />
     );
   });
+  AnimatedPrecipitationZone.displayName = 'AnimatedPrecipitationZone';
 
-  const AnimatedRainDirectionArrow = () => {
+  const AnimatedRainDirectionArrow = React.memo(() => {
     const arrowLength = maxRadius * 0.6;
     const direction = radarData?.rainDirection || 0;
     
@@ -966,7 +967,8 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         </SvgText>
       </G>
     );
-  };
+  });
+  AnimatedRainDirectionArrow.displayName = 'AnimatedRainDirectionArrow';
 
   const currentGridData = getCurrentFrameData();
 
@@ -1353,5 +1355,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     </View>
   );
 };
+
+TrackRainfallRadar.displayName = 'TrackRainfallRadar';
 
 export default TrackRainfallRadar;
