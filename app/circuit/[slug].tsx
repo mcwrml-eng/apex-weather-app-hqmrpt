@@ -67,10 +67,10 @@ function DetailScreen() {
   const openCharts = useCallback(() => chartsRef.current?.expand(), []);
   const openForecast = useCallback(() => forecastRef.current?.expand(), []);
 
-  // Convert hourly data for charts
+  // Convert hourly data for charts - OPTIMIZED: only first 72 hours
   const chartData = useMemo(() => {
     try {
-      return hourly.map(h => ({
+      return hourly.slice(0, 72).map(h => ({
         time: h.time,
         temperature: h.temperature,
         windSpeed: h.windSpeed,
@@ -83,10 +83,10 @@ function DetailScreen() {
     }
   }, [hourly]);
 
-  // Convert hourly data for wind graphs
+  // Convert hourly data for wind graphs - OPTIMIZED: only first 72 hours
   const windData = useMemo(() => {
     try {
-      return hourly.map(h => ({
+      return hourly.slice(0, 72).map(h => ({
         time: h.time,
         windSpeed: h.windSpeed,
         windDirection: h.windDirection,
@@ -292,7 +292,7 @@ function DetailScreen() {
     subtitle: { color: colors.textMuted, marginTop: 4, fontFamily: 'Roboto_400Regular' },
     actions: { position: 'absolute', right: 16, top: 8, flexDirection: 'row', gap: 4 },
     actionBtn: { padding: 8, borderRadius: 10 },
-    content: { paddingHorizontal: 16, paddingTop: 8 },
+    content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 100 },
     updateInfo: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -782,7 +782,12 @@ function DetailScreen() {
           </View>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView 
+          contentContainerStyle={styles.content}
+          removeClippedSubviews={true}
+          scrollEventThrottle={16}
+          decelerationRate="fast"
+        >
           {loading && <Text style={styles.muted}>Loading enhanced weather data…</Text>}
           {error && <Text style={styles.error}>Failed to load weather data. Please try again.</Text>}
 
@@ -852,7 +857,7 @@ function DetailScreen() {
             </SafeComponent>
           )}
 
-          {/* Rainfall Radar */}
+          {/* Rainfall Radar - Optimized with autoStartAnimation=false and compact mode */}
           {!loading && circuit && (
             <SafeComponent componentName="TrackRainfallRadar">
               <TrackRainfallRadar
@@ -861,8 +866,8 @@ function DetailScreen() {
                 circuitName={circuit.name}
                 country={circuit.country}
                 category={category}
-                compact={false}
-                showControls={true}
+                compact={true}
+                showControls={false}
                 autoStartAnimation={false}
                 radarOpacity={0.6}
               />
@@ -881,6 +886,7 @@ function DetailScreen() {
                   horizontal 
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.next12HoursScroll}
+                  removeClippedSubviews={true}
                 >
                   {forecast72Hours.slice(0, 12).map((hour, index) => (
                     <View key={hour.time} style={styles.next12HourCard}>
@@ -918,7 +924,12 @@ function DetailScreen() {
               <View style={styles.card}>
                 <Text style={styles.cardLabel}>7-Day Forecast</Text>
                 <View style={{ height: 8 }} />
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false} 
+                  contentContainerStyle={{ gap: 12 }}
+                  removeClippedSubviews={true}
+                >
                   {daily.days.map((d) => (
                     <View key={d.date} style={styles.dayPill}>
                       <Text style={styles.dayText}>{d.weekday}</Text>
@@ -1201,8 +1212,8 @@ function DetailScreen() {
                         windDirection={current.wind_direction}
                         width={320}
                         height={280}
-                        particleCount={450}
-                        showGrid={true}
+                        particleCount={200}
+                        showGrid={false}
                         unit={unit}
                         latitude={circuit.latitude}
                         longitude={circuit.longitude}
@@ -1240,8 +1251,6 @@ function DetailScreen() {
               </SafeComponent>
             </>
           )}
-
-          <View style={{ height: 40 }} />
         </ScrollView>
 
         {/* Settings Bottom Sheet */}

@@ -53,7 +53,7 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
   windDirection,
   width = 320,
   height = 320,
-  particleCount = 900, // Reduced from 1800 to 900 (half again) for better map visibility
+  particleCount = 400, // Reduced from 900 to 400 for smooth scrolling
   particleColor,
   showGrid = true,
   unit = 'metric',
@@ -404,10 +404,15 @@ const WindParticleAnimation: React.FC<WindParticleAnimationProps> = ({
     setParticles([...updatedParticles]);
   }, [windSpeed, windDirection, calculateVelocity, getVisibleBounds, wrapParticlePosition]);
 
-  // Animation loop
+  // Animation loop - THROTTLED for scroll performance
   useEffect(() => {
+    let frameCount = 0;
     const animate = () => {
-      updateParticles();
+      frameCount++;
+      // Update particles every 2 frames (30fps instead of 60fps) for smooth scrolling
+      if (frameCount % 2 === 0) {
+        updateParticles();
+      }
       animationFrameRef.current = requestAnimationFrame(animate);
     };
     
