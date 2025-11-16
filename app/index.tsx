@@ -56,6 +56,7 @@ export default function CoverPage() {
       width: '100%',
     },
     logoContainer: {
+      marginTop: spacing.xl,
       marginBottom: spacing.huge,
       alignItems: 'center',
     },
