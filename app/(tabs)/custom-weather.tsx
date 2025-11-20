@@ -9,6 +9,7 @@ import { useUnit } from '../../state/UnitContext';
 import AppHeader from '../../components/AppHeader';
 import { useWeather } from '../../hooks/useWeather';
 import WeatherSymbol from '../../components/WeatherSymbol';
+import TwelveHourForecast from '../../components/TwelveHourForecast';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface SavedLocation {
@@ -72,7 +73,7 @@ export default function CustomWeatherScreen() {
   }, [longitude]);
 
   // Fetch weather data if coordinates are valid
-  const { current, daily, loading, error } = useWeather(
+  const { current, daily, hourly, loading, error } = useWeather(
     selectedLocation?.latitude || parsedLat || 0,
     selectedLocation?.longitude || parsedLon || 0,
     unit === 'metric' ? 'metric' : 'imperial'
@@ -818,6 +819,21 @@ export default function CustomWeatherScreen() {
                       </View>
                     </View>
 
+                    {/* 12-Hour Forecast Section */}
+                    {hourly && hourly.length > 0 && (
+                      <View style={styles.forecastSection}>
+                        <TwelveHourForecast
+                          hourlyData={hourly}
+                          unit={unit === 'metric' ? 'metric' : 'imperial'}
+                          latitude={selectedLocation?.latitude || parsedLat || 0}
+                          longitude={selectedLocation?.longitude || parsedLon || 0}
+                          sunrise={daily?.days?.[0]?.sunrise}
+                          sunset={daily?.days?.[0]?.sunset}
+                        />
+                      </View>
+                    )}
+
+                    {/* 7-Day Forecast Section */}
                     {daily && daily.days && daily.days.length > 0 && (
                       <View style={styles.forecastSection}>
                         <Text style={styles.forecastTitle}>7-Day Forecast</Text>
