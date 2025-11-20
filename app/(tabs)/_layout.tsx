@@ -76,6 +76,15 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="custom-weather"
+          options={{
+            title: 'Custom',
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="location" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="calendar"
           options={{
             title: 'Calendar',
