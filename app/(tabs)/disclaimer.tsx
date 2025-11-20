@@ -115,7 +115,7 @@ export default function DisclaimerScreen() {
       fontFamily: 'Roboto_400Regular',
       textAlign: 'center',
       marginTop: spacing.xl,
-      marginBottom: spacing.lg,
+      marginBottom: spacing.xl,
     },
   });
 
@@ -232,7 +232,7 @@ export default function DisclaimerScreen() {
           </View>
 
           <Text style={styles.versionText}>
-            {t('version_info')}
+            Motorsport Weather App v1.1
           </Text>
         </View>
       </ScrollView>
