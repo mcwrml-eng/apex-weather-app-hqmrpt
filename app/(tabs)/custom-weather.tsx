@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout } from '../../styles/commonStyles';
 import { useTheme } from '../../state/ThemeContext';
@@ -15,6 +15,18 @@ interface SavedLocation {
   name: string;
   latitude: number;
   longitude: number;
+  country?: string;
+  admin1?: string;
+}
+
+interface GeocodingResult {
+  id: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  country: string;
+  admin1?: string;
+  country_code?: string;
 }
 
 // Popular locations for quick selection
@@ -30,11 +42,15 @@ const POPULAR_LOCATIONS: SavedLocation[] = [
 ];
 
 export default function CustomWeatherScreen() {
-  const [locationName, setLocationName] = useState('');
+  const [locationSearch, setLocationSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<GeocodingResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [selectedLocation, setSelectedLocation] = useState<SavedLocation | null>(null);
   const [showCoordinates, setShowCoordinates] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
   
   const { isDark } = useTheme();
   const { t } = useLanguage();
@@ -84,6 +100,96 @@ export default function CustomWeatherScreen() {
       color: colors.text,
       fontFamily: 'Roboto_500Medium',
       marginBottom: spacing.md,
+    },
+    searchContainer: {
+      backgroundColor: colors.card,
+      borderRadius: borderRadius.lg,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+      boxShadow: shadows.sm,
+      marginBottom: spacing.md,
+    },
+    searchInputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: borderRadius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    searchIcon: {
+      marginRight: spacing.sm,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 16,
+      color: colors.text,
+      fontFamily: 'Roboto_400Regular',
+      paddingVertical: spacing.sm,
+    },
+    clearButton: {
+      padding: spacing.xs,
+    },
+    searchResultsContainer: {
+      marginTop: spacing.md,
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: borderRadius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      maxHeight: 300,
+    },
+    searchResultItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+    },
+    searchResultItemLast: {
+      borderBottomWidth: 0,
+    },
+    searchResultIcon: {
+      marginRight: spacing.md,
+    },
+    searchResultText: {
+      flex: 1,
+    },
+    searchResultName: {
+      fontSize: 16,
+      fontWeight: '500',
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+      marginBottom: 2,
+    },
+    searchResultDetails: {
+      fontSize: 13,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+    },
+    searchingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.lg,
+    },
+    searchingText: {
+      fontSize: 14,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginLeft: spacing.md,
+    },
+    noResultsContainer: {
+      alignItems: 'center',
+      padding: spacing.lg,
+    },
+    noResultsText: {
+      fontSize: 14,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      textAlign: 'center',
     },
     inputContainer: {
       backgroundColor: colors.card,
@@ -326,30 +432,122 @@ export default function CustomWeatherScreen() {
       fontFamily: 'Roboto_400Regular',
       textAlign: 'center',
     },
+    hintText: {
+      fontSize: 13,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: spacing.sm,
+      fontStyle: 'italic',
+    },
   });
+
+  // Search for locations using Open-Meteo Geocoding API
+  const searchLocation = async (query: string) => {
+    if (!query || query.trim().length < 2) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    console.log('CustomWeather: Searching for location:', query);
+    setIsSearching(true);
+    setSearchError(null);
+    setShowSearchResults(true);
+
+    try {
+      const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=10&language=en&format=json`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('CustomWeather: Geocoding results:', data.results?.length || 0);
+
+      if (data.results && data.results.length > 0) {
+        setSearchResults(data.results);
+        setSearchError(null);
+      } else {
+        setSearchResults([]);
+        setSearchError('No locations found. Try a different search term.');
+      }
+    } catch (error: any) {
+      console.error('CustomWeather: Error searching location:', error);
+      setSearchError('Failed to search locations. Please try again.');
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Debounced search
+  const handleSearchChange = (text: string) => {
+    setLocationSearch(text);
+    
+    // Clear previous timeout
+    if ((handleSearchChange as any).timeout) {
+      clearTimeout((handleSearchChange as any).timeout);
+    }
+
+    // Set new timeout for debounced search
+    (handleSearchChange as any).timeout = setTimeout(() => {
+      searchLocation(text);
+    }, 500);
+  };
 
   const handleLocationSelect = (location: SavedLocation) => {
     console.log('CustomWeather: Selected location:', location.name);
     setSelectedLocation(location);
-    setLocationName(location.name);
+    setLocationSearch('');
+    setSearchResults([]);
+    setShowSearchResults(false);
     setLatitude('');
     setLongitude('');
+  };
+
+  const handleSearchResultSelect = (result: GeocodingResult) => {
+    const locationName = result.admin1 
+      ? `${result.name}, ${result.admin1}, ${result.country}`
+      : `${result.name}, ${result.country}`;
+    
+    const location: SavedLocation = {
+      name: locationName,
+      latitude: result.latitude,
+      longitude: result.longitude,
+      country: result.country,
+      admin1: result.admin1,
+    };
+
+    console.log('CustomWeather: Selected search result:', locationName);
+    handleLocationSelect(location);
   };
 
   const handleManualCoordinates = () => {
     if (parsedLat !== null && parsedLon !== null) {
       console.log('CustomWeather: Using manual coordinates:', parsedLat, parsedLon);
       setSelectedLocation(null);
-      setLocationName('');
+      setLocationSearch('');
+      setSearchResults([]);
+      setShowSearchResults(false);
     }
   };
 
   const clearLocation = () => {
     console.log('CustomWeather: Clearing location');
     setSelectedLocation(null);
-    setLocationName('');
+    setLocationSearch('');
     setLatitude('');
     setLongitude('');
+    setSearchResults([]);
+    setShowSearchResults(false);
+  };
+
+  const clearSearch = () => {
+    setLocationSearch('');
+    setSearchResults([]);
+    setShowSearchResults(false);
+    setSearchError(null);
   };
 
   console.log('CustomWeatherScreen: Rendering with theme:', isDark ? 'dark' : 'light', 'hasValidLocation:', hasValidLocation);
@@ -364,6 +562,89 @@ export default function CustomWeatherScreen() {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.scrollContent}>
+          {/* Location Search Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Search Location</Text>
+            <View style={styles.searchContainer}>
+              <View style={styles.searchInputWrapper}>
+                <Ionicons 
+                  name="search" 
+                  size={20} 
+                  color={colors.textMuted} 
+                  style={styles.searchIcon}
+                />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Type a city name (e.g., New York, London)"
+                  placeholderTextColor={colors.textMuted}
+                  value={locationSearch}
+                  onChangeText={handleSearchChange}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                />
+                {locationSearch.length > 0 && (
+                  <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+                    <Ionicons name="close-circle" size={20} color={colors.textMuted} />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <Text style={styles.hintText}>
+                Search for any city, town, or location worldwide
+              </Text>
+
+              {/* Search Results */}
+              {showSearchResults && (
+                <View style={styles.searchResultsContainer}>
+                  <ScrollView style={{ maxHeight: 300 }} nestedScrollEnabled>
+                    {isSearching ? (
+                      <View style={styles.searchingContainer}>
+                        <ActivityIndicator size="small" color={colors.primary} />
+                        <Text style={styles.searchingText}>Searching...</Text>
+                      </View>
+                    ) : searchError ? (
+                      <View style={styles.noResultsContainer}>
+                        <Ionicons name="alert-circle-outline" size={32} color={colors.textMuted} />
+                        <Text style={styles.noResultsText}>{searchError}</Text>
+                      </View>
+                    ) : searchResults.length > 0 ? (
+                      searchResults.map((result, index) => (
+                        <TouchableOpacity
+                          key={result.id}
+                          style={[
+                            styles.searchResultItem,
+                            index === searchResults.length - 1 && styles.searchResultItemLast,
+                          ]}
+                          onPress={() => handleSearchResultSelect(result)}
+                        >
+                          <Ionicons 
+                            name="location" 
+                            size={20} 
+                            color={colors.primary} 
+                            style={styles.searchResultIcon}
+                          />
+                          <View style={styles.searchResultText}>
+                            <Text style={styles.searchResultName}>{result.name}</Text>
+                            <Text style={styles.searchResultDetails}>
+                              {result.admin1 ? `${result.admin1}, ` : ''}{result.country}
+                            </Text>
+                          </View>
+                          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+                        </TouchableOpacity>
+                      ))
+                    ) : (
+                      <View style={styles.noResultsContainer}>
+                        <Text style={styles.noResultsText}>
+                          No results found. Try a different search term.
+                        </Text>
+                      </View>
+                    )}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+          </View>
+
           {/* Popular Locations Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Popular Locations</Text>
@@ -419,7 +700,12 @@ export default function CustomWeatherScreen() {
                       value={latitude}
                       onChangeText={(text) => {
                         setLatitude(text);
-                        if (text) setSelectedLocation(null);
+                        if (text) {
+                          setSelectedLocation(null);
+                          setLocationSearch('');
+                          setSearchResults([]);
+                          setShowSearchResults(false);
+                        }
                       }}
                       keyboardType="numeric"
                       onBlur={handleManualCoordinates}
@@ -435,7 +721,12 @@ export default function CustomWeatherScreen() {
                       value={longitude}
                       onChangeText={(text) => {
                         setLongitude(text);
-                        if (text) setSelectedLocation(null);
+                        if (text) {
+                          setSelectedLocation(null);
+                          setLocationSearch('');
+                          setSearchResults([]);
+                          setShowSearchResults(false);
+                        }
                       }}
                       keyboardType="numeric"
                       onBlur={handleManualCoordinates}
@@ -564,8 +855,8 @@ export default function CustomWeatherScreen() {
               />
               <Text style={styles.emptyTitle}>No Location Selected</Text>
               <Text style={styles.emptyText}>
-                Choose a popular location above or{'\n'}
-                enter custom coordinates to view weather
+                Search for a location, choose a popular location,{'\n'}
+                or enter custom coordinates to view weather
               </Text>
             </View>
           )}
