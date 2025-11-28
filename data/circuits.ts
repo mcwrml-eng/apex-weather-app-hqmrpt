@@ -1,5 +1,6 @@
 
 import { Circuit } from '../components/CircuitCard';
+import { f2Circuits, f3Circuits } from './f2f3-circuits';
 
 // F1 2026 calendar circuits (reordered to match official 2026 calendar)
 export const f1Circuits: Circuit[] = [
@@ -112,9 +113,11 @@ export const nascarCircuits: Circuit[] = [
   { slug: 'phoenix-championship', name: 'Phoenix Raceway (Championship)', country: 'USA', latitude: 33.3750, longitude: -112.3111 },
 ];
 
-export function getCircuitBySlug(slug: string, category?: 'f1' | 'motogp' | 'indycar' | 'nascar') {
+export function getCircuitBySlug(slug: string, category?: 'f1' | 'f2' | 'f3' | 'motogp' | 'indycar' | 'nascar') {
   if (category) {
     const list = category === 'f1' ? f1Circuits : 
+                  category === 'f2' ? f2Circuits :
+                  category === 'f3' ? f3Circuits :
                   category === 'motogp' ? motogpCircuits : 
                   category === 'indycar' ? indycarCircuits :
                   nascarCircuits;
@@ -127,7 +130,7 @@ export function getCircuitBySlug(slug: string, category?: 'f1' | 'motogp' | 'ind
   }
   
   // Search all circuits if no category specified
-  const allCircuits = [...f1Circuits, ...motogpCircuits, ...indycarCircuits, ...nascarCircuits];
+  const allCircuits = [...f1Circuits, ...f2Circuits, ...f3Circuits, ...motogpCircuits, ...indycarCircuits, ...nascarCircuits];
   const hit = allCircuits.find((c) => c.slug === slug);
   if (!hit) {
     console.log('Circuit not found', slug, 'in any category');

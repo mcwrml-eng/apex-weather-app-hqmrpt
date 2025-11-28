@@ -330,7 +330,7 @@ export default function F2F3Screen() {
                   <ErrorBoundary key={`${circuit.category}-${circuit.slug}`}>
                     <CircuitCard
                       circuit={circuit}
-                      category="f1"
+                      category={circuit.category}
                     />
                   </ErrorBoundary>
                 ))}

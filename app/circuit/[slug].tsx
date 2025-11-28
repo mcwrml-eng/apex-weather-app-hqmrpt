@@ -32,9 +32,9 @@ function DetailScreen() {
   const shadows = getShadows(isDark);
 
   // Get params
-  const params = useLocalSearchParams<{ slug?: string; category?: 'f1' | 'motogp' | 'indycar' | 'nascar' }>();
+  const params = useLocalSearchParams<{ slug?: string; category?: 'f1' | 'f2' | 'f3' | 'motogp' | 'indycar' | 'nascar' }>();
   const slug = params.slug as string;
-  const category = (params.category as 'f1' | 'motogp' | 'indycar' | 'nascar') || 'f1';
+  const category = (params.category as 'f1' | 'f2' | 'f3' | 'motogp' | 'indycar' | 'nascar') || 'f1';
 
   console.log('DetailScreen: Loading circuit', slug, 'category', category, 'isDark:', isDark);
 
@@ -271,6 +271,19 @@ function DetailScreen() {
     date.setHours(12, 0, 0, 0);
     return date.toISOString();
   }, []);
+
+  // Get category display name
+  const getCategoryDisplayName = (cat: string): string => {
+    switch (cat) {
+      case 'f1': return 'F1';
+      case 'f2': return 'F2';
+      case 'f3': return 'F3';
+      case 'motogp': return 'MotoGP';
+      case 'indycar': return 'IndyCar';
+      case 'nascar': return 'NASCAR';
+      default: return cat.toUpperCase();
+    }
+  };
 
   // Create dynamic styles based on theme
   const styles = useMemo(() => StyleSheet.create({
@@ -767,7 +780,7 @@ function DetailScreen() {
           </TouchableOpacity>
 
           <Text style={styles.title}>{circuit.name}</Text>
-          <Text style={styles.subtitle}>{circuit.country} • {category.toUpperCase()}</Text>
+          <Text style={styles.subtitle}>{circuit.country} • {getCategoryDisplayName(category)}</Text>
 
           <View style={styles.actions}>
             <TouchableOpacity onPress={openForecast} style={styles.actionBtn} activeOpacity={0.8}>
