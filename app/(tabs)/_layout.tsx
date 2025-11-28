@@ -49,6 +49,15 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="f2f3"
+          options={{
+            title: 'F2/F3',
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="trophy" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="motogp"
           options={{
             title: 'MotoGP',
@@ -90,15 +99,6 @@ export default function TabLayout() {
             title: 'Calendar',
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="calendar" size={size} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="f2f3"
-          options={{
-            title: 'F2/F3',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="trophy" size={size} color={color} />
             ),
           }}
         />
