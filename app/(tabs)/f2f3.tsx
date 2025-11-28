@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout } from '../../styles/commonStyles';
 import { useTheme } from '../../state/ThemeContext';
@@ -171,7 +171,7 @@ export default function F2F3Screen() {
   const f2Count = f2Circuits.length;
   const f3Count = f3Circuits.length;
 
-  console.log('F2F3Screen: Rendering with', filteredCircuits.length, 'circuits, theme:', isDark ? 'dark' : 'light');
+  console.log('F2F3Screen: Rendering with', filteredCircuits.length, 'circuits, category:', selectedCategory, 'theme:', isDark ? 'dark' : 'light');
 
   return (
     <ErrorBoundary>
@@ -197,24 +197,29 @@ export default function F2F3Screen() {
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
-            <Ionicons 
-              name="close-circle" 
-              size={20} 
-              color={colors.textMuted}
-              onPress={() => setSearchQuery('')}
-            />
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons 
+                name="close-circle" 
+                size={20} 
+                color={colors.textMuted}
+              />
+            </TouchableOpacity>
           )}
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.scrollContent}>
             <View style={styles.filterContainer}>
-              <View 
+              <TouchableOpacity 
                 style={[
                   styles.filterButton, 
                   selectedCategory === 'all' && styles.filterButtonActive
                 ]}
-                onTouchEnd={() => setSelectedCategory('all')}
+                onPress={() => {
+                  console.log('F2F3Screen: Filter button pressed - ALL');
+                  setSelectedCategory('all');
+                }}
+                activeOpacity={0.7}
               >
                 <Text style={[
                   styles.filterText,
@@ -222,13 +227,17 @@ export default function F2F3Screen() {
                 ]}>
                   All
                 </Text>
-              </View>
-              <View 
+              </TouchableOpacity>
+              <TouchableOpacity 
                 style={[
                   styles.filterButton, 
                   selectedCategory === 'f2' && styles.filterButtonActive
                 ]}
-                onTouchEnd={() => setSelectedCategory('f2')}
+                onPress={() => {
+                  console.log('F2F3Screen: Filter button pressed - F2');
+                  setSelectedCategory('f2');
+                }}
+                activeOpacity={0.7}
               >
                 <Text style={[
                   styles.filterText,
@@ -236,13 +245,17 @@ export default function F2F3Screen() {
                 ]}>
                   F2
                 </Text>
-              </View>
-              <View 
+              </TouchableOpacity>
+              <TouchableOpacity 
                 style={[
                   styles.filterButton, 
                   selectedCategory === 'f3' && styles.filterButtonActive
                 ]}
-                onTouchEnd={() => setSelectedCategory('f3')}
+                onPress={() => {
+                  console.log('F2F3Screen: Filter button pressed - F3');
+                  setSelectedCategory('f3');
+                }}
+                activeOpacity={0.7}
               >
                 <Text style={[
                   styles.filterText,
@@ -250,7 +263,7 @@ export default function F2F3Screen() {
                 ]}>
                   F3
                 </Text>
-              </View>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.statsContainer}>
