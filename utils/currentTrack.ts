@@ -1,7 +1,8 @@
 
 import { f1RaceDates, motogpRaceDates, indycarRaceDates, nascarRaceDates } from '../data/schedules';
+import { f2RaceDates, f3RaceDates } from '../data/f2f3-circuits';
 
-export type Category = 'f1' | 'motogp' | 'indycar' | 'nascar';
+export type Category = 'f1' | 'motogp' | 'indycar' | 'nascar' | 'f2' | 'f3';
 
 interface TrackOfWeek {
   slug: string;
@@ -16,7 +17,9 @@ function getRaceDates(category: Category): Record<string, string> {
   return category === 'f1' ? f1RaceDates : 
          category === 'motogp' ? motogpRaceDates : 
          category === 'indycar' ? indycarRaceDates :
-         nascarRaceDates;
+         category === 'nascar' ? nascarRaceDates :
+         category === 'f2' ? f2RaceDates :
+         f3RaceDates;
 }
 
 // Calculate days between two dates
@@ -36,8 +39,8 @@ export function getCurrentTrackOfWeek(category: Category): TrackOfWeek | null {
   let closestTrack: TrackOfWeek | null = null;
   let minDaysUntilRace = Infinity;
   
-  // For MotoGP in 2026, always show the next upcoming race
-  if (category === 'motogp') {
+  // For MotoGP, F2, and F3 in 2026, always show the next upcoming race
+  if (category === 'motogp' || category === 'f2' || category === 'f3') {
     // Find the next race in 2026
     for (const [slug, dateString] of Object.entries(raceDates)) {
       const raceDate = new Date(dateString + 'T00:00:00');
@@ -124,8 +127,8 @@ export function getTrackStatusKey(trackOfWeek: TrackOfWeek): { key: string; days
   } else if (isRaceWeek && daysUntilRace > 0) {
     return { key: 'days_to_go', days: daysUntilRace };
   } else if (daysUntilRace > 0) {
-    // For MotoGP, always show days instead of months
-    if (category === 'motogp') {
+    // For MotoGP, F2, and F3, always show days instead of months
+    if (category === 'motogp' || category === 'f2' || category === 'f3') {
       return { key: 'next_race_in_days', days: daysUntilRace };
     }
     
@@ -159,8 +162,8 @@ export function getTrackStatusText(trackOfWeek: TrackOfWeek): string {
   } else if (isRaceWeek && daysUntilRace > 0) {
     return `${daysUntilRace} days to go`;
   } else if (daysUntilRace > 0) {
-    // For MotoGP, always show days instead of months
-    if (category === 'motogp') {
+    // For MotoGP, F2, and F3, always show days instead of months
+    if (category === 'motogp' || category === 'f2' || category === 'f3') {
       return `Next race in ${daysUntilRace} days`;
     }
     

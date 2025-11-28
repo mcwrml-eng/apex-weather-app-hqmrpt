@@ -6,6 +6,7 @@ import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout }
 import { useTheme } from '../../state/ThemeContext';
 import { useLanguage } from '../../state/LanguageContext';
 import CircuitCard from '../../components/CircuitCard';
+import FeaturedTrackCard from '../../components/FeaturedTrackCard';
 import AppHeader from '../../components/AppHeader';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import { f2Circuits, f3Circuits } from '../../data/f2f3-circuits';
@@ -229,6 +230,18 @@ export default function F2F3Screen() {
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.scrollContent}>
+            {selectedCategory === 'f2' && (
+              <ErrorBoundary>
+                <FeaturedTrackCard category="f2" />
+              </ErrorBoundary>
+            )}
+            
+            {selectedCategory === 'f3' && (
+              <ErrorBoundary>
+                <FeaturedTrackCard category="f3" />
+              </ErrorBoundary>
+            )}
+
             <View style={styles.filterContainer}>
               <TouchableOpacity 
                 style={[

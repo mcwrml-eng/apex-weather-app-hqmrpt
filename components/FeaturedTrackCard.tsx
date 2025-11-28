@@ -12,6 +12,7 @@ import { useLanguage } from '../state/LanguageContext';
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { getCircuitBySlug } from '../data/circuits';
+import { getF2F3CircuitBySlug } from '../data/f2f3-circuits';
 
 interface Props {
   category: Category;
@@ -35,7 +36,13 @@ export default function FeaturedTrackCard({ category }: Props) {
   
   try {
     currentTrack = getCurrentTrackOfWeek(category);
-    circuit = currentTrack ? getCircuitBySlug(currentTrack.slug, category) : null;
+    
+    // Get circuit based on category
+    if (category === 'f2' || category === 'f3') {
+      circuit = currentTrack ? getF2F3CircuitBySlug(currentTrack.slug, category) : null;
+    } else {
+      circuit = currentTrack ? getCircuitBySlug(currentTrack.slug, category) : null;
+    }
   } catch (error) {
     console.error('FeaturedTrackCard: Error getting track data:', error);
     trackError = error;
@@ -173,6 +180,10 @@ export default function FeaturedTrackCard({ category }: Props) {
         return colors.gradientIndyCar;
       case 'nascar':
         return [colors.nascarYellow, colors.nascarBlack];
+      case 'f2':
+        return isDark ? ['#1565C0', '#0D47A1'] : ['#64B5F6', '#1976D2'];
+      case 'f3':
+        return isDark ? ['#C62828', '#B71C1C'] : ['#E57373', '#D32F2F'];
       default:
         return colors.gradientPrimary;
     }
@@ -188,6 +199,10 @@ export default function FeaturedTrackCard({ category }: Props) {
         return t('indycar');
       case 'nascar':
         return 'NASCAR';
+      case 'f2':
+        return 'FIA Formula 2';
+      case 'f3':
+        return 'FIA Formula 3';
       default:
         return t('featured');
     }
