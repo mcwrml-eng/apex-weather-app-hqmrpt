@@ -62,7 +62,7 @@ export const f3RaceDates: Record<string, string> = {
   'spa-f3': '2026-07-19',
   'hungaroring-f3': '2026-07-26',
   'monza-f3': '2026-09-06',
-  'madrid-ring-f3': '2026-12-06',
+  'madrid-ring-f3': '2026-09-13',
 };
 
 export function getF2F3CircuitBySlug(slug: string, category: 'f2' | 'f3') {
