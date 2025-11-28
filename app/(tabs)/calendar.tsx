@@ -7,11 +7,12 @@ import { useTheme } from '../../state/ThemeContext';
 import { useLanguage } from '../../state/LanguageContext';
 import AppHeader from '../../components/AppHeader';
 import { f1Circuits, motogpCircuits, indycarCircuits, nascarCircuits } from '../../data/circuits';
+import { f2Circuits, f3Circuits, f2RaceDates, f3RaceDates } from '../../data/f2f3-circuits';
 import { router } from 'expo-router';
 
 interface RaceEvent {
   date: string;
-  category: 'f1' | 'motogp' | 'indycar' | 'nascar';
+  category: 'f1' | 'f2' | 'f3' | 'motogp' | 'indycar' | 'nascar';
   circuit: any;
   round: number;
 }
@@ -24,7 +25,7 @@ export default function CalendarScreen() {
   const commonStyles = getCommonStyles(isDark);
   const shadows = getShadows(isDark);
 
-  // Mock race calendar data - in a real app this would come from an API
+  // Race calendar data with all categories including F2 and F3
   const raceEvents: RaceEvent[] = useMemo(() => {
     const events: RaceEvent[] = [];
     
@@ -37,6 +38,32 @@ export default function CalendarScreen() {
         circuit,
         round: index + 1,
       });
+    });
+
+    // Add F2 races with actual dates
+    f2Circuits.forEach((circuit, index) => {
+      const raceDate = f2RaceDates[circuit.slug];
+      if (raceDate) {
+        events.push({
+          date: raceDate,
+          category: 'f2',
+          circuit,
+          round: index + 1,
+        });
+      }
+    });
+
+    // Add F3 races with actual dates
+    f3Circuits.forEach((circuit, index) => {
+      const raceDate = f3RaceDates[circuit.slug];
+      if (raceDate) {
+        events.push({
+          date: raceDate,
+          category: 'f3',
+          circuit,
+          round: index + 1,
+        });
+      }
     });
 
     // Add MotoGP races (22 races starting March)
@@ -178,6 +205,8 @@ export default function CalendarScreen() {
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'f1': return colors.f1Red;
+      case 'f2': return colors.f1Red;
+      case 'f3': return colors.f1Red;
       case 'motogp': return colors.motogpBlue;
       case 'indycar': return colors.indycarBlue;
       case 'nascar': return colors.nascarYellow;
@@ -245,7 +274,7 @@ export default function CalendarScreen() {
               <Text style={styles.statLabel}>{t('months')}</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>4</Text>
+              <Text style={styles.statNumber}>6</Text>
               <Text style={styles.statLabel}>{t('categories')}</Text>
             </View>
           </View>
