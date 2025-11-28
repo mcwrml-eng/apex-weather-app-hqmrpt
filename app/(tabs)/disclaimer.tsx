@@ -221,7 +221,7 @@ export default function DisclaimerScreen() {
             <Text style={styles.cardText}>{t('copyright_text')}</Text>
           </View>
 
-          <Text style={styles.versionText}>Motorsport Weather App v1.1</Text>
+          <Text style={styles.versionText}>Motorsport Weather App v1.2</Text>
           <Text style={styles.copyrightText}>Built with ❤️ for racing fans worldwide</Text>
         </View>
       </ScrollView>
