@@ -1,8 +1,9 @@
+
 {
   "expo": {
     "name": "Meteorological Services",
     "slug": "Meteorological Services",
-    "version": "1.1",
+    "version": "1.2",
     "orientation": "portrait",
     "icon": "./assets/images/c84e183c-9c73-456c-a90b-f3be78ef7b8b.png",
     "userInterfaceStyle": "automatic",
