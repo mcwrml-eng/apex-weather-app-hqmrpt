@@ -16,6 +16,7 @@ import WeatherAlerts from '../../components/WeatherAlerts';
 import TrackRainfallRadar from '../../components/TrackRainfallRadar';
 import WindyCloudRadar from '../../components/WindyCloudRadar';
 import WindParticleAnimation from '../../components/WindParticleAnimation';
+import TrackMap from '../../components/TrackMap';
 import BottomSheet, { BottomSheetView, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
@@ -320,6 +321,71 @@ function DetailScreen() {
       fontSize: 12,
       color: colors.textMuted,
       fontFamily: 'Roboto_400Regular',
+    },
+    trackMapCard: {
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      boxShadow: shadows.md,
+    },
+    trackMapHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    trackMapTitleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    trackMapTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+    },
+    trackMapSubtitle: {
+      fontSize: 14,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 16,
+    },
+    trackMapContainer: {
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    trackMapInfo: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginTop: 12,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+    },
+    trackMapInfoItem: {
+      alignItems: 'center',
+    },
+    trackMapInfoLabel: {
+      fontSize: 11,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 4,
+    },
+    trackMapInfoValue: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+    },
+    trackMapInfoUnit: {
+      fontSize: 10,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: 2,
     },
     sunTimesBar: {
       flexDirection: 'row',
@@ -765,6 +831,9 @@ function DetailScreen() {
     );
   }
 
+  // Only show track map for F1 circuits
+  const showTrackMap = category === 'f1';
+
   return (
     <ErrorBoundary>
       <View style={styles.wrapper}>
@@ -804,7 +873,54 @@ function DetailScreen() {
           {loading && <Text style={styles.muted}>Loading enhanced weather data…</Text>}
           {error && <Text style={styles.error}>Failed to load weather data. Please try again.</Text>}
 
-          {/* Simplified Sunrise/Sunset Bar - Now at the top */}
+          {/* Track Map with Wind Overlay - ONLY FOR F1 */}
+          {!loading && showTrackMap && current && (
+            <SafeComponent componentName="TrackMapWithWind">
+              <View style={styles.trackMapCard}>
+                <View style={styles.trackMapHeader}>
+                  <View style={styles.trackMapTitleContainer}>
+                    <Icon name="map" size={20} color={colors.primary} />
+                    <Text style={styles.trackMapTitle}>Track Wind Analysis</Text>
+                  </View>
+                </View>
+                <Text style={styles.trackMapSubtitle}>
+                  Headwind/tailwind overlay showing wind impact on corners and straights
+                </Text>
+                
+                <View style={styles.trackMapContainer}>
+                  <TrackMap
+                    circuitSlug={circuit.slug}
+                    windDirection={current.wind_direction}
+                    windSpeed={current.wind_speed}
+                    size={320}
+                    showWindOverlay={true}
+                  />
+                </View>
+                
+                <View style={styles.trackMapInfo}>
+                  <View style={styles.trackMapInfoItem}>
+                    <Text style={styles.trackMapInfoLabel}>Wind Speed</Text>
+                    <Text style={styles.trackMapInfoValue}>{Math.round(current.wind_speed)}</Text>
+                    <Text style={styles.trackMapInfoUnit}>{unit === 'metric' ? 'km/h' : 'mph'}</Text>
+                  </View>
+                  
+                  <View style={styles.trackMapInfoItem}>
+                    <Text style={styles.trackMapInfoLabel}>Direction</Text>
+                    <Text style={styles.trackMapInfoValue}>{getWindDirectionLabel(current.wind_direction)}</Text>
+                    <Text style={styles.trackMapInfoUnit}>{Math.round(current.wind_direction)}°</Text>
+                  </View>
+                  
+                  <View style={styles.trackMapInfoItem}>
+                    <Text style={styles.trackMapInfoLabel}>Gusts</Text>
+                    <Text style={styles.trackMapInfoValue}>{Math.round(current.wind_gusts)}</Text>
+                    <Text style={styles.trackMapInfoUnit}>{unit === 'metric' ? 'km/h' : 'mph'}</Text>
+                  </View>
+                </View>
+              </View>
+            </SafeComponent>
+          )}
+
+          {/* Simplified Sunrise/Sunset Bar */}
           {!loading && todaySunTimes && (
             <SafeComponent componentName="SunriseSunsetBar">
               <View style={styles.sunTimesBar}>
@@ -931,7 +1047,7 @@ function DetailScreen() {
             </SafeComponent>
           )}
 
-          {/* 7-Day Forecast - MOVED HERE (after Next 12 Hours) */}
+          {/* 7-Day Forecast */}
           {!loading && daily && (
             <SafeComponent componentName="7DayForecast">
               <View style={styles.card}>
@@ -1205,7 +1321,7 @@ function DetailScreen() {
                 />
               </SafeComponent>
 
-              {/* Animated Wind Visualization with Map Underlay - MOVED HERE */}
+              {/* Animated Wind Visualization with Map Underlay */}
               {current && (
                 <SafeComponent componentName="WindParticleAnimation">
                   <View style={styles.windAnimationCard}>
@@ -1287,8 +1403,8 @@ function DetailScreen() {
             <View style={{ height: 18 }} />
             <Text style={styles.muted}>
               Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, 
-              written text summaries, animated wind visualization with map underlay, and sunrise/sunset times for each track location. 
-              Data updates every 10 minutes for accuracy.
+              written text summaries, animated wind visualization with map underlay, track maps with headwind/tailwind overlays for F1 circuits, 
+              and sunrise/sunset times for each track location. Data updates every 10 minutes for accuracy.
             </Text>
           </BottomSheetView>
         </BottomSheet>
