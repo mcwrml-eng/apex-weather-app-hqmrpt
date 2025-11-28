@@ -68,13 +68,16 @@ export default function F2F3Screen() {
       alignItems: 'center',
     },
     filterButtonAll: {
-      backgroundColor: '#F5F5F5',
+      backgroundColor: isDark ? '#4A4A4A' : '#D0D0D0',
+      borderColor: isDark ? '#5A5A5A' : '#B0B0B0',
     },
     filterButtonF2: {
-      backgroundColor: '#E3F2FD',
+      backgroundColor: isDark ? '#1565C0' : '#90CAF9',
+      borderColor: isDark ? '#1976D2' : '#64B5F6',
     },
     filterButtonF3: {
-      backgroundColor: '#FFEBEE',
+      backgroundColor: isDark ? '#C62828' : '#EF9A9A',
+      borderColor: isDark ? '#D32F2F' : '#E57373',
     },
     filterButtonActive: {
       backgroundColor: colors.primary,
@@ -83,9 +86,17 @@ export default function F2F3Screen() {
     filterText: {
       fontSize: 14,
       fontWeight: '600',
-      color: colors.text,
       fontFamily: 'Roboto_500Medium',
       textTransform: 'uppercase',
+    },
+    filterTextAll: {
+      color: isDark ? '#FFFFFF' : '#1A1A1A',
+    },
+    filterTextF2: {
+      color: isDark ? '#FFFFFF' : '#0D47A1',
+    },
+    filterTextF3: {
+      color: isDark ? '#FFFFFF' : '#B71C1C',
     },
     filterTextActive: {
       color: colors.background,
@@ -233,6 +244,7 @@ export default function F2F3Screen() {
               >
                 <Text style={[
                   styles.filterText,
+                  styles.filterTextAll,
                   selectedCategory === 'all' && styles.filterTextActive
                 ]}>
                   All
@@ -252,6 +264,7 @@ export default function F2F3Screen() {
               >
                 <Text style={[
                   styles.filterText,
+                  styles.filterTextF2,
                   selectedCategory === 'f2' && styles.filterTextActive
                 ]}>
                   F2
@@ -271,6 +284,7 @@ export default function F2F3Screen() {
               >
                 <Text style={[
                   styles.filterText,
+                  styles.filterTextF3,
                   selectedCategory === 'f3' && styles.filterTextActive
                 ]}>
                   F3
