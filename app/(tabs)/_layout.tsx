@@ -94,6 +94,15 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="f2f3"
+          options={{
+            title: 'F2/F3',
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="trophy" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="disclaimer"
           options={{
             title: 'About',
