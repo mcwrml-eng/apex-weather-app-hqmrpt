@@ -14,36 +14,61 @@ interface Props {
   showWindOverlay?: boolean;
 }
 
-// Satellite image URLs for each circuit (using Google Maps Static API style URLs)
-// These are high-resolution satellite images centered on each circuit
-const satelliteImages: Record<string, string> = {
-  'monaco': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/7.4206,43.7347,15,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'silverstone': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/-1.0142,52.0733,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'spa': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/5.9714,50.4372,14,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'monza': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/9.2811,45.6183,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'suzuka': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/136.5419,34.8431,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'interlagos': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/-46.6988,-23.701,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'hungaroring': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/19.2486,47.5789,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'red-bull-ring': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/14.7647,47.2197,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'zandvoort': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/4.5402,52.3885,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'baku': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/49.8533,40.3725,14,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'marina-bay': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/103.864,1.2914,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'cota': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/-97.6411,30.1328,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'mexico-city': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/-99.0907,19.4042,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'las-vegas': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/-115.173,36.1147,14,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'lusail': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/51.4542,25.4889,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'yas-marina': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/54.6031,24.4672,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'bahrain': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/50.5106,26.0325,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'jeddah': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/39.1044,21.6319,14,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'albert-park': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/144.968,-37.8497,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'shanghai': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/121.2206,31.3389,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'miami': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/-80.2389,25.958,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'imola': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/11.7167,44.3439,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'barcelona': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/2.2611,41.57,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'gilles-villeneuve': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/-73.5228,45.5,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'madrid': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/-3.7038,40.4168,14.5,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  'default': 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/0,0,2,0/600x600@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
+// Circuit coordinates for satellite imagery
+const circuitCoordinates: Record<string, { lat: number; lon: number; zoom: number }> = {
+  'monaco': { lat: 43.7347, lon: 7.4206, zoom: 15 },
+  'silverstone': { lat: 52.0733, lon: -1.0142, zoom: 14 },
+  'spa': { lat: 50.4372, lon: 5.9714, zoom: 14 },
+  'monza': { lat: 45.6183, lon: 9.2811, zoom: 14 },
+  'suzuka': { lat: 34.8431, lon: 136.5419, zoom: 14 },
+  'interlagos': { lat: -23.701, lon: -46.6988, zoom: 14 },
+  'hungaroring': { lat: 47.5789, lon: 19.2486, zoom: 14 },
+  'red-bull-ring': { lat: 47.2197, lon: 14.7647, zoom: 14 },
+  'zandvoort': { lat: 52.3885, lon: 4.5402, zoom: 14 },
+  'baku': { lat: 40.3725, lon: 49.8533, zoom: 14 },
+  'marina-bay': { lat: 1.2914, lon: 103.864, zoom: 14 },
+  'cota': { lat: 30.1328, lon: -97.6411, zoom: 14 },
+  'mexico-city': { lat: 19.4042, lon: -99.0907, zoom: 14 },
+  'las-vegas': { lat: 36.1147, lon: -115.173, zoom: 14 },
+  'lusail': { lat: 25.4889, lon: 51.4542, zoom: 14 },
+  'yas-marina': { lat: 24.4672, lon: 54.6031, zoom: 14 },
+  'bahrain': { lat: 26.0325, lon: 50.5106, zoom: 14 },
+  'jeddah': { lat: 21.6319, lon: 39.1044, zoom: 14 },
+  'albert-park': { lat: -37.8497, lon: 144.968, zoom: 14 },
+  'shanghai': { lat: 31.3389, lon: 121.2206, zoom: 14 },
+  'miami': { lat: 25.958, lon: -80.2389, zoom: 14 },
+  'imola': { lat: 44.3439, lon: 11.7167, zoom: 14 },
+  'barcelona': { lat: 41.57, lon: 2.2611, zoom: 14 },
+  'gilles-villeneuve': { lat: 45.5, lon: -73.5228, zoom: 14 },
+  'madrid': { lat: 40.4168, lon: -3.7038, zoom: 14 },
+  'default': { lat: 0, lon: 0, zoom: 2 },
 };
+
+// Generate OpenStreetMap satellite tile URL
+function getOpenStreetMapUrl(lat: number, lon: number, zoom: number, width: number, height: number): string {
+  // Using Esri World Imagery tiles (free, no API key required)
+  // Calculate tile coordinates
+  const n = Math.pow(2, zoom);
+  const xtile = Math.floor((lon + 180) / 360 * n);
+  const ytile = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n);
+  
+  // Use Esri World Imagery service
+  return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${ytile}/${xtile}`;
+}
+
+// Generate Google Maps Static API URL (requires API key - user needs to add their own)
+function getGoogleMapsUrl(lat: number, lon: number, zoom: number, width: number, height: number): string {
+  // Note: This requires a Google Maps Static API key
+  // Users should replace YOUR_GOOGLE_MAPS_API_KEY with their actual key
+  const apiKey = 'YOUR_GOOGLE_MAPS_API_KEY'; // Replace with actual API key
+  
+  if (apiKey === 'YOUR_GOOGLE_MAPS_API_KEY') {
+    // If no API key is set, return empty string to trigger fallback
+    return '';
+  }
+  
+  return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lon}&zoom=${zoom}&size=${width}x${height}&maptype=satellite&key=${apiKey}`;
+}
 
 // Track section definitions for wind analysis
 // Each section has a position (x, y as percentage of image) and direction (in degrees) representing the track heading
@@ -228,10 +253,18 @@ export default function TrackMap({
   const { isDark } = useTheme();
   const colors = getColors(isDark);
   
-  const satelliteImage = satelliteImages[circuitSlug] || satelliteImages.default;
+  const coords = circuitCoordinates[circuitSlug] || circuitCoordinates.default;
   const sections = trackSections[circuitSlug] || trackSections.default;
   
+  // Try Google Maps first, fallback to OpenStreetMap
+  const googleMapsUrl = getGoogleMapsUrl(coords.lat, coords.lon, coords.zoom, 600, 600);
+  const osmUrl = getOpenStreetMapUrl(coords.lat, coords.lon, coords.zoom, 600, 600);
+  
+  // Use OpenStreetMap as primary since it doesn't require API key
+  const satelliteImage = osmUrl;
+  
   console.log(`Rendering satellite track map for ${circuitSlug} with wind: ${windSpeed}km/h at ${windDirection}°`);
+  console.log(`Using satellite image URL: ${satelliteImage}`);
   
   // Generate wind indicators for each track section
   const windIndicators = [];
@@ -265,7 +298,18 @@ export default function TrackMap({
         contentFit="cover"
         transition={300}
         placeholder={require('../assets/images/natively-dark.png')}
+        cachePolicy="memory-disk"
       />
+      
+      {/* Fallback text if image fails to load */}
+      <View style={styles.fallbackContainer}>
+        <Text style={styles.fallbackText}>
+          Satellite imagery from OpenStreetMap
+        </Text>
+        <Text style={styles.fallbackSubtext}>
+          For Google Maps, add API key in TrackMap.tsx
+        </Text>
+      </View>
       
       {/* Wind Overlay Layer */}
       {windSpeed > 0 && showWindOverlay && (
@@ -319,6 +363,30 @@ function getStyles(colors: any) {
       width: '100%',
       height: '100%',
       borderRadius: 16,
+    },
+    fallbackContainer: {
+      position: 'absolute',
+      bottom: 40,
+      left: 8,
+      right: 8,
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderRadius: 6,
+      alignItems: 'center',
+    },
+    fallbackText: {
+      fontSize: 9,
+      color: 'rgba(255, 255, 255, 0.9)',
+      fontFamily: 'Roboto_500Medium',
+      textAlign: 'center',
+    },
+    fallbackSubtext: {
+      fontSize: 8,
+      color: 'rgba(255, 255, 255, 0.6)',
+      fontFamily: 'Roboto_400Regular',
+      textAlign: 'center',
+      marginTop: 2,
     },
     overlayContainer: {
       position: 'absolute',
