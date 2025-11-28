@@ -67,6 +67,15 @@ export default function F2F3Screen() {
       backgroundColor: colors.card,
       alignItems: 'center',
     },
+    filterButtonAll: {
+      backgroundColor: '#F5F5F5',
+    },
+    filterButtonF2: {
+      backgroundColor: '#E3F2FD',
+    },
+    filterButtonF3: {
+      backgroundColor: '#FFEBEE',
+    },
     filterButtonActive: {
       backgroundColor: colors.primary,
       borderColor: colors.primary,
@@ -212,7 +221,8 @@ export default function F2F3Screen() {
             <View style={styles.filterContainer}>
               <TouchableOpacity 
                 style={[
-                  styles.filterButton, 
+                  styles.filterButton,
+                  styles.filterButtonAll,
                   selectedCategory === 'all' && styles.filterButtonActive
                 ]}
                 onPress={() => {
@@ -230,7 +240,8 @@ export default function F2F3Screen() {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[
-                  styles.filterButton, 
+                  styles.filterButton,
+                  styles.filterButtonF2,
                   selectedCategory === 'f2' && styles.filterButtonActive
                 ]}
                 onPress={() => {
@@ -248,7 +259,8 @@ export default function F2F3Screen() {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[
-                  styles.filterButton, 
+                  styles.filterButton,
+                  styles.filterButtonF3,
                   selectedCategory === 'f3' && styles.filterButtonActive
                 ]}
                 onPress={() => {
