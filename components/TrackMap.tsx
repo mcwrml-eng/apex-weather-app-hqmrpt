@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
-import Svg, { Circle, Line, Polygon, G } from 'react-native-svg';
+import Svg, { Circle, Line, Polygon, G, Path } from 'react-native-svg';
 import { getColors } from '../styles/commonStyles';
 import { useTheme } from '../state/ThemeContext';
 
@@ -46,121 +46,285 @@ const circuitCoordinates: Record<string, { lat: number; lon: number; zoom: numbe
 
 // Generate OpenStreetMap satellite tile URL
 function getOpenStreetMapUrl(lat: number, lon: number, zoom: number, width: number, height: number): string {
-  // Using Esri World Imagery tiles (free, no API key required)
-  // Calculate tile coordinates
   const n = Math.pow(2, zoom);
   const xtile = Math.floor((lon + 180) / 360 * n);
   const ytile = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n);
   
-  // Use Esri World Imagery service
   return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${ytile}/${xtile}`;
 }
 
 // Generate Google Maps Static API URL (requires API key - user needs to add their own)
 function getGoogleMapsUrl(lat: number, lon: number, zoom: number, width: number, height: number): string {
-  // Note: This requires a Google Maps Static API key
-  // Users should replace YOUR_GOOGLE_MAPS_API_KEY with their actual key
   const apiKey = 'YOUR_GOOGLE_MAPS_API_KEY'; // Replace with actual API key
   
   if (apiKey === 'YOUR_GOOGLE_MAPS_API_KEY') {
-    // If no API key is set, return empty string to trigger fallback
     return '';
   }
   
   return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lon}&zoom=${zoom}&size=${width}x${height}&maptype=satellite&key=${apiKey}`;
 }
 
-// Track section definitions for wind analysis
+// Enhanced track section definitions with more granular points
 // Each section has a position (x, y as percentage of image) and direction (in degrees) representing the track heading
-const trackSections: Record<string, Array<{ x: number; y: number; direction: number; type: 'straight' | 'corner' }>> = {
+const trackSections: Record<string, Array<{ x: number; y: number; direction: number; type: 'straight' | 'corner'; importance: number }>> = {
   'monaco': [
-    { x: 22, y: 50, direction: 90, type: 'straight' },
-    { x: 31, y: 43, direction: 45, type: 'corner' },
-    { x: 47, y: 37, direction: 90, type: 'straight' },
-    { x: 60, y: 45, direction: 135, type: 'corner' },
-    { x: 65, y: 59, direction: 180, type: 'straight' },
-    { x: 56, y: 71, direction: 225, type: 'corner' },
-    { x: 40, y: 70, direction: 270, type: 'straight' },
-    { x: 30, y: 61, direction: 315, type: 'corner' },
+    // Start/Finish straight
+    { x: 20, y: 50, direction: 90, type: 'straight', importance: 1.0 },
+    { x: 25, y: 48, direction: 85, type: 'straight', importance: 0.8 },
+    // Sainte Devote
+    { x: 30, y: 45, direction: 60, type: 'corner', importance: 0.9 },
+    { x: 33, y: 42, direction: 45, type: 'corner', importance: 0.7 },
+    // Beau Rivage
+    { x: 38, y: 39, direction: 75, type: 'straight', importance: 0.9 },
+    { x: 43, y: 38, direction: 85, type: 'straight', importance: 1.0 },
+    { x: 48, y: 37, direction: 90, type: 'straight', importance: 1.0 },
+    // Massenet
+    { x: 53, y: 38, direction: 110, type: 'corner', importance: 0.7 },
+    { x: 57, y: 41, direction: 130, type: 'corner', importance: 0.8 },
+    // Casino Square
+    { x: 60, y: 45, direction: 145, type: 'corner', importance: 0.9 },
+    { x: 62, y: 50, direction: 160, type: 'corner', importance: 0.7 },
+    // Mirabeau
+    { x: 64, y: 55, direction: 175, type: 'corner', importance: 0.8 },
+    { x: 65, y: 59, direction: 180, type: 'straight', importance: 0.9 },
+    // Portier
+    { x: 64, y: 64, direction: 195, type: 'corner', importance: 0.7 },
+    { x: 61, y: 68, direction: 215, type: 'corner', importance: 0.8 },
+    // Tunnel
+    { x: 56, y: 71, direction: 235, type: 'straight', importance: 1.0 },
+    { x: 50, y: 72, direction: 255, type: 'straight', importance: 1.0 },
+    { x: 44, y: 71, direction: 265, type: 'straight', importance: 1.0 },
+    { x: 40, y: 70, direction: 270, type: 'straight', importance: 1.0 },
+    // Nouvelle Chicane
+    { x: 36, y: 68, direction: 285, type: 'corner', importance: 0.7 },
+    { x: 33, y: 65, direction: 305, type: 'corner', importance: 0.8 },
+    // Tabac
+    { x: 30, y: 61, direction: 320, type: 'corner', importance: 0.9 },
+    { x: 28, y: 57, direction: 340, type: 'corner', importance: 0.7 },
+    // Swimming Pool
+    { x: 26, y: 53, direction: 0, type: 'corner', importance: 0.8 },
+    { x: 23, y: 51, direction: 20, type: 'corner', importance: 0.7 },
   ],
   'silverstone': [
-    { x: 32, y: 68, direction: 45, type: 'corner' },
-    { x: 52, y: 59, direction: 90, type: 'straight' },
-    { x: 68, y: 64, direction: 135, type: 'corner' },
-    { x: 73, y: 78, direction: 180, type: 'straight' },
-    { x: 63, y: 90, direction: 225, type: 'corner' },
-    { x: 48, y: 86, direction: 270, type: 'straight' },
-    { x: 34, y: 77, direction: 315, type: 'corner' },
-    { x: 30, y: 62, direction: 0, type: 'straight' },
+    // Abbey
+    { x: 30, y: 65, direction: 30, type: 'corner', importance: 0.9 },
+    { x: 34, y: 62, direction: 45, type: 'corner', importance: 0.8 },
+    // Farm Curve
+    { x: 40, y: 60, direction: 70, type: 'corner', importance: 0.7 },
+    { x: 46, y: 59, direction: 85, type: 'straight', importance: 0.9 },
+    // Wellington Straight
+    { x: 52, y: 59, direction: 90, type: 'straight', importance: 1.0 },
+    { x: 58, y: 59, direction: 90, type: 'straight', importance: 1.0 },
+    { x: 64, y: 60, direction: 95, type: 'straight', importance: 1.0 },
+    // Brooklands
+    { x: 68, y: 62, direction: 115, type: 'corner', importance: 0.9 },
+    { x: 71, y: 66, direction: 135, type: 'corner', importance: 0.8 },
+    // Luffield
+    { x: 73, y: 72, direction: 160, type: 'corner', importance: 0.9 },
+    { x: 73, y: 78, direction: 180, type: 'straight', importance: 0.8 },
+    // Woodcote
+    { x: 71, y: 83, direction: 200, type: 'corner', importance: 0.9 },
+    { x: 67, y: 87, direction: 220, type: 'corner', importance: 0.8 },
+    // Copse
+    { x: 60, y: 89, direction: 245, type: 'corner', importance: 1.0 },
+    { x: 54, y: 88, direction: 260, type: 'straight', importance: 0.9 },
+    { x: 48, y: 86, direction: 270, type: 'straight', importance: 1.0 },
+    // Maggotts
+    { x: 42, y: 84, direction: 285, type: 'corner', importance: 0.9 },
+    { x: 38, y: 80, direction: 305, type: 'corner', importance: 0.8 },
+    // Becketts
+    { x: 34, y: 77, direction: 320, type: 'corner', importance: 1.0 },
+    { x: 32, y: 72, direction: 340, type: 'corner', importance: 0.8 },
+    // Chapel
+    { x: 30, y: 68, direction: 355, type: 'corner', importance: 0.7 },
+    { x: 30, y: 62, direction: 10, type: 'straight', importance: 0.8 },
   ],
   'spa': [
-    { x: 27, y: 52, direction: 45, type: 'corner' },
-    { x: 47, y: 40, direction: 90, type: 'straight' },
-    { x: 67, y: 44, direction: 135, type: 'corner' },
-    { x: 77, y: 62, direction: 180, type: 'straight' },
-    { x: 68, y: 79, direction: 225, type: 'corner' },
-    { x: 48, y: 77, direction: 270, type: 'straight' },
-    { x: 31, y: 63, direction: 315, type: 'corner' },
+    // La Source
+    { x: 25, y: 55, direction: 30, type: 'corner', importance: 0.9 },
+    { x: 28, y: 51, direction: 45, type: 'corner', importance: 0.8 },
+    // Eau Rouge
+    { x: 33, y: 47, direction: 65, type: 'corner', importance: 1.0 },
+    { x: 38, y: 44, direction: 80, type: 'corner', importance: 1.0 },
+    // Raidillon
+    { x: 43, y: 42, direction: 85, type: 'straight', importance: 1.0 },
+    { x: 48, y: 40, direction: 90, type: 'straight', importance: 1.0 },
+    // Kemmel Straight
+    { x: 54, y: 40, direction: 90, type: 'straight', importance: 1.0 },
+    { x: 60, y: 41, direction: 95, type: 'straight', importance: 1.0 },
+    { x: 65, y: 43, direction: 105, type: 'straight', importance: 1.0 },
+    // Les Combes
+    { x: 69, y: 46, direction: 125, type: 'corner', importance: 0.9 },
+    { x: 72, y: 51, direction: 145, type: 'corner', importance: 0.8 },
+    // Malmedy
+    { x: 74, y: 56, direction: 165, type: 'corner', importance: 0.7 },
+    { x: 75, y: 61, direction: 175, type: 'straight', importance: 0.8 },
+    // Rivage
+    { x: 74, y: 66, direction: 190, type: 'corner', importance: 0.8 },
+    { x: 72, y: 71, direction: 210, type: 'corner', importance: 0.7 },
+    // Pouhon
+    { x: 69, y: 75, direction: 225, type: 'corner', importance: 1.0 },
+    { x: 65, y: 78, direction: 240, type: 'corner', importance: 0.9 },
+    // Fagnes
+    { x: 60, y: 79, direction: 255, type: 'straight', importance: 0.8 },
+    { x: 54, y: 78, direction: 265, type: 'straight', importance: 0.9 },
+    // Stavelot
+    { x: 48, y: 77, direction: 270, type: 'corner', importance: 0.9 },
+    { x: 43, y: 75, direction: 285, type: 'corner', importance: 0.8 },
+    // Blanchimont
+    { x: 38, y: 72, direction: 295, type: 'straight', importance: 1.0 },
+    { x: 34, y: 68, direction: 305, type: 'straight', importance: 1.0 },
+    // Bus Stop Chicane
+    { x: 31, y: 63, direction: 320, type: 'corner', importance: 0.8 },
+    { x: 29, y: 59, direction: 340, type: 'corner', importance: 0.7 },
   ],
   'monza': [
-    { x: 25, y: 50, direction: 90, type: 'straight' },
-    { x: 55, y: 46, direction: 90, type: 'straight' },
-    { x: 76, y: 40, direction: 135, type: 'corner' },
-    { x: 78, y: 50, direction: 180, type: 'straight' },
-    { x: 73, y: 65, direction: 225, type: 'corner' },
-    { x: 55, y: 76, direction: 270, type: 'straight' },
-    { x: 35, y: 68, direction: 315, type: 'corner' },
+    // Start/Finish
+    { x: 22, y: 50, direction: 90, type: 'straight', importance: 1.0 },
+    { x: 30, y: 49, direction: 90, type: 'straight', importance: 1.0 },
+    { x: 38, y: 48, direction: 90, type: 'straight', importance: 1.0 },
+    { x: 46, y: 47, direction: 90, type: 'straight', importance: 1.0 },
+    { x: 55, y: 46, direction: 90, type: 'straight', importance: 1.0 },
+    // Variante del Rettifilo
+    { x: 62, y: 45, direction: 100, type: 'corner', importance: 0.8 },
+    { x: 68, y: 43, direction: 115, type: 'corner', importance: 0.7 },
+    // Curva Grande
+    { x: 73, y: 42, direction: 125, type: 'corner', importance: 0.9 },
+    { x: 76, y: 44, direction: 140, type: 'corner', importance: 0.8 },
+    // Variante della Roggia
+    { x: 78, y: 48, direction: 160, type: 'corner', importance: 0.7 },
+    { x: 78, y: 53, direction: 175, type: 'straight', importance: 0.8 },
+    // Lesmo 1
+    { x: 77, y: 58, direction: 195, type: 'corner', importance: 0.9 },
+    { x: 75, y: 62, direction: 210, type: 'corner', importance: 0.8 },
+    // Lesmo 2
+    { x: 73, y: 66, direction: 225, type: 'corner', importance: 0.9 },
+    { x: 70, y: 69, direction: 240, type: 'corner', importance: 0.8 },
+    // Ascari
+    { x: 65, y: 72, direction: 255, type: 'corner', importance: 0.9 },
+    { x: 60, y: 74, direction: 265, type: 'corner', importance: 0.8 },
+    { x: 55, y: 76, direction: 270, type: 'straight', importance: 0.9 },
+    // Parabolica
+    { x: 48, y: 76, direction: 280, type: 'corner', importance: 1.0 },
+    { x: 42, y: 74, direction: 295, type: 'corner', importance: 1.0 },
+    { x: 37, y: 71, direction: 310, type: 'corner', importance: 1.0 },
+    { x: 33, y: 67, direction: 325, type: 'corner', importance: 0.9 },
+    { x: 30, y: 62, direction: 340, type: 'corner', importance: 0.8 },
+    { x: 28, y: 56, direction: 355, type: 'corner', importance: 0.7 },
   ],
   'suzuka': [
-    { x: 37, y: 67, direction: 45, type: 'corner' },
-    { x: 52, y: 57, direction: 90, type: 'straight' },
-    { x: 67, y: 56, direction: 135, type: 'corner' },
-    { x: 79, y: 71, direction: 180, type: 'straight' },
-    { x: 70, y: 82, direction: 225, type: 'corner' },
-    { x: 50, y: 77, direction: 270, type: 'straight' },
-    { x: 38, y: 63, direction: 315, type: 'corner' },
-    { x: 52, y: 52, direction: 0, type: 'corner' },
+    // Turn 1
+    { x: 35, y: 70, direction: 30, type: 'corner', importance: 0.9 },
+    { x: 38, y: 66, direction: 45, type: 'corner', importance: 0.8 },
+    // Turn 2
+    { x: 42, y: 63, direction: 65, type: 'corner', importance: 0.8 },
+    { x: 46, y: 61, direction: 80, type: 'corner', importance: 0.7 },
+    // S Curves
+    { x: 50, y: 59, direction: 90, type: 'corner', importance: 0.9 },
+    { x: 54, y: 58, direction: 95, type: 'straight', importance: 0.8 },
+    { x: 58, y: 57, direction: 90, type: 'straight', importance: 0.9 },
+    // Dunlop Curve
+    { x: 62, y: 56, direction: 105, type: 'corner', importance: 0.9 },
+    { x: 66, y: 57, direction: 125, type: 'corner', importance: 0.8 },
+    // Degner Curve
+    { x: 70, y: 60, direction: 145, type: 'corner', importance: 0.9 },
+    { x: 73, y: 64, direction: 160, type: 'corner', importance: 0.8 },
+    // Hairpin
+    { x: 76, y: 68, direction: 175, type: 'corner', importance: 0.8 },
+    { x: 78, y: 73, direction: 185, type: 'corner', importance: 0.7 },
+    // Spoon Curve
+    { x: 77, y: 78, direction: 200, type: 'corner', importance: 1.0 },
+    { x: 74, y: 82, direction: 220, type: 'corner', importance: 0.9 },
+    // 130R
+    { x: 68, y: 84, direction: 245, type: 'corner', importance: 1.0 },
+    { x: 62, y: 83, direction: 260, type: 'straight', importance: 1.0 },
+    { x: 56, y: 81, direction: 265, type: 'straight', importance: 1.0 },
+    // Casio Triangle
+    { x: 50, y: 79, direction: 275, type: 'corner', importance: 0.8 },
+    { x: 46, y: 76, direction: 290, type: 'corner', importance: 0.7 },
+    // Crossover
+    { x: 42, y: 72, direction: 305, type: 'corner', importance: 0.8 },
+    { x: 40, y: 68, direction: 320, type: 'corner', importance: 0.7 },
+    // Final Corner
+    { x: 38, y: 63, direction: 340, type: 'corner', importance: 0.9 },
+    { x: 37, y: 58, direction: 355, type: 'corner', importance: 0.8 },
   ],
   'default': [
-    { x: 27, y: 52, direction: 45, type: 'corner' },
-    { x: 47, y: 40, direction: 90, type: 'straight' },
-    { x: 67, y: 44, direction: 135, type: 'corner' },
-    { x: 70, y: 56, direction: 180, type: 'straight' },
-    { x: 62, y: 66, direction: 225, type: 'corner' },
-    { x: 45, y: 66, direction: 270, type: 'straight' },
-    { x: 35, y: 58, direction: 315, type: 'corner' },
+    { x: 25, y: 50, direction: 45, type: 'corner', importance: 0.8 },
+    { x: 35, y: 42, direction: 70, type: 'straight', importance: 0.9 },
+    { x: 45, y: 40, direction: 90, type: 'straight', importance: 1.0 },
+    { x: 55, y: 42, direction: 110, type: 'straight', importance: 0.9 },
+    { x: 65, y: 48, direction: 135, type: 'corner', importance: 0.8 },
+    { x: 70, y: 56, direction: 160, type: 'straight', importance: 0.9 },
+    { x: 68, y: 64, direction: 200, type: 'corner', importance: 0.8 },
+    { x: 60, y: 68, direction: 225, type: 'corner', importance: 0.8 },
+    { x: 50, y: 68, direction: 250, type: 'straight', importance: 0.9 },
+    { x: 40, y: 66, direction: 270, type: 'straight', importance: 1.0 },
+    { x: 32, y: 62, direction: 300, type: 'corner', importance: 0.8 },
+    { x: 28, y: 56, direction: 330, type: 'corner', importance: 0.8 },
   ]
 };
 
-// Calculate wind impact on track section
-// Returns: 'headwind', 'tailwind', or 'crosswind'
-function calculateWindImpact(trackDirection: number, windDirection: number): { type: 'headwind' | 'tailwind' | 'crosswind'; strength: number } {
+// Calculate precise wind impact using vector decomposition
+// Returns headwind, tailwind, and crosswind components
+function calculateWindComponents(trackDirection: number, windDirection: number, windSpeed: number): {
+  headwind: number;
+  tailwind: number;
+  crosswind: number;
+  type: 'headwind' | 'tailwind' | 'crosswind';
+  strength: number;
+} {
   // Normalize angles to 0-360
   const normalizeAngle = (angle: number) => ((angle % 360) + 360) % 360;
   
   const trackDir = normalizeAngle(trackDirection);
   const windDir = normalizeAngle(windDirection);
   
-  // Calculate the difference between wind direction and track direction
-  let diff = Math.abs(windDir - trackDir);
-  if (diff > 180) diff = 360 - diff;
+  // Calculate relative wind angle (wind direction relative to track direction)
+  // Wind direction is where wind is coming FROM
+  // Track direction is where vehicle is going TO
+  let relativeAngle = windDir - trackDir;
+  if (relativeAngle > 180) relativeAngle -= 360;
+  if (relativeAngle < -180) relativeAngle += 360;
   
-  // Headwind: wind coming from ahead (within 45 degrees)
-  // Tailwind: wind coming from behind (within 45 degrees)
-  // Crosswind: wind from the side
+  // Convert to radians for calculation
+  const relativeRad = (relativeAngle * Math.PI) / 180;
   
-  const strength = Math.cos((diff * Math.PI) / 180); // -1 to 1
+  // Decompose wind into parallel (headwind/tailwind) and perpendicular (crosswind) components
+  // Positive parallel = headwind (opposing motion), Negative = tailwind (assisting motion)
+  const parallelComponent = windSpeed * Math.cos(relativeRad);
+  const perpendicularComponent = windSpeed * Math.sin(relativeRad);
   
-  if (diff < 45) {
-    return { type: 'headwind', strength: Math.abs(strength) };
-  } else if (diff > 135) {
-    return { type: 'tailwind', strength: Math.abs(strength) };
+  // Determine headwind vs tailwind
+  const headwind = Math.max(0, parallelComponent);
+  const tailwind = Math.max(0, -parallelComponent);
+  const crosswind = Math.abs(perpendicularComponent);
+  
+  // Determine dominant type based on component magnitudes
+  let type: 'headwind' | 'tailwind' | 'crosswind';
+  let strength: number;
+  
+  if (headwind > tailwind && headwind > crosswind * 0.7) {
+    type = 'headwind';
+    strength = headwind / windSpeed; // Normalized 0-1
+  } else if (tailwind > headwind && tailwind > crosswind * 0.7) {
+    type = 'tailwind';
+    strength = tailwind / windSpeed; // Normalized 0-1
   } else {
-    return { type: 'crosswind', strength: Math.abs(strength) };
+    type = 'crosswind';
+    strength = crosswind / windSpeed; // Normalized 0-1
   }
+  
+  return {
+    headwind,
+    tailwind,
+    crosswind,
+    type,
+    strength: Math.min(1, strength), // Clamp to 0-1
+  };
 }
 
-// Wind direction indicator component with headwind/tailwind coloring
+// Enhanced wind indicator component with accurate vector visualization
 function WindIndicator({ 
   x, 
   y, 
@@ -169,7 +333,7 @@ function WindIndicator({
   windSpeed, 
   size = 12, 
   colors,
-  showLabel = false
+  importance = 1.0,
 }: { 
   x: number; 
   y: number; 
@@ -178,39 +342,56 @@ function WindIndicator({
   windSpeed: number; 
   size?: number; 
   colors: any;
-  showLabel?: boolean;
+  importance?: number;
 }) {
-  const impact = calculateWindImpact(trackDirection, windDirection);
+  const components = calculateWindComponents(trackDirection, windDirection, windSpeed);
   
-  // Color based on wind impact
-  let color = colors.wind;
-  if (impact.type === 'headwind') {
-    color = '#EF4444'; // Red for headwind (slows down)
-  } else if (impact.type === 'tailwind') {
-    color = '#10B981'; // Green for tailwind (speeds up)
+  // Color based on wind impact type with gradient
+  let color: string;
+  let backgroundColor: string;
+  
+  if (components.type === 'headwind') {
+    // Red gradient for headwind (slows down)
+    const intensity = Math.floor(components.strength * 255);
+    color = `rgb(${Math.min(255, 200 + intensity * 0.2)}, ${Math.max(0, 100 - intensity * 0.4)}, ${Math.max(0, 100 - intensity * 0.4)})`;
+    backgroundColor = 'rgba(239, 68, 68, 0.3)';
+  } else if (components.type === 'tailwind') {
+    // Green gradient for tailwind (speeds up)
+    const intensity = Math.floor(components.strength * 255);
+    color = `rgb(${Math.max(0, 100 - intensity * 0.4)}, ${Math.min(255, 180 + intensity * 0.3)}, ${Math.max(0, 100 - intensity * 0.4)})`;
+    backgroundColor = 'rgba(16, 185, 129, 0.3)';
   } else {
-    color = '#F59E0B'; // Amber for crosswind
+    // Amber gradient for crosswind (affects handling)
+    const intensity = Math.floor(components.strength * 255);
+    color = `rgb(${Math.min(255, 220 + intensity * 0.15)}, ${Math.max(100, 180 - intensity * 0.3)}, ${Math.max(0, 50 - intensity * 0.2)})`;
+    backgroundColor = 'rgba(245, 158, 11, 0.3)';
   }
   
-  const arrowLength = Math.min(size, windSpeed * 0.15);
-  const opacity = 0.8 + (impact.strength * 0.2); // More visible for stronger impact
+  // Scale arrow based on wind strength and importance
+  const baseArrowLength = size * (0.8 + components.strength * 0.4);
+  const arrowLength = baseArrowLength * importance;
+  const opacity = 0.7 + (components.strength * 0.3);
   
-  // Calculate arrow direction relative to track
+  // Calculate arrow direction (wind direction relative to track)
   const relativeWindDir = (windDirection - trackDirection + 360) % 360;
   const radians = (relativeWindDir - 90) * (Math.PI / 180);
   
   const endX = x + Math.cos(radians) * arrowLength;
   const endY = y + Math.sin(radians) * arrowLength;
   
-  // Arrow head
-  const headLength = arrowLength * 0.4;
-  const headAngle = Math.PI / 6;
+  // Arrow head proportional to arrow length
+  const headLength = arrowLength * 0.35;
+  const headAngle = Math.PI / 5.5;
   
   const head1X = endX - Math.cos(radians - headAngle) * headLength;
   const head1Y = endY - Math.sin(radians - headAngle) * headLength;
   
   const head2X = endX - Math.cos(radians + headAngle) * headLength;
   const head2Y = endY - Math.sin(radians + headAngle) * headLength;
+  
+  // Scale circle based on importance and strength
+  const circleRadius = size * 0.85 * importance * (0.7 + components.strength * 0.3);
+  const strokeWidth = 2.5 + components.strength * 1.5;
 
   return (
     <G opacity={opacity}>
@@ -218,19 +399,32 @@ function WindIndicator({
       <Circle
         cx={x}
         cy={y}
-        r={size * 0.9}
-        fill={color}
-        opacity={0.3}
+        r={circleRadius}
+        fill={backgroundColor}
+        opacity={0.6}
       />
       
-      {/* Arrow line */}
+      {/* Outer ring to emphasize important sections */}
+      {importance > 0.85 && (
+        <Circle
+          cx={x}
+          cy={y}
+          r={circleRadius + 2}
+          fill="none"
+          stroke={color}
+          strokeWidth="1"
+          opacity={0.4}
+        />
+      )}
+      
+      {/* Arrow line with variable thickness */}
       <Line
         x1={x}
         y1={y}
         x2={endX}
         y2={endY}
         stroke={color}
-        strokeWidth="3"
+        strokeWidth={strokeWidth}
         strokeLinecap="round"
       />
       
@@ -238,6 +432,15 @@ function WindIndicator({
       <Polygon
         points={`${endX},${endY} ${head1X},${head1Y} ${head2X},${head2Y}`}
         fill={color}
+      />
+      
+      {/* Small center dot for reference */}
+      <Circle
+        cx={x}
+        cy={y}
+        r={1.5}
+        fill={color}
+        opacity={0.8}
       />
     </G>
   );
@@ -263,14 +466,34 @@ export default function TrackMap({
   // Use OpenStreetMap as primary since it doesn't require API key
   const satelliteImage = osmUrl;
   
-  console.log(`Rendering satellite track map for ${circuitSlug} with wind: ${windSpeed}km/h at ${windDirection}°`);
-  console.log(`Using satellite image URL: ${satelliteImage}`);
+  console.log(`Rendering enhanced track map for ${circuitSlug} with wind: ${windSpeed}km/h at ${windDirection}°`);
+  console.log(`Track sections: ${sections.length} points`);
+  
+  // Calculate overall wind impact statistics
+  let totalHeadwind = 0;
+  let totalTailwind = 0;
+  let totalCrosswind = 0;
+  let headwindCount = 0;
+  let tailwindCount = 0;
+  let crosswindCount = 0;
   
   // Generate wind indicators for each track section
   const windIndicators = [];
   if (windSpeed > 0 && showWindOverlay) {
     sections.forEach((section, index) => {
-      const impact = calculateWindImpact(section.direction, windDirection);
+      const components = calculateWindComponents(section.direction, windDirection, windSpeed);
+      
+      // Accumulate statistics
+      if (components.type === 'headwind') {
+        totalHeadwind += components.headwind;
+        headwindCount++;
+      } else if (components.type === 'tailwind') {
+        totalTailwind += components.tailwind;
+        tailwindCount++;
+      } else {
+        totalCrosswind += components.crosswind;
+        crosswindCount++;
+      }
       
       windIndicators.push(
         <WindIndicator
@@ -280,11 +503,14 @@ export default function TrackMap({
           trackDirection={section.direction}
           windDirection={windDirection}
           windSpeed={windSpeed}
-          size={section.type === 'straight' ? 16 : 12}
+          size={section.type === 'straight' ? 16 : 13}
           colors={colors}
+          importance={section.importance}
         />
       );
     });
+    
+    console.log(`Wind analysis: ${headwindCount} headwind sections, ${tailwindCount} tailwind sections, ${crosswindCount} crosswind sections`);
   }
 
   const styles = getStyles(colors);
@@ -325,14 +551,23 @@ export default function TrackMap({
           <View style={styles.legendRow}>
             <View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} />
             <Text style={styles.legendText}>Headwind</Text>
+            {headwindCount > 0 && (
+              <Text style={styles.legendCount}>({headwindCount})</Text>
+            )}
           </View>
           <View style={styles.legendRow}>
             <View style={[styles.legendDot, { backgroundColor: '#10B981' }]} />
             <Text style={styles.legendText}>Tailwind</Text>
+            {tailwindCount > 0 && (
+              <Text style={styles.legendCount}>({tailwindCount})</Text>
+            )}
           </View>
           <View style={styles.legendRow}>
             <View style={[styles.legendDot, { backgroundColor: '#F59E0B' }]} />
             <Text style={styles.legendText}>Crosswind</Text>
+            {crosswindCount > 0 && (
+              <Text style={styles.legendCount}>({crosswindCount})</Text>
+            )}
           </View>
         </View>
       )}
@@ -450,6 +685,12 @@ function getStyles(colors: any) {
       fontSize: 10,
       color: '#FFFFFF',
       fontFamily: 'Roboto_500Medium',
+    },
+    legendCount: {
+      fontSize: 9,
+      color: 'rgba(255, 255, 255, 0.7)',
+      fontFamily: 'Roboto_400Regular',
+      marginLeft: 2,
     },
   });
 }
