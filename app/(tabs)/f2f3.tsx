@@ -1,22 +1,18 @@
 
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout } from '../../styles/commonStyles';
 import { useTheme } from '../../state/ThemeContext';
 import { useLanguage } from '../../state/LanguageContext';
+import CircuitCard from '../../components/CircuitCard';
 import AppHeader from '../../components/AppHeader';
-import { f2Circuits, f3Circuits, f2RaceDates, f3RaceDates } from '../../data/f2f3-circuits';
-import { router } from 'expo-router';
+import ErrorBoundary from '../../components/ErrorBoundary';
+import { f2Circuits, f3Circuits } from '../../data/f2f3-circuits';
 
-interface RaceEvent {
-  date: string;
-  category: 'f2' | 'f3';
-  circuit: any;
-  round: number;
-}
-
-export default function F2F3CalendarScreen() {
+export default function F2F3Screen() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'f2' | 'f3'>('all');
   const { isDark } = useTheme();
   const { t } = useLanguage();
   
@@ -24,43 +20,31 @@ export default function F2F3CalendarScreen() {
   const commonStyles = getCommonStyles(isDark);
   const shadows = getShadows(isDark);
 
-  // Generate race calendar data
-  const raceEvents: RaceEvent[] = useMemo(() => {
-    const events: RaceEvent[] = [];
-    
-    // Add F2 races
-    f2Circuits.forEach((circuit, index) => {
-      const date = f2RaceDates[circuit.slug];
-      if (date) {
-        events.push({
-          date,
-          category: 'f2',
-          circuit,
-          round: index + 1,
-        });
-      }
-    });
-
-    // Add F3 races
-    f3Circuits.forEach((circuit, index) => {
-      const date = f3RaceDates[circuit.slug];
-      if (date) {
-        events.push({
-          date,
-          category: 'f3',
-          circuit,
-          round: index + 1,
-        });
-      }
-    });
-
-    return events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, []);
-
   const styles = StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background,
+    },
+    searchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: borderRadius.lg,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginHorizontal: layout.screenPadding,
+      marginBottom: spacing.lg,
+    },
+    searchIcon: {
+      marginRight: spacing.md,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 16,
+      color: colors.text,
+      fontFamily: 'Roboto_400Regular',
     },
     content: {
       flex: 1,
@@ -68,61 +52,45 @@ export default function F2F3CalendarScreen() {
     scrollContent: {
       padding: layout.screenPadding,
     },
-    monthSection: {
-      marginBottom: spacing.xl,
-    },
-    monthTitle: {
-      fontSize: 20,
-      fontWeight: '600',
-      color: colors.text,
-      fontFamily: 'Roboto_500Medium',
-      marginBottom: spacing.lg,
-    },
-    eventCard: {
-      backgroundColor: colors.card,
-      borderRadius: borderRadius.lg,
-      padding: spacing.lg,
-      marginBottom: spacing.md,
-      borderWidth: 1,
-      borderColor: colors.borderLight,
-      boxShadow: shadows.sm,
-    },
-    eventHeader: {
+    filterContainer: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
+      marginBottom: spacing.xl,
+      gap: spacing.md,
+    },
+    filterButton: {
+      flex: 1,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      borderRadius: borderRadius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
       alignItems: 'center',
-      marginBottom: spacing.sm,
     },
-    eventDate: {
+    filterButtonActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    filterText: {
       fontSize: 14,
-      fontWeight: '600',
-      color: colors.textSecondary,
-      fontFamily: 'Roboto_500Medium',
-    },
-    categoryBadge: {
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.xs,
-      borderRadius: borderRadius.sm,
-      backgroundColor: colors.backgroundAlt,
-    },
-    categoryText: {
-      fontSize: 12,
       fontWeight: '600',
       color: colors.text,
       fontFamily: 'Roboto_500Medium',
       textTransform: 'uppercase',
     },
-    eventTitle: {
-      fontSize: 16,
+    filterTextActive: {
+      color: colors.background,
+    },
+    sectionTitle: {
+      fontSize: 20,
       fontWeight: '600',
       color: colors.text,
       fontFamily: 'Roboto_500Medium',
-      marginBottom: spacing.xs,
+      marginBottom: spacing.lg,
+      marginTop: spacing.md,
     },
-    eventLocation: {
-      fontSize: 14,
-      color: colors.textMuted,
-      fontFamily: 'Roboto_400Regular',
+    circuitsGrid: {
+      gap: spacing.md,
     },
     statsContainer: {
       flexDirection: 'row',
@@ -155,128 +123,181 @@ export default function F2F3CalendarScreen() {
       letterSpacing: 0.5,
       marginTop: spacing.xs,
     },
-    headerSubtitle: {
-      fontSize: 14,
-      color: colors.textSecondary,
+    emptyState: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing.massive,
+    },
+    emptyText: {
+      fontSize: 16,
+      color: colors.textMuted,
       fontFamily: 'Roboto_400Regular',
-      marginTop: spacing.xs,
+      textAlign: 'center',
+      marginTop: spacing.lg,
     },
   });
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'f2': return colors.f1Red;
-      case 'f3': return colors.motogpBlue;
-      default: return colors.primary;
-    }
-  };
+  const allCircuits = useMemo(() => {
+    const f2WithCategory = f2Circuits.map(circuit => ({ ...circuit, category: 'f2' as const }));
+    const f3WithCategory = f3Circuits.map(circuit => ({ ...circuit, category: 'f3' as const }));
+    return [...f2WithCategory, ...f3WithCategory];
+  }, []);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'short',
-      month: 'short', 
-      day: 'numeric' 
-    });
-  };
+  const filteredCircuits = useMemo(() => {
+    try {
+      let circuits = allCircuits;
 
-  const formatMonth = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'long', 
-      year: 'numeric' 
-    });
-  };
-
-  const groupEventsByMonth = (events: RaceEvent[]) => {
-    const grouped: { [key: string]: RaceEvent[] } = {};
-    
-    events.forEach(event => {
-      const month = formatMonth(event.date);
-      if (!grouped[month]) {
-        grouped[month] = [];
+      // Filter by category
+      if (selectedCategory !== 'all') {
+        circuits = circuits.filter(circuit => circuit.category === selectedCategory);
       }
-      grouped[month].push(event);
-    });
 
-    return grouped;
-  };
+      // Filter by search query
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        circuits = circuits.filter(circuit => 
+          circuit.name.toLowerCase().includes(query) ||
+          circuit.country.toLowerCase().includes(query)
+        );
+      }
 
-  const handleEventPress = (event: RaceEvent) => {
-    console.log('F2F3 Calendar: Navigating to circuit:', event.circuit.slug, 'category:', event.category);
-    // For now, we'll navigate to the F1 circuit detail page with the base slug
-    // You can create a separate F2/F3 detail page if needed
-    const baseSlug = event.circuit.slug.replace('-f2', '').replace('-f3', '');
-    router.push(`/circuit/${baseSlug}?category=f1`);
-  };
+      return circuits;
+    } catch (error) {
+      console.error('F2F3Screen: Error filtering circuits:', error);
+      return allCircuits;
+    }
+  }, [searchQuery, selectedCategory, allCircuits]);
 
-  const groupedEvents = groupEventsByMonth(raceEvents);
+  const f2Count = f2Circuits.length;
+  const f3Count = f3Circuits.length;
 
-  const f2Count = raceEvents.filter(e => e.category === 'f2').length;
-  const f3Count = raceEvents.filter(e => e.category === 'f3').length;
-
-  console.log('F2F3CalendarScreen: Rendering with', raceEvents.length, 'events, theme:', isDark ? 'dark' : 'light');
+  console.log('F2F3Screen: Rendering with', filteredCircuits.length, 'circuits, theme:', isDark ? 'dark' : 'light');
 
   return (
-    <View style={styles.container}>
-      <AppHeader
-        title="F2 / F3 Calendar"
-        subtitle="FIA Formula 2 & Formula 3 Championship 2026"
-        icon={<Ionicons name="trophy" size={32} color={colors.primary} />}
-      />
+    <ErrorBoundary>
+      <View style={styles.container}>
+        <AppHeader
+          title="F2 / F3"
+          subtitle={`FIA Formula 2 & Formula 3 • ${allCircuits.length} ${t('circuits')}`}
+          icon={<Ionicons name="trophy" size={32} color={colors.primary} />}
+        />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.scrollContent}>
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{f2Count}</Text>
-              <Text style={styles.statLabel}>F2 Races</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{f3Count}</Text>
-              <Text style={styles.statLabel}>F3 Races</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{raceEvents.length}</Text>
-              <Text style={styles.statLabel}>Total</Text>
-            </View>
-          </View>
-
-          {Object.entries(groupedEvents).map(([month, events]) => (
-            <View key={month} style={styles.monthSection}>
-              <Text style={styles.monthTitle}>{month}</Text>
-              
-              {events.map((event, index) => (
-                <TouchableOpacity
-                  key={`${event.category}-${event.circuit.slug}-${index}`}
-                  style={styles.eventCard}
-                  onPress={() => handleEventPress(event)}
-                >
-                  <View style={styles.eventHeader}>
-                    <Text style={styles.eventDate}>
-                      {formatDate(event.date)} • {t('round')} {event.round}
-                    </Text>
-                    <View style={[
-                      styles.categoryBadge,
-                      { backgroundColor: getCategoryColor(event.category) + '20' }
-                    ]}>
-                      <Text style={[
-                        styles.categoryText,
-                        { color: getCategoryColor(event.category) }
-                      ]}>
-                        {event.category.toUpperCase()}
-                      </Text>
-                    </View>
-                  </View>
-                  
-                  <Text style={styles.eventTitle}>{event.circuit.name}</Text>
-                  <Text style={styles.eventLocation}>{event.circuit.country}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          ))}
+        <View style={styles.searchContainer}>
+          <Ionicons 
+            name="search" 
+            size={20} 
+            color={colors.textMuted} 
+            style={styles.searchIcon}
+          />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={t('search_circuits')}
+            placeholderTextColor={colors.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <Ionicons 
+              name="close-circle" 
+              size={20} 
+              color={colors.textMuted}
+              onPress={() => setSearchQuery('')}
+            />
+          )}
         </View>
-      </ScrollView>
-    </View>
+
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.scrollContent}>
+            <View style={styles.filterContainer}>
+              <View 
+                style={[
+                  styles.filterButton, 
+                  selectedCategory === 'all' && styles.filterButtonActive
+                ]}
+                onTouchEnd={() => setSelectedCategory('all')}
+              >
+                <Text style={[
+                  styles.filterText,
+                  selectedCategory === 'all' && styles.filterTextActive
+                ]}>
+                  All
+                </Text>
+              </View>
+              <View 
+                style={[
+                  styles.filterButton, 
+                  selectedCategory === 'f2' && styles.filterButtonActive
+                ]}
+                onTouchEnd={() => setSelectedCategory('f2')}
+              >
+                <Text style={[
+                  styles.filterText,
+                  selectedCategory === 'f2' && styles.filterTextActive
+                ]}>
+                  F2
+                </Text>
+              </View>
+              <View 
+                style={[
+                  styles.filterButton, 
+                  selectedCategory === 'f3' && styles.filterButtonActive
+                ]}
+                onTouchEnd={() => setSelectedCategory('f3')}
+              >
+                <Text style={[
+                  styles.filterText,
+                  selectedCategory === 'f3' && styles.filterTextActive
+                ]}>
+                  F3
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.statsContainer}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{f2Count}</Text>
+                <Text style={styles.statLabel}>F2 {t('circuits')}</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{f3Count}</Text>
+                <Text style={styles.statLabel}>F3 {t('circuits')}</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{allCircuits.length}</Text>
+                <Text style={styles.statLabel}>{t('total')}</Text>
+              </View>
+            </View>
+
+            <Text style={styles.sectionTitle}>
+              {selectedCategory === 'all' ? t('all_circuits') : selectedCategory.toUpperCase() + ' ' + t('circuits')} ({filteredCircuits.length})
+            </Text>
+
+            {filteredCircuits.length > 0 ? (
+              <View style={styles.circuitsGrid}>
+                {filteredCircuits.map((circuit) => (
+                  <ErrorBoundary key={`${circuit.category}-${circuit.slug}`}>
+                    <CircuitCard
+                      circuit={circuit}
+                      category="f1"
+                    />
+                  </ErrorBoundary>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <Ionicons 
+                  name="search" 
+                  size={48} 
+                  color={colors.textMuted} 
+                />
+                <Text style={styles.emptyText}>
+                  {t('no_circuits_found')} &quot;{searchQuery}&quot;
+                </Text>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      </View>
+    </ErrorBoundary>
   );
 }
