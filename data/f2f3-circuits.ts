@@ -3,9 +3,9 @@ import { Circuit } from '../components/CircuitCard';
 
 // F2 2026 calendar circuits (follows F1 calendar closely)
 export const f2Circuits: Circuit[] = [
+  { slug: 'albert-park-f2', name: 'Albert Park Circuit', country: 'Australia', latitude: -37.8497, longitude: 144.968 },
   { slug: 'bahrain-f2', name: 'Bahrain International Circuit', country: 'Bahrain', latitude: 26.0325, longitude: 50.5106 },
   { slug: 'jeddah-f2', name: 'Jeddah Corniche Circuit', country: 'Saudi Arabia', latitude: 21.6319, longitude: 39.1044 },
-  { slug: 'albert-park-f2', name: 'Albert Park Circuit', country: 'Australia', latitude: -37.8497, longitude: 144.968 },
   { slug: 'miami-f2', name: 'Miami International Autodrome', country: 'USA', latitude: 25.958, longitude: -80.2389 },
   { slug: 'monaco-f2', name: 'Circuit de Monaco', country: 'Monaco', latitude: 43.7347, longitude: 7.4206 },
   { slug: 'barcelona-f2', name: 'Circuit de Barcelona-Catalunya', country: 'Spain', latitude: 41.57, longitude: 2.2611 },
@@ -21,8 +21,8 @@ export const f2Circuits: Circuit[] = [
 
 // F3 2026 calendar circuits (follows F1 calendar closely)
 export const f3Circuits: Circuit[] = [
-  { slug: 'bahrain-f3', name: 'Bahrain International Circuit', country: 'Bahrain', latitude: 26.0325, longitude: 50.5106 },
   { slug: 'albert-park-f3', name: 'Albert Park Circuit', country: 'Australia', latitude: -37.8497, longitude: 144.968 },
+  { slug: 'bahrain-f3', name: 'Bahrain International Circuit', country: 'Bahrain', latitude: 26.0325, longitude: 50.5106 },
   { slug: 'miami-f3', name: 'Miami International Autodrome', country: 'USA', latitude: 25.958, longitude: -80.2389 },
   { slug: 'monaco-f3', name: 'Circuit de Monaco', country: 'Monaco', latitude: 43.7347, longitude: 7.4206 },
   { slug: 'barcelona-f3', name: 'Circuit de Barcelona-Catalunya', country: 'Spain', latitude: 41.57, longitude: 2.2611 },
@@ -35,9 +35,9 @@ export const f3Circuits: Circuit[] = [
 
 // F2 race dates for 2026
 export const f2RaceDates: Record<string, string> = {
+  'albert-park-f2': '2026-03-08',
   'bahrain-f2': '2026-04-12',
   'jeddah-f2': '2026-04-19',
-  'albert-park-f2': '2026-03-08',
   'miami-f2': '2026-05-03',
   'monaco-f2': '2026-06-07',
   'barcelona-f2': '2026-06-14',
@@ -53,8 +53,8 @@ export const f2RaceDates: Record<string, string> = {
 
 // F3 race dates for 2026
 export const f3RaceDates: Record<string, string> = {
-  'bahrain-f3': '2026-04-12',
   'albert-park-f3': '2026-03-08',
+  'bahrain-f3': '2026-04-12',
   'miami-f3': '2026-05-03',
   'monaco-f3': '2026-06-07',
   'barcelona-f3': '2026-06-14',
