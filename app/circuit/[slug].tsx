@@ -6,6 +6,8 @@ import { getColors, getButtonStyles, spacing, borderRadius, getShadows } from '.
 import { getCircuitBySlug } from '../../data/circuits';
 import { useWeather } from '../../hooks/useWeather';
 import ChartDoughnut from '../../components/ChartDoughnut';
+import WindBarGraphs from '../../components/WindBarGraphs';
+import WindRadarGraph from '../../components/WindRadarGraph';
 import WeatherChart from '../../components/WeatherChart';
 import WeatherSymbol from '../../components/WeatherSymbol';
 import EnhancedWeatherForecast from '../../components/EnhancedWeatherForecast';
@@ -13,6 +15,9 @@ import WeatherTextForecast from '../../components/WeatherTextForecast';
 import WeatherAlerts from '../../components/WeatherAlerts';
 import TrackRainfallRadar from '../../components/TrackRainfallRadar';
 import WindyCloudRadar from '../../components/WindyCloudRadar';
+import WindParticleAnimation from '../../components/WindParticleAnimation';
+import RaceCountdown from '../../components/RaceCountdown';
+import EnhancedWeatherAlerts from '../../components/EnhancedWeatherAlerts';
 import BottomSheet, { BottomSheetView, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
@@ -20,6 +25,7 @@ import ErrorBoundary from '../../components/ErrorBoundary';
 import SafeComponent from '../../components/SafeComponent';
 import { useUnit } from '../../state/UnitContext';
 import { useTheme } from '../../state/ThemeContext';
+import { getCurrentTrackOfWeek } from '../../utils/currentTrack';
 
 function DetailScreen() {
   // Get theme first
@@ -282,6 +288,39 @@ function DetailScreen() {
     }
   };
 
+  // Get next race date for countdown
+  const getNextRaceDate = useCallback((): string | null => {
+    try {
+      const currentTrack = getCurrentTrackOfWeek(category);
+      if (!currentTrack) return null;
+      
+      // Get race dates from schedules
+      const { f1RaceDates } = require('../../data/schedules');
+      const { f2RaceDates, f3RaceDates } = require('../../data/f2f3-circuits');
+      
+      let raceDates: any = {};
+      switch (category) {
+        case 'f1':
+          raceDates = f1RaceDates;
+          break;
+        case 'f2':
+          raceDates = f2RaceDates;
+          break;
+        case 'f3':
+          raceDates = f3RaceDates;
+          break;
+        default:
+          return null;
+      }
+      
+      const raceDate = raceDates[circuit.slug];
+      return raceDate || null;
+    } catch (error) {
+      console.error('DetailScreen: Error getting race date:', error);
+      return null;
+    }
+  }, [category, circuit]);
+
   // Create dynamic styles based on theme
   const styles = useMemo(() => StyleSheet.create({
     wrapper: { flex: 1, backgroundColor: colors.background },
@@ -361,6 +400,71 @@ function DetailScreen() {
       fontFamily: 'Roboto_600SemiBold',
     },
     daylightLabel: {
+      fontSize: 11,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginTop: 2,
+    },
+    windAnimationCard: {
+      backgroundColor: colors.card,
+      borderRadius: 14,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      boxShadow: shadows.md,
+      marginBottom: 16,
+    },
+    windAnimationHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    windAnimationTitleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    windAnimationTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+    },
+    windAnimationSubtitle: {
+      fontSize: 14,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 12,
+    },
+    windAnimationContainer: {
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    windStatsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginTop: 12,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+    },
+    windStatItem: {
+      alignItems: 'center',
+    },
+    windStatLabel: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontFamily: 'Roboto_400Regular',
+      marginBottom: 4,
+    },
+    windStatValue: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+      fontFamily: 'Roboto_700Bold',
+    },
+    windStatUnit: {
       fontSize: 11,
       color: colors.textMuted,
       fontFamily: 'Roboto_400Regular',
@@ -697,9 +801,6 @@ function DetailScreen() {
     );
   }
 
-  // Only show track map for F1 circuits
-  const showTrackMap = category === 'f1';
-
   return (
     <ErrorBoundary>
       <View style={styles.wrapper}>
@@ -739,7 +840,7 @@ function DetailScreen() {
           {loading && <Text style={styles.muted}>Loading enhanced weather data…</Text>}
           {error && <Text style={styles.error}>Failed to load weather data. Please try again.</Text>}
 
-          {/* Simplified Sunrise/Sunset Bar */}
+          {/* Simplified Sunrise/Sunset Bar - Now at the top */}
           {!loading && todaySunTimes && (
             <SafeComponent componentName="SunriseSunsetBar">
               <View style={styles.sunTimesBar}>
@@ -773,8 +874,33 @@ function DetailScreen() {
             </SafeComponent>
           )}
 
-          {/* Weather Alerts */}
+          {/* Race Countdown Timer */}
+          {!loading && (
+            <SafeComponent componentName="RaceCountdown">
+              {(() => {
+                const raceDate = getNextRaceDate();
+                if (raceDate) {
+                  return (
+                    <RaceCountdown
+                      raceDate={raceDate}
+                      raceName={circuit.name}
+                    />
+                  );
+                }
+                return null;
+              })()}
+            </SafeComponent>
+          )}
+
+          {/* Enhanced Weather Alerts */}
           {!loading && alerts && alerts.length > 0 && (
+            <SafeComponent componentName="EnhancedWeatherAlerts">
+              <EnhancedWeatherAlerts alerts={alerts} />
+            </SafeComponent>
+          )}
+
+          {/* Legacy Weather Alerts (fallback) */}
+          {!loading && alerts && alerts.length === 0 && (
             <SafeComponent componentName="WeatherAlerts">
               <WeatherAlerts alerts={alerts} />
             </SafeComponent>
@@ -866,7 +992,7 @@ function DetailScreen() {
             </SafeComponent>
           )}
 
-          {/* 7-Day Forecast */}
+          {/* 7-Day Forecast - MOVED HERE (after Next 12 Hours) */}
           {!loading && daily && (
             <SafeComponent componentName="7DayForecast">
               <View style={styles.card}>
@@ -1129,6 +1255,76 @@ function DetailScreen() {
               )}
             </>
           )}
+
+          {/* Wind Analysis */}
+          {!loading && windData.length > 0 && (
+            <>
+              <SafeComponent componentName="WindBarGraphs">
+                <WindBarGraphs
+                  hourlyData={windData}
+                  unit={unit}
+                />
+              </SafeComponent>
+
+              {/* Animated Wind Visualization with Map Underlay - MOVED HERE */}
+              {current && (
+                <SafeComponent componentName="WindParticleAnimation">
+                  <View style={styles.windAnimationCard}>
+                    <View style={styles.windAnimationHeader}>
+                      <View style={styles.windAnimationTitleContainer}>
+                        <Icon name="flag" size={20} color={colors.wind} />
+                        <Text style={styles.windAnimationTitle}>Live Wind Flow</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.windAnimationSubtitle}>
+                      Real-time wind visualisation
+                    </Text>
+                    
+                    <View style={styles.windAnimationContainer}>
+                      <WindParticleAnimation
+                        windSpeed={current.wind_speed}
+                        windDirection={current.wind_direction}
+                        width={320}
+                        height={280}
+                        particleCount={200}
+                        showGrid={false}
+                        unit={unit}
+                        latitude={circuit.latitude}
+                        longitude={circuit.longitude}
+                      />
+                    </View>
+                    
+                    <View style={styles.windStatsContainer}>
+                      <View style={styles.windStatItem}>
+                        <Text style={styles.windStatLabel}>Speed</Text>
+                        <Text style={styles.windStatValue}>{Math.round(current.wind_speed)}</Text>
+                        <Text style={styles.windStatUnit}>{unit === 'metric' ? 'km/h' : 'mph'}</Text>
+                      </View>
+                      
+                      <View style={styles.windStatItem}>
+                        <Text style={styles.windStatLabel}>Direction</Text>
+                        <Text style={styles.windStatValue}>{getWindDirectionLabel(current.wind_direction)}</Text>
+                        <Text style={styles.windStatUnit}>{Math.round(current.wind_direction)}°</Text>
+                      </View>
+                      
+                      <View style={styles.windStatItem}>
+                        <Text style={styles.windStatLabel}>Gusts</Text>
+                        <Text style={styles.windStatValue}>{Math.round(current.wind_gusts)}</Text>
+                        <Text style={styles.windStatUnit}>{unit === 'metric' ? 'km/h' : 'mph'}</Text>
+                      </View>
+                    </View>
+                  </View>
+                </SafeComponent>
+              )}
+
+              <SafeComponent componentName="WindRadarGraph">
+                <WindRadarGraph
+                  hourlyData={windData}
+                  unit={unit}
+                />
+              </SafeComponent>
+            </>
+          )}
         </ScrollView>
 
         {/* Settings Bottom Sheet */}
@@ -1152,7 +1348,8 @@ function DetailScreen() {
             <View style={{ height: 18 }} />
             <Text style={styles.muted}>
               Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, 
-              written text summaries, and sunrise/sunset times for each track location. Data updates every 10 minutes for accuracy.
+              written text summaries, animated wind visualization with map underlay, and sunrise/sunset times for each track location. 
+              Data updates every 10 minutes for accuracy.
             </Text>
           </BottomSheetView>
         </BottomSheet>
@@ -1208,9 +1405,18 @@ function DetailScreen() {
               </>
             )}
             
+            {windData.length > 0 && (
+              <SafeComponent componentName="WindRadarAnalysis">
+                <WindRadarGraph
+                  hourlyData={windData}
+                  unit={unit}
+                />
+              </SafeComponent>
+            )}
+            
             <Text style={styles.muted}>
               72-hour enhanced forecast data with number scales for precise readings. Charts update every 10 minutes with detailed 
-              atmospheric conditions.
+              atmospheric conditions. Wind radar analysis shows directional patterns and frequency distribution.
             </Text>
           </BottomSheetScrollView>
         </BottomSheet>

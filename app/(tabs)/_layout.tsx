@@ -8,11 +8,26 @@ import IndyCarIcon from '../../components/IndyCarIcon';
 import NascarIcon from '../../components/NascarIcon';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEffect } from 'react';
+import NotificationService from '../../utils/notificationService';
+import OfflineStorageService from '../../utils/offlineStorage';
+import FavoritesService from '../../utils/favoritesService';
 
 export default function TabLayout() {
   const { isDark } = useTheme();
   const colors = getColors(isDark);
   const insets = useSafeAreaInsets();
+
+  // Initialize services
+  useEffect(() => {
+    async function initServices() {
+      console.log('TabLayout: Initializing services');
+      await NotificationService.initialize();
+      await OfflineStorageService.clearOldCache();
+      await FavoritesService.initialize();
+    }
+    initServices();
+  }, []);
 
   console.log('TabLayout: Rendering with theme:', isDark ? 'dark' : 'light');
   console.log('TabLayout: Safe area insets:', insets);
@@ -103,12 +118,27 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="favorites"
+          options={{
+            title: 'Favorites',
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="heart" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="notifications"
+          options={{
+            title: 'Settings',
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="settings" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="disclaimer"
           options={{
-            title: 'About',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="information-circle" size={size} color={color} />
-            ),
+            href: null,
           }}
         />
         <Tabs.Screen
