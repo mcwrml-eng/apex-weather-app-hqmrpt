@@ -112,7 +112,7 @@ export class OfflineStorageService {
   private async updateRecentCircuits(circuitSlug: string, category: string): Promise<void> {
     try {
       const recentStr = await AsyncStorage.getItem(RECENT_CIRCUITS_KEY);
-      let recent: Array<{ slug: string; category: string; timestamp: number }> = [];
+      let recent: { slug: string; category: string; timestamp: number }[] = [];
       
       if (recentStr) {
         recent = JSON.parse(recentStr);
@@ -134,7 +134,7 @@ export class OfflineStorageService {
   }
 
   // Get recent circuits
-  async getRecentCircuits(): Promise<Array<{ slug: string; category: string; timestamp: number }>> {
+  async getRecentCircuits(): Promise<{ slug: string; category: string; timestamp: number }[]> {
     try {
       const recentStr = await AsyncStorage.getItem(RECENT_CIRCUITS_KEY);
       if (recentStr) {

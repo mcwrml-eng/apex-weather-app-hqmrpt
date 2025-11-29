@@ -32,8 +32,8 @@ const PREFERENCES_KEY = '@notification_preferences';
 
 export class NotificationService {
   private static instance: NotificationService;
-  private notificationListener: any;
-  private responseListener: any;
+  private notificationListener: Notifications.Subscription | null = null;
+  private responseListener: Notifications.Subscription | null = null;
 
   private constructor() {
     console.log('NotificationService: Initializing');
@@ -244,10 +244,10 @@ export class NotificationService {
 
   cleanup() {
     if (this.notificationListener) {
-      Notifications.removeNotificationSubscription(this.notificationListener);
+      this.notificationListener.remove();
     }
     if (this.responseListener) {
-      Notifications.removeNotificationSubscription(this.responseListener);
+      this.responseListener.remove();
     }
     console.log('NotificationService: Cleaned up');
   }

@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useUnit } from '../state/UnitContext';
 import { useTheme } from '../state/ThemeContext';
 import { useLanguage } from '../state/LanguageContext';
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import FavoritesService from '../utils/favoritesService';
@@ -40,18 +40,18 @@ export default function CircuitCard({ circuit, category }: Props) {
   const scaleAnim = useMemo(() => new Animated.Value(1), []);
   const [isFavorite, setIsFavorite] = useState(false);
 
-  useEffect(() => {
-    checkFavorite();
-  }, [circuit.slug, category]);
-
-  const checkFavorite = async () => {
+  const checkFavorite = useCallback(async () => {
     try {
       const fav = await FavoritesService.isFavorite(circuit.slug, category);
       setIsFavorite(fav);
     } catch (error) {
       console.error('CircuitCard: Error checking favorite:', error);
     }
-  };
+  }, [circuit.slug, category]);
+
+  useEffect(() => {
+    checkFavorite();
+  }, [checkFavorite]);
 
   const handleToggleFavorite = async (e: any) => {
     e.stopPropagation();

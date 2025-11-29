@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useWeather } from './useWeather';
 import OfflineStorageService from '../utils/offlineStorage';
 
@@ -30,6 +30,8 @@ export function useWeatherWithCache(
 
   // Get live weather data
   const liveWeather = useWeather(latitude, longitude, unit);
+  const liveWeatherRef = useRef(liveWeather);
+  liveWeatherRef.current = liveWeather;
 
   // Load cached data on mount
   useEffect(() => {
@@ -50,17 +52,17 @@ export function useWeatherWithCache(
   useEffect(() => {
     async function cacheData() {
       if (
-        !liveWeather.loading &&
-        !liveWeather.error &&
-        liveWeather.current &&
+        !liveWeatherRef.current.loading &&
+        !liveWeatherRef.current.error &&
+        liveWeatherRef.current.current &&
         circuitSlug &&
         category
       ) {
         await OfflineStorageService.cacheWeatherData(circuitSlug, category, {
-          current: liveWeather.current,
-          daily: liveWeather.daily,
-          hourly: liveWeather.hourly,
-          alerts: liveWeather.alerts,
+          current: liveWeatherRef.current.current,
+          daily: liveWeatherRef.current.daily,
+          hourly: liveWeatherRef.current.hourly,
+          alerts: liveWeatherRef.current.alerts,
           timestamp: Date.now(),
           latitude,
           longitude,

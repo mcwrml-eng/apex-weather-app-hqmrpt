@@ -26,6 +26,8 @@ import SafeComponent from '../../components/SafeComponent';
 import { useUnit } from '../../state/UnitContext';
 import { useTheme } from '../../state/ThemeContext';
 import { getCurrentTrackOfWeek } from '../../utils/currentTrack';
+import { f1RaceDates } from '../../data/schedules';
+import { f2RaceDates, f3RaceDates } from '../../data/f2f3-circuits';
 
 function DetailScreen() {
   // Get theme first
@@ -295,9 +297,6 @@ function DetailScreen() {
       if (!currentTrack) return null;
       
       // Get race dates from schedules
-      const { f1RaceDates } = require('../../data/schedules');
-      const { f2RaceDates, f3RaceDates } = require('../../data/f2f3-circuits');
-      
       let raceDates: any = {};
       switch (category) {
         case 'f1':
