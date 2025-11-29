@@ -16,8 +16,6 @@ import WeatherAlerts from '../../components/WeatherAlerts';
 import TrackRainfallRadar from '../../components/TrackRainfallRadar';
 import WindyCloudRadar from '../../components/WindyCloudRadar';
 import WindParticleAnimation from '../../components/WindParticleAnimation';
-import RaceCountdown from '../../components/RaceCountdown';
-import EnhancedWeatherAlerts from '../../components/EnhancedWeatherAlerts';
 import BottomSheet, { BottomSheetView, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
@@ -25,9 +23,6 @@ import ErrorBoundary from '../../components/ErrorBoundary';
 import SafeComponent from '../../components/SafeComponent';
 import { useUnit } from '../../state/UnitContext';
 import { useTheme } from '../../state/ThemeContext';
-import { getCurrentTrackOfWeek } from '../../utils/currentTrack';
-import { f1RaceDates } from '../../data/schedules';
-import { f2RaceDates, f3RaceDates } from '../../data/f2f3-circuits';
 
 function DetailScreen() {
   // Get theme first
@@ -289,36 +284,6 @@ function DetailScreen() {
       default: return cat.toUpperCase();
     }
   };
-
-  // Get next race date for countdown
-  const getNextRaceDate = useCallback((): string | null => {
-    try {
-      const currentTrack = getCurrentTrackOfWeek(category);
-      if (!currentTrack) return null;
-      
-      // Get race dates from schedules
-      let raceDates: any = {};
-      switch (category) {
-        case 'f1':
-          raceDates = f1RaceDates;
-          break;
-        case 'f2':
-          raceDates = f2RaceDates;
-          break;
-        case 'f3':
-          raceDates = f3RaceDates;
-          break;
-        default:
-          return null;
-      }
-      
-      const raceDate = raceDates[circuit.slug];
-      return raceDate || null;
-    } catch (error) {
-      console.error('DetailScreen: Error getting race date:', error);
-      return null;
-    }
-  }, [category, circuit]);
 
   // Create dynamic styles based on theme
   const styles = useMemo(() => StyleSheet.create({
@@ -873,33 +838,8 @@ function DetailScreen() {
             </SafeComponent>
           )}
 
-          {/* Race Countdown Timer */}
-          {!loading && (
-            <SafeComponent componentName="RaceCountdown">
-              {(() => {
-                const raceDate = getNextRaceDate();
-                if (raceDate) {
-                  return (
-                    <RaceCountdown
-                      raceDate={raceDate}
-                      raceName={circuit.name}
-                    />
-                  );
-                }
-                return null;
-              })()}
-            </SafeComponent>
-          )}
-
-          {/* Enhanced Weather Alerts */}
+          {/* Weather Alerts */}
           {!loading && alerts && alerts.length > 0 && (
-            <SafeComponent componentName="EnhancedWeatherAlerts">
-              <EnhancedWeatherAlerts alerts={alerts} />
-            </SafeComponent>
-          )}
-
-          {/* Legacy Weather Alerts (fallback) */}
-          {!loading && alerts && alerts.length === 0 && (
             <SafeComponent componentName="WeatherAlerts">
               <WeatherAlerts alerts={alerts} />
             </SafeComponent>

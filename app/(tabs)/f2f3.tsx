@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout } from '../../styles/commonStyles';
 import { useTheme } from '../../state/ThemeContext';
 import { useLanguage } from '../../state/LanguageContext';
-import EnhancedCircuitCard from '../../components/EnhancedCircuitCard';
+import CircuitCard from '../../components/CircuitCard';
 import FeaturedTrackCard from '../../components/FeaturedTrackCard';
 import AppHeader from '../../components/AppHeader';
 import ErrorBoundary from '../../components/ErrorBoundary';
@@ -63,11 +63,10 @@ export default function F2F3Screen() {
       paddingVertical: spacing.md,
       paddingHorizontal: spacing.lg,
       borderRadius: borderRadius.lg,
-      borderWidth: 2,
+      borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.card,
       alignItems: 'center',
-      boxShadow: shadows.sm,
     },
     filterButtonAll: {
       backgroundColor: isDark ? '#4A4A4A' : '#D0D0D0',
@@ -84,15 +83,12 @@ export default function F2F3Screen() {
     filterButtonActive: {
       backgroundColor: colors.primary,
       borderColor: colors.primary,
-      borderWidth: 3,
-      boxShadow: shadows.md,
     },
     filterText: {
-      fontSize: 15,
-      fontWeight: '700',
-      fontFamily: 'Roboto_700Bold',
+      fontSize: 14,
+      fontWeight: '600',
+      fontFamily: 'Roboto_500Medium',
       textTransform: 'uppercase',
-      letterSpacing: 1,
     },
     filterTextAll: {
       color: isDark ? '#FFFFFF' : '#1A1A1A',
@@ -107,10 +103,10 @@ export default function F2F3Screen() {
       color: colors.background,
     },
     sectionTitle: {
-      fontSize: 22,
-      fontWeight: '700',
+      fontSize: 20,
+      fontWeight: '600',
       color: colors.text,
-      fontFamily: 'Roboto_700Bold',
+      fontFamily: 'Roboto_500Medium',
       marginBottom: spacing.lg,
       marginTop: spacing.md,
     },
@@ -121,51 +117,44 @@ export default function F2F3Screen() {
       flexDirection: 'row',
       justifyContent: 'space-between',
       marginBottom: spacing.xl,
-      paddingHorizontal: spacing.xs,
-      gap: spacing.md,
+      paddingHorizontal: spacing.md,
     },
     statItem: {
       alignItems: 'center',
       backgroundColor: colors.card,
       padding: spacing.lg,
-      borderRadius: borderRadius.xl,
+      borderRadius: borderRadius.lg,
       flex: 1,
+      marginHorizontal: spacing.xs,
       borderWidth: 1,
       borderColor: colors.borderLight,
-      boxShadow: shadows.md,
-    },
-    statIcon: {
-      marginBottom: spacing.sm,
+      boxShadow: shadows.sm,
     },
     statNumber: {
-      fontSize: 28,
-      fontWeight: '800',
+      fontSize: 24,
+      fontWeight: '700',
       color: colors.primary,
       fontFamily: 'Roboto_700Bold',
     },
     statLabel: {
-      fontSize: 11,
+      fontSize: 12,
       color: colors.textMuted,
-      fontFamily: 'Roboto_500Medium',
+      fontFamily: 'Roboto_400Regular',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
       marginTop: spacing.xs,
-      textAlign: 'center',
     },
     emptyState: {
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: spacing.massive,
     },
-    emptyIcon: {
-      marginBottom: spacing.lg,
-    },
     emptyText: {
       fontSize: 16,
       color: colors.textMuted,
-      fontFamily: 'Roboto_500Medium',
+      fontFamily: 'Roboto_400Regular',
       textAlign: 'center',
-      marginTop: spacing.md,
+      marginTop: spacing.lg,
     },
   });
 
@@ -318,17 +307,14 @@ export default function F2F3Screen() {
 
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
-                <Ionicons name="trophy" size={28} color={isDark ? '#1565C0' : '#1976D2'} style={styles.statIcon} />
                 <Text style={styles.statNumber}>{f2Count}</Text>
                 <Text style={styles.statLabel}>F2 {t('circuits')}</Text>
               </View>
               <View style={styles.statItem}>
-                <Ionicons name="trophy" size={28} color={isDark ? '#C62828' : '#D32F2F'} style={styles.statIcon} />
                 <Text style={styles.statNumber}>{f3Count}</Text>
                 <Text style={styles.statLabel}>F3 {t('circuits')}</Text>
               </View>
               <View style={styles.statItem}>
-                <Ionicons name="globe" size={28} color={colors.primary} style={styles.statIcon} />
                 <Text style={styles.statNumber}>{allCircuits.length}</Text>
                 <Text style={styles.statLabel}>{t('total')}</Text>
               </View>
@@ -342,10 +328,9 @@ export default function F2F3Screen() {
               <View style={styles.circuitsGrid}>
                 {filteredCircuits.map((circuit) => (
                   <ErrorBoundary key={`${circuit.category}-${circuit.slug}`}>
-                    <EnhancedCircuitCard
+                    <CircuitCard
                       circuit={circuit}
                       category={circuit.category}
-                      enhanced={true}
                     />
                   </ErrorBoundary>
                 ))}
@@ -354,9 +339,8 @@ export default function F2F3Screen() {
               <View style={styles.emptyState}>
                 <Ionicons 
                   name="search" 
-                  size={64} 
-                  color={colors.textMuted}
-                  style={styles.emptyIcon}
+                  size={48} 
+                  color={colors.textMuted} 
                 />
                 <Text style={styles.emptyText}>
                   {t('no_circuits_found')} &quot;{searchQuery}&quot;
