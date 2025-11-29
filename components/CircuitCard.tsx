@@ -7,10 +7,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useUnit } from '../state/UnitContext';
 import { useTheme } from '../state/ThemeContext';
 import { useLanguage } from '../state/LanguageContext';
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import FavoritesService from '../utils/favoritesService';
 
 export interface Circuit {
   slug: string;
@@ -38,40 +36,6 @@ export default function CircuitCard({ circuit, category }: Props) {
   const shadows = getShadows(isDark);
   
   const scaleAnim = useMemo(() => new Animated.Value(1), []);
-  const [isFavorite, setIsFavorite] = useState(false);
-
-  useEffect(() => {
-    checkFavorite();
-  }, [circuit.slug, category]);
-
-  const checkFavorite = async () => {
-    try {
-      const fav = await FavoritesService.isFavorite(circuit.slug, category);
-      setIsFavorite(fav);
-    } catch (error) {
-      console.error('CircuitCard: Error checking favorite:', error);
-    }
-  };
-
-  const handleToggleFavorite = async (e: any) => {
-    e.stopPropagation();
-    try {
-      if (isFavorite) {
-        await FavoritesService.removeFavorite(circuit.slug, category);
-      } else {
-        await FavoritesService.addFavorite({
-          slug: circuit.slug,
-          category,
-          name: circuit.name,
-          country: circuit.country,
-          addedAt: Date.now(),
-        });
-      }
-      setIsFavorite(!isFavorite);
-    } catch (error) {
-      console.error('CircuitCard: Error toggling favorite:', error);
-    }
-  };
 
   const styles = StyleSheet.create({
     card: {
@@ -157,22 +121,6 @@ export default function CircuitCard({ circuit, category }: Props) {
       fontFamily: 'Roboto_400Regular',
       marginTop: spacing.sm,
     },
-    favoriteButton: {
-      position: 'absolute',
-      top: spacing.md,
-      right: spacing.md,
-      backgroundColor: colors.primary,
-      borderRadius: borderRadius.round,
-      width: 40,
-      height: 40,
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 10,
-      boxShadow: shadows.md,
-    },
-    favoriteButtonActive: {
-      backgroundColor: colors.error,
-    },
   });
 
   const getCategoryGradient = () => {
@@ -223,17 +171,6 @@ export default function CircuitCard({ circuit, category }: Props) {
         onPressOut={onPressOut}
         activeOpacity={1}
       >
-        <TouchableOpacity
-          style={[styles.favoriteButton, isFavorite && styles.favoriteButtonActive]}
-          onPress={handleToggleFavorite}
-        >
-          <Ionicons
-            name={isFavorite ? 'heart' : 'heart-outline'}
-            size={20}
-            color="#FFFFFF"
-          />
-        </TouchableOpacity>
-
         <LinearGradient
           colors={[colors.card, colors.backgroundAlt]}
           style={styles.gradient}

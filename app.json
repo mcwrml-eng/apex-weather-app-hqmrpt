@@ -19,7 +19,7 @@
       "buildNumber": "4",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": []
       }
     },
     "android": {
@@ -29,12 +29,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.gridweather.pro",
-      "versionCode": 4,
-      "permissions": [
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE",
-        "SCHEDULE_EXACT_ALARM"
-      ]
+      "versionCode": 4
     },
     "web": {
       "favicon": "./assets/images/c84e183c-9c73-456c-a90b-f3be78ef7b8b.png",
@@ -47,15 +42,6 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#374151"
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/images/c84e183c-9c73-456c-a90b-f3be78ef7b8b.png",
-          "color": "#374151",
-          "sounds": [],
-          "mode": "production"
         }
       ]
     ],
