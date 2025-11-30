@@ -15,6 +15,7 @@ import { useWeather } from '../../hooks/useWeather';
 import WeatherSymbol from '../../components/WeatherSymbol';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 
 const FAVOURITES_STORAGE_KEY = '@motorsport_weather_favourites';
 
@@ -170,36 +171,32 @@ export default function FavouritesScreen() {
       position: 'relative',
       marginBottom: spacing.md,
     },
-    removeButtonWrapper: {
-      position: 'absolute',
-      top: 60,
-      left: spacing.sm,
-      zIndex: 1000,
-      elevation: 1000,
-    },
     removeButton: {
+      position: 'absolute',
+      top: spacing.md,
+      right: spacing.md,
       backgroundColor: colors.error,
       borderRadius: borderRadius.full,
-      width: 32,
-      height: 32,
+      width: 36,
+      height: 36,
       alignItems: 'center',
       justifyContent: 'center',
+      zIndex: 10,
+      elevation: 5,
       boxShadow: shadows.md,
     },
-    customRemoveButtonWrapper: {
-      position: 'absolute',
-      top: 60,
-      left: spacing.md,
-      zIndex: 1000,
-      elevation: 1000,
-    },
     customRemoveButton: {
+      position: 'absolute',
+      top: spacing.md,
+      right: spacing.md,
       backgroundColor: colors.error,
       borderRadius: borderRadius.full,
-      width: 32,
-      height: 32,
+      width: 36,
+      height: 36,
       alignItems: 'center',
       justifyContent: 'center',
+      zIndex: 10,
+      elevation: 5,
       boxShadow: shadows.md,
     },
     categoryBadge: {
@@ -291,20 +288,21 @@ export default function FavouritesScreen() {
       setFavourites(updated);
       await AsyncStorage.setItem(FAVOURITES_STORAGE_KEY, JSON.stringify(updated));
       console.log('Favourites: Successfully saved updated list to storage');
+      
+      // Provide haptic feedback
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       console.error('Favourites: Error removing favourite:', error);
       Alert.alert('Error', 'Failed to remove favourite. Please try again.');
     }
   };
 
-  const handleRemove = (favourite: FavouriteLocation, event?: any) => {
-    // Stop event propagation if event is provided
-    if (event) {
-      event.stopPropagation();
-      event.preventDefault();
-    }
-    
+  const handleRemove = (favourite: FavouriteLocation) => {
     console.log('Favourites: handleRemove called for:', favourite.id, favourite.name);
+    
+    // Provide haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
     Alert.alert(
       'Remove Favourite',
       `Remove ${favourite.name} from favourites?`,
@@ -415,23 +413,21 @@ export default function FavouritesScreen() {
                     
                     return (
                       <View key={favourite.id} style={styles.circuitCardWrapper}>
-                        <View style={styles.removeButtonWrapper} pointerEvents="box-none">
-                          <TouchableOpacity
-                            style={styles.removeButton}
-                            onPress={(e) => {
-                              console.log('Favourites: Remove button pressed for circuit:', favourite.id);
-                              handleRemove(favourite, e);
-                            }}
-                            activeOpacity={0.7}
-                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                          >
-                            <Ionicons name="close" size={20} color="#FFFFFF" />
-                          </TouchableOpacity>
-                        </View>
                         <CircuitCard
                           circuit={circuit}
                           category={favourite.category || 'f1'}
                         />
+                        <TouchableOpacity
+                          style={styles.removeButton}
+                          onPress={() => {
+                            console.log('Favourites: Remove button pressed for circuit:', favourite.id);
+                            handleRemove(favourite);
+                          }}
+                          activeOpacity={0.7}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                          <Ionicons name="close" size={20} color="#FFFFFF" />
+                        </TouchableOpacity>
                       </View>
                     );
                   })}
@@ -447,9 +443,9 @@ export default function FavouritesScreen() {
                     <CustomLocationCard
                       key={favourite.id}
                       favourite={favourite}
-                      onRemove={(e) => {
+                      onRemove={() => {
                         console.log('Favourites: Remove button pressed for custom location:', favourite.id);
-                        handleRemove(favourite, e);
+                        handleRemove(favourite);
                       }}
                       colors={colors}
                       styles={styles}
@@ -468,7 +464,7 @@ export default function FavouritesScreen() {
 
 interface CustomLocationCardProps {
   favourite: FavouriteLocation;
-  onRemove: (event?: any) => void;
+  onRemove: () => void;
   colors: any;
   styles: any;
   unit: string;
@@ -478,81 +474,81 @@ function CustomLocationCard({ favourite, onRemove, colors, styles, unit }: Custo
   const { current, loading } = useWeather(favourite.latitude, favourite.longitude, unit === 'metric' ? 'metric' : 'imperial');
 
   return (
-    <View style={styles.customLocationCard}>
-      <LinearGradient
-        colors={[colors.card, colors.backgroundAlt]}
-        style={styles.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <View style={styles.cardHeader}>
-          <View style={styles.locationInfo}>
-            <Text style={styles.locationName} numberOfLines={2}>
-              {favourite.name}
-            </Text>
-            <Text style={styles.locationDetails}>
-              {favourite.country || 'Custom Location'}
-            </Text>
-            <Text style={[styles.locationDetails, { fontSize: 12, marginTop: 2 }]}>
-              {favourite.latitude.toFixed(4)}°, {favourite.longitude.toFixed(4)}°
-            </Text>
+    <View style={{ position: 'relative', marginBottom: spacing.md }}>
+      <View style={styles.customLocationCard}>
+        <LinearGradient
+          colors={[colors.card, colors.backgroundAlt]}
+          style={styles.gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.locationInfo}>
+              <Text style={styles.locationName} numberOfLines={2}>
+                {favourite.name}
+              </Text>
+              <Text style={styles.locationDetails}>
+                {favourite.country || 'Custom Location'}
+              </Text>
+              <Text style={[styles.locationDetails, { fontSize: 12, marginTop: 2 }]}>
+                {favourite.latitude.toFixed(4)}°, {favourite.longitude.toFixed(4)}°
+              </Text>
+            </View>
+
+            <View style={styles.weatherContainer}>
+              {loading ? (
+                <WeatherSymbol weatherCode={1} size={32} latitude={favourite.latitude} longitude={favourite.longitude} />
+              ) : current ? (
+                <>
+                  <WeatherSymbol 
+                    weatherCode={current.weather_code} 
+                    size={32}
+                    latitude={favourite.latitude}
+                    longitude={favourite.longitude}
+                  />
+                  <Text style={styles.temperature}>
+                    {Math.round(current.temperature)}°
+                  </Text>
+                </>
+              ) : (
+                <WeatherSymbol weatherCode={1} size={32} latitude={favourite.latitude} longitude={favourite.longitude} />
+              )}
+            </View>
           </View>
 
-          <View style={styles.weatherContainer}>
-            {loading ? (
-              <WeatherSymbol weatherCode={1} size={32} latitude={favourite.latitude} longitude={favourite.longitude} />
-            ) : current ? (
-              <>
-                <WeatherSymbol 
-                  weatherCode={current.weather_code} 
-                  size={32}
-                  latitude={favourite.latitude}
-                  longitude={favourite.longitude}
-                />
-                <Text style={styles.temperature}>
-                  {Math.round(current.temperature)}°
+          {current && !loading && (
+            <View style={styles.weatherInfo}>
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Wind</Text>
+                <Text style={styles.infoValue}>
+                  {Math.round(current.wind_speed)} {unit === 'metric' ? 'km/h' : 'mph'}
                 </Text>
-              </>
-            ) : (
-              <WeatherSymbol weatherCode={1} size={32} latitude={favourite.latitude} longitude={favourite.longitude} />
-            )}
-          </View>
-        </View>
-
-        {current && !loading && (
-          <View style={styles.weatherInfo}>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Wind</Text>
-              <Text style={styles.infoValue}>
-                {Math.round(current.wind_speed)} {unit === 'metric' ? 'km/h' : 'mph'}
-              </Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Humidity</Text>
+                <Text style={styles.infoValue}>
+                  {Math.round(current.humidity)}%
+                </Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Pressure</Text>
+                <Text style={styles.infoValue}>
+                  {Math.round(current.pressure)} hPa
+                </Text>
+              </View>
             </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Humidity</Text>
-              <Text style={styles.infoValue}>
-                {Math.round(current.humidity)}%
-              </Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Pressure</Text>
-              <Text style={styles.infoValue}>
-                {Math.round(current.pressure)} hPa
-              </Text>
-            </View>
-          </View>
-        )}
-
-        <View style={styles.customRemoveButtonWrapper} pointerEvents="box-none">
-          <TouchableOpacity
-            style={styles.customRemoveButton}
-            onPress={onRemove}
-            activeOpacity={0.7}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons name="close" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
+          )}
+        </LinearGradient>
+      </View>
+      
+      <TouchableOpacity
+        style={styles.customRemoveButton}
+        onPress={onRemove}
+        activeOpacity={0.7}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Ionicons name="close" size={20} color="#FFFFFF" />
+      </TouchableOpacity>
     </View>
   );
 }
