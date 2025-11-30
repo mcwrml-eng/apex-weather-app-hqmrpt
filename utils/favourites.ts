@@ -17,25 +17,30 @@ export interface FavouriteLocation {
 
 export async function getFavourites(): Promise<FavouriteLocation[]> {
   try {
+    console.log('Favourites Utils: Getting favourites from storage');
     const stored = await AsyncStorage.getItem(FAVOURITES_STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      console.log('Favourites Utils: Found', parsed.length, 'favourites');
+      return parsed;
     }
+    console.log('Favourites Utils: No favourites found');
     return [];
   } catch (error) {
-    console.error('Favourites: Error loading favourites:', error);
+    console.error('Favourites Utils: Error loading favourites:', error);
     return [];
   }
 }
 
 export async function addFavourite(favourite: Omit<FavouriteLocation, 'addedAt'>): Promise<boolean> {
   try {
+    console.log('Favourites Utils: Adding favourite:', favourite.id, favourite.name);
     const favourites = await getFavourites();
     
     // Check if already exists
     const exists = favourites.some(fav => fav.id === favourite.id);
     if (exists) {
-      console.log('Favourites: Already exists:', favourite.id);
+      console.log('Favourites Utils: Already exists:', favourite.id);
       return false;
     }
     
@@ -46,34 +51,39 @@ export async function addFavourite(favourite: Omit<FavouriteLocation, 'addedAt'>
     
     const updated = [...favourites, newFavourite];
     await AsyncStorage.setItem(FAVOURITES_STORAGE_KEY, JSON.stringify(updated));
-    console.log('Favourites: Added successfully:', favourite.id);
+    console.log('Favourites Utils: Added successfully. Total favourites:', updated.length);
     return true;
   } catch (error) {
-    console.error('Favourites: Error adding favourite:', error);
+    console.error('Favourites Utils: Error adding favourite:', error);
     return false;
   }
 }
 
 export async function removeFavourite(id: string): Promise<boolean> {
   try {
+    console.log('Favourites Utils: Removing favourite:', id);
     const favourites = await getFavourites();
+    const beforeCount = favourites.length;
     const updated = favourites.filter(fav => fav.id !== id);
+    const afterCount = updated.length;
+    
     await AsyncStorage.setItem(FAVOURITES_STORAGE_KEY, JSON.stringify(updated));
-    console.log('Favourites: Removed successfully:', id);
+    console.log('Favourites Utils: Removed successfully. Before:', beforeCount, 'After:', afterCount);
     return true;
   } catch (error) {
-    console.error('Favourites: Error removing favourite:', error);
+    console.error('Favourites Utils: Error removing favourite:', error);
     return false;
   }
 }
 
 export async function removeAllFavourites(): Promise<boolean> {
   try {
+    console.log('Favourites Utils: Removing all favourites');
     await AsyncStorage.setItem(FAVOURITES_STORAGE_KEY, JSON.stringify([]));
-    console.log('Favourites: Removed all favourites successfully');
+    console.log('Favourites Utils: Removed all favourites successfully');
     return true;
   } catch (error) {
-    console.error('Favourites: Error removing all favourites:', error);
+    console.error('Favourites Utils: Error removing all favourites:', error);
     return false;
   }
 }
@@ -81,26 +91,31 @@ export async function removeAllFavourites(): Promise<boolean> {
 export async function isFavourite(id: string): Promise<boolean> {
   try {
     const favourites = await getFavourites();
-    return favourites.some(fav => fav.id === id);
+    const result = favourites.some(fav => fav.id === id);
+    console.log('Favourites Utils: Checking if favourite:', id, 'Result:', result);
+    return result;
   } catch (error) {
-    console.error('Favourites: Error checking favourite:', error);
+    console.error('Favourites Utils: Error checking favourite:', error);
     return false;
   }
 }
 
 export async function toggleFavourite(favourite: Omit<FavouriteLocation, 'addedAt'>): Promise<boolean> {
   try {
+    console.log('Favourites Utils: Toggling favourite:', favourite.id, favourite.name);
     const isCurrentlyFavourite = await isFavourite(favourite.id);
     
     if (isCurrentlyFavourite) {
       await removeFavourite(favourite.id);
+      console.log('Favourites Utils: Removed from favourites');
       return false;
     } else {
       await addFavourite(favourite);
+      console.log('Favourites Utils: Added to favourites');
       return true;
     }
   } catch (error) {
-    console.error('Favourites: Error toggling favourite:', error);
+    console.error('Favourites Utils: Error toggling favourite:', error);
     return false;
   }
 }

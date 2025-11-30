@@ -23,9 +23,11 @@ export type Category = 'f1' | 'f2' | 'f3' | 'motogp' | 'indycar' | 'nascar';
 interface Props {
   circuit: Circuit;
   category: Category;
+  onPress?: () => void;
+  disablePress?: boolean;
 }
 
-export default function CircuitCard({ circuit, category }: Props) {
+export default function CircuitCard({ circuit, category, onPress, disablePress = false }: Props) {
   const { current, loading } = useWeather(circuit.latitude, circuit.longitude, 'metric');
   const { unit } = useUnit();
   const { isDark } = useTheme();
@@ -143,6 +145,7 @@ export default function CircuitCard({ circuit, category }: Props) {
   };
 
   const onPressIn = () => {
+    if (disablePress) return;
     Animated.spring(scaleAnim, {
       toValue: animations.scale.pressed,
       ...animations.spring,
@@ -151,6 +154,7 @@ export default function CircuitCard({ circuit, category }: Props) {
   };
 
   const onPressOut = () => {
+    if (disablePress) return;
     Animated.spring(scaleAnim, {
       toValue: animations.scale.normal,
       ...animations.spring,
@@ -159,9 +163,88 @@ export default function CircuitCard({ circuit, category }: Props) {
   };
 
   const handlePress = () => {
-    console.log('CircuitCard: Navigating to circuit:', circuit.slug, 'category:', category);
-    router.push(`/circuit/${circuit.slug}?category=${category}`);
+    if (disablePress) return;
+    if (onPress) {
+      onPress();
+    } else {
+      console.log('CircuitCard: Navigating to circuit:', circuit.slug, 'category:', category);
+      router.push(`/circuit/${circuit.slug}?category=${category}`);
+    }
   };
+
+  const cardContent = (
+    <LinearGradient
+      colors={[colors.card, colors.backgroundAlt]}
+      style={styles.gradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      <View style={styles.header}>
+        <View style={styles.titleContainer}>
+          <Text style={styles.circuitName} numberOfLines={2}>
+            {circuit.name}
+          </Text>
+          <Text style={styles.country}>
+            {circuit.country}
+          </Text>
+        </View>
+        
+        <View style={styles.weatherContainer}>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <WeatherSymbol weatherCode={1} size={32} />
+              <Text style={styles.loadingText}>{t('loading')}</Text>
+            </View>
+          ) : current ? (
+            <>
+              <WeatherSymbol 
+                weatherCode={current.weather_code} 
+                size={32}
+                latitude={circuit.latitude}
+                longitude={circuit.longitude}
+              />
+              <Text style={styles.temperature}>
+                {Math.round(current.temperature)}°
+              </Text>
+            </>
+          ) : (
+            <WeatherSymbol weatherCode={1} size={32} />
+          )}
+        </View>
+      </View>
+
+      {current && !loading && (
+        <View style={styles.weatherInfo}>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoLabel}>{t('wind')}</Text>
+            <Text style={styles.infoValue}>
+              {Math.round(current.wind_speed)} {unit === 'metric' ? 'km/h' : 'mph'}
+            </Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoLabel}>{t('humidity')}</Text>
+            <Text style={styles.infoValue}>
+              {Math.round(current.humidity)}%
+            </Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoLabel}>{t('pressure')}</Text>
+            <Text style={styles.infoValue}>
+              {Math.round(current.pressure)} hPa
+            </Text>
+          </View>
+        </View>
+      )}
+    </LinearGradient>
+  );
+
+  if (disablePress) {
+    return (
+      <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
+        {cardContent}
+      </Animated.View>
+    );
+  }
 
   return (
     <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
@@ -171,69 +254,7 @@ export default function CircuitCard({ circuit, category }: Props) {
         onPressOut={onPressOut}
         activeOpacity={1}
       >
-        <LinearGradient
-          colors={[colors.card, colors.backgroundAlt]}
-          style={styles.gradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <View style={styles.header}>
-            <View style={styles.titleContainer}>
-              <Text style={styles.circuitName} numberOfLines={2}>
-                {circuit.name}
-              </Text>
-              <Text style={styles.country}>
-                {circuit.country}
-              </Text>
-            </View>
-            
-            <View style={styles.weatherContainer}>
-              {loading ? (
-                <View style={styles.loadingContainer}>
-                  <WeatherSymbol weatherCode={1} size={32} />
-                  <Text style={styles.loadingText}>{t('loading')}</Text>
-                </View>
-              ) : current ? (
-                <>
-                  <WeatherSymbol 
-                    weatherCode={current.weather_code} 
-                    size={32}
-                    latitude={circuit.latitude}
-                    longitude={circuit.longitude}
-                  />
-                  <Text style={styles.temperature}>
-                    {Math.round(current.temperature)}°
-                  </Text>
-                </>
-              ) : (
-                <WeatherSymbol weatherCode={1} size={32} />
-              )}
-            </View>
-          </View>
-
-          {current && !loading && (
-            <View style={styles.weatherInfo}>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>{t('wind')}</Text>
-                <Text style={styles.infoValue}>
-                  {Math.round(current.wind_speed)} {unit === 'metric' ? 'km/h' : 'mph'}
-                </Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>{t('humidity')}</Text>
-                <Text style={styles.infoValue}>
-                  {Math.round(current.humidity)}%
-                </Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>{t('pressure')}</Text>
-                <Text style={styles.infoValue}>
-                  {Math.round(current.pressure)} hPa
-                </Text>
-              </View>
-            </View>
-          )}
-        </LinearGradient>
+        {cardContent}
       </TouchableOpacity>
     </Animated.View>
   );
