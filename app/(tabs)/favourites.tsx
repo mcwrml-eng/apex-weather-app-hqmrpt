@@ -170,30 +170,36 @@ export default function FavouritesScreen() {
       position: 'relative',
       marginBottom: spacing.md,
     },
-    removeButton: {
+    removeButtonWrapper: {
       position: 'absolute',
       top: 60,
       left: spacing.sm,
+      zIndex: 1000,
+      elevation: 1000,
+    },
+    removeButton: {
       backgroundColor: colors.error,
       borderRadius: borderRadius.full,
       width: 32,
       height: 32,
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 10,
       boxShadow: shadows.md,
     },
-    customRemoveButton: {
+    customRemoveButtonWrapper: {
       position: 'absolute',
       top: 60,
       left: spacing.md,
+      zIndex: 1000,
+      elevation: 1000,
+    },
+    customRemoveButton: {
       backgroundColor: colors.error,
       borderRadius: borderRadius.full,
       width: 32,
       height: 32,
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 10,
       boxShadow: shadows.md,
     },
     categoryBadge: {
@@ -291,7 +297,13 @@ export default function FavouritesScreen() {
     }
   };
 
-  const handleRemove = (favourite: FavouriteLocation) => {
+  const handleRemove = (favourite: FavouriteLocation, event?: any) => {
+    // Stop event propagation if event is provided
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    
     console.log('Favourites: handleRemove called for:', favourite.id, favourite.name);
     Alert.alert(
       'Remove Favourite',
@@ -403,16 +415,19 @@ export default function FavouritesScreen() {
                     
                     return (
                       <View key={favourite.id} style={styles.circuitCardWrapper}>
-                        <TouchableOpacity
-                          style={styles.removeButton}
-                          onPress={() => {
-                            console.log('Favourites: Remove button pressed for circuit:', favourite.id);
-                            handleRemove(favourite);
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Ionicons name="close" size={20} color="#FFFFFF" />
-                        </TouchableOpacity>
+                        <View style={styles.removeButtonWrapper} pointerEvents="box-none">
+                          <TouchableOpacity
+                            style={styles.removeButton}
+                            onPress={(e) => {
+                              console.log('Favourites: Remove button pressed for circuit:', favourite.id);
+                              handleRemove(favourite, e);
+                            }}
+                            activeOpacity={0.7}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          >
+                            <Ionicons name="close" size={20} color="#FFFFFF" />
+                          </TouchableOpacity>
+                        </View>
                         <CircuitCard
                           circuit={circuit}
                           category={favourite.category || 'f1'}
@@ -432,9 +447,9 @@ export default function FavouritesScreen() {
                     <CustomLocationCard
                       key={favourite.id}
                       favourite={favourite}
-                      onRemove={() => {
+                      onRemove={(e) => {
                         console.log('Favourites: Remove button pressed for custom location:', favourite.id);
-                        handleRemove(favourite);
+                        handleRemove(favourite, e);
                       }}
                       colors={colors}
                       styles={styles}
@@ -453,7 +468,7 @@ export default function FavouritesScreen() {
 
 interface CustomLocationCardProps {
   favourite: FavouriteLocation;
-  onRemove: () => void;
+  onRemove: (event?: any) => void;
   colors: any;
   styles: any;
   unit: string;
@@ -527,13 +542,16 @@ function CustomLocationCard({ favourite, onRemove, colors, styles, unit }: Custo
           </View>
         )}
 
-        <TouchableOpacity
-          style={styles.customRemoveButton}
-          onPress={onRemove}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="close" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
+        <View style={styles.customRemoveButtonWrapper} pointerEvents="box-none">
+          <TouchableOpacity
+            style={styles.customRemoveButton}
+            onPress={onRemove}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="close" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
       </LinearGradient>
     </View>
   );
