@@ -17,7 +17,8 @@
   "indycar": "IndyCar",
   "nascar": "NASCAR",
   
-  "calendar": "Calendar",
+  "favourites": "Favourites",
+  "favorites": "Favorites",
   "disclaimer": "Disclaimer",
   "legal_info": "Legal & Info",
   
@@ -111,9 +112,22 @@
   "support_description": "Need help or have questions? We're here to assist you with any issues or feedback.",
   "contact_support": "Contact Support",
   
-  "version_info": "Motorsport Weather App v1.0.0\nBuilt with ❤️ for racing fans worldwide",
+  "version_info": "Motorsport Weather App v1.2\nBuilt with ❤️ for racing fans worldwide",
   
   "this_week": "This Week",
   "wind": "Wind",
-  "featured": "Featured"
+  "featured": "Featured",
+  
+  "add_to_favourites": "Add to Favourites",
+  "remove_from_favourites": "Remove from Favourites",
+  "added_to_favourites": "Added to Favourites",
+  "removed_from_favourites": "Removed from Favourites",
+  "no_favourites_yet": "No Favourites Yet",
+  "favourites_empty_message": "Start adding your favourite racing circuits and custom locations to quickly access their weather forecasts.",
+  "favourites_hint": "Tap the heart icon on any circuit or custom location to add it to your favourites",
+  "total": "Total",
+  "custom": "Custom",
+  "racing_circuits": "Racing Circuits",
+  "custom_locations": "Custom Locations",
+  "saved_locations": "Saved Locations"
 }

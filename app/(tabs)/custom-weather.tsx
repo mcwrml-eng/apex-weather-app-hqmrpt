@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout } from '../../styles/commonStyles';
 import { useTheme } from '../../state/ThemeContext';
@@ -11,6 +11,8 @@ import { useWeather } from '../../hooks/useWeather';
 import WeatherSymbol from '../../components/WeatherSymbol';
 import TwelveHourForecast from '../../components/TwelveHourForecast';
 import { LinearGradient } from 'expo-linear-gradient';
+import { toggleFavourite, isFavourite } from '../../utils/favourites';
+import * as Haptics from 'expo-haptics';
 
 interface SavedLocation {
   name: string;
@@ -52,6 +54,7 @@ export default function CustomWeatherScreen() {
   const [selectedLocation, setSelectedLocation] = useState<SavedLocation | null>(null);
   const [showCoordinates, setShowCoordinates] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [isFav, setIsFav] = useState(false);
   
   const { isDark } = useTheme();
   const { t } = useLanguage();
@@ -497,7 +500,7 @@ export default function CustomWeatherScreen() {
     }, 500);
   };
 
-  const handleLocationSelect = (location: SavedLocation) => {
+  const handleLocationSelect = async (location: SavedLocation) => {
     console.log('CustomWeather: Selected location:', location.name);
     setSelectedLocation(location);
     setLocationSearch('');
@@ -505,6 +508,11 @@ export default function CustomWeatherScreen() {
     setShowSearchResults(false);
     setLatitude('');
     setLongitude('');
+    
+    // Check if this location is favourited
+    const favouriteId = `custom-${location.latitude}-${location.longitude}`;
+    const status = await isFavourite(favouriteId);
+    setIsFav(status);
   };
 
   const handleSearchResultSelect = (result: GeocodingResult) => {
@@ -542,6 +550,44 @@ export default function CustomWeatherScreen() {
     setLongitude('');
     setSearchResults([]);
     setShowSearchResults(false);
+    setIsFav(false);
+  };
+
+  const handleToggleFavourite = async () => {
+    if (!selectedLocation && (parsedLat === null || parsedLon === null)) {
+      Alert.alert('No Location', 'Please select or enter a location first.');
+      return;
+    }
+    
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+      const lat = selectedLocation?.latitude || parsedLat || 0;
+      const lon = selectedLocation?.longitude || parsedLon || 0;
+      const favouriteId = `custom-${lat}-${lon}`;
+      
+      const locationName = selectedLocation?.name || `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
+      
+      const newStatus = await toggleFavourite({
+        id: favouriteId,
+        type: 'custom',
+        name: locationName,
+        country: selectedLocation?.country,
+        latitude: lat,
+        longitude: lon,
+      });
+      
+      setIsFav(newStatus);
+      
+      if (newStatus) {
+        Alert.alert('Added to Favourites', `${locationName} has been added to your favourites.`);
+      } else {
+        Alert.alert('Removed from Favourites', `${locationName} has been removed from your favourites.`);
+      }
+    } catch (error) {
+      console.error('CustomWeather: Error toggling favourite:', error);
+      Alert.alert('Error', 'Failed to update favourites. Please try again.');
+    }
   };
 
   const clearSearch = () => {
@@ -751,9 +797,18 @@ export default function CustomWeatherScreen() {
             <View style={styles.section}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md }}>
                 <Text style={styles.sectionTitle}>Weather Forecast</Text>
-                <TouchableOpacity onPress={clearLocation}>
-                  <Ionicons name="close-circle" size={24} color={colors.textMuted} />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: spacing.md }}>
+                  <TouchableOpacity onPress={handleToggleFavourite}>
+                    <Ionicons 
+                      name={isFav ? "heart" : "heart-outline"} 
+                      size={24} 
+                      color={isFav ? colors.error : colors.textMuted} 
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={clearLocation}>
+                    <Ionicons name="close-circle" size={24} color={colors.textMuted} />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {loading ? (

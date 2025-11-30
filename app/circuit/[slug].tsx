@@ -1,6 +1,6 @@
 
-import React, { useMemo, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useMemo, useRef, useCallback, useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { getColors, getButtonStyles, spacing, borderRadius, getShadows } from '../../styles/commonStyles';
 import { getCircuitBySlug } from '../../data/circuits';
@@ -23,6 +23,8 @@ import ErrorBoundary from '../../components/ErrorBoundary';
 import SafeComponent from '../../components/SafeComponent';
 import { useUnit } from '../../state/UnitContext';
 import { useTheme } from '../../state/ThemeContext';
+import { toggleFavourite, isFavourite } from '../../utils/favourites';
+import * as Haptics from 'expo-haptics';
 
 function DetailScreen() {
   // Get theme first
@@ -66,6 +68,61 @@ function DetailScreen() {
   const openSettings = useCallback(() => settingsRef.current?.expand(), []);
   const openCharts = useCallback(() => chartsRef.current?.expand(), []);
   const openForecast = useCallback(() => forecastRef.current?.expand(), []);
+
+  // Favourite state
+  const [isFav, setIsFav] = useState(false);
+  const [checkingFav, setCheckingFav] = useState(true);
+
+  // Check if circuit is favourited
+  useEffect(() => {
+    if (circuit) {
+      checkFavouriteStatus();
+    }
+  }, [circuit]);
+
+  const checkFavouriteStatus = async () => {
+    if (!circuit) return;
+    try {
+      const favouriteId = `circuit-${category}-${slug}`;
+      const status = await isFavourite(favouriteId);
+      setIsFav(status);
+    } catch (error) {
+      console.error('DetailScreen: Error checking favourite status:', error);
+    } finally {
+      setCheckingFav(false);
+    }
+  };
+
+  const handleToggleFavourite = async () => {
+    if (!circuit) return;
+    
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+      const favouriteId = `circuit-${category}-${slug}`;
+      const newStatus = await toggleFavourite({
+        id: favouriteId,
+        type: 'circuit',
+        name: circuit.name,
+        country: circuit.country,
+        latitude: circuit.latitude,
+        longitude: circuit.longitude,
+        category: category,
+        slug: slug,
+      });
+      
+      setIsFav(newStatus);
+      
+      if (newStatus) {
+        Alert.alert('Added to Favourites', `${circuit.name} has been added to your favourites.`);
+      } else {
+        Alert.alert('Removed from Favourites', `${circuit.name} has been removed from your favourites.`);
+      }
+    } catch (error) {
+      console.error('DetailScreen: Error toggling favourite:', error);
+      Alert.alert('Error', 'Failed to update favourites. Please try again.');
+    }
+  };
 
   // Convert hourly data for charts - OPTIMIZED: only first 72 hours
   const chartData = useMemo(() => {
@@ -783,6 +840,18 @@ function DetailScreen() {
           <Text style={styles.subtitle}>{circuit.country} • {getCategoryDisplayName(category)}</Text>
 
           <View style={styles.actions}>
+            <TouchableOpacity 
+              onPress={handleToggleFavourite} 
+              style={styles.actionBtn} 
+              activeOpacity={0.8}
+              disabled={checkingFav}
+            >
+              <Icon 
+                name={isFav ? "heart" : "heart-outline"} 
+                size={22} 
+                color={isFav ? colors.error : colors.text} 
+              />
+            </TouchableOpacity>
             <TouchableOpacity onPress={openForecast} style={styles.actionBtn} activeOpacity={0.8}>
               <Icon name="time-outline" size={22} color={colors.text} />
             </TouchableOpacity>
