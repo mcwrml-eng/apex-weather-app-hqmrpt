@@ -16,6 +16,7 @@ import WeatherSymbol from '../../components/WeatherSymbol';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { removeAllFavourites } from '../../utils/favourites';
 
 const FAVOURITES_STORAGE_KEY = '@motorsport_weather_favourites';
 
@@ -248,6 +249,25 @@ export default function FavouritesScreen() {
       letterSpacing: 0.5,
       marginTop: spacing.xs,
     },
+    removeAllButton: {
+      backgroundColor: colors.error,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderRadius: borderRadius.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginHorizontal: spacing.md,
+      marginBottom: spacing.lg,
+      boxShadow: shadows.md,
+    },
+    removeAllButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '600',
+      fontFamily: 'Roboto_500Medium',
+      marginLeft: spacing.sm,
+    },
   });
 
   // Load favourites from storage - using useFocusEffect to reload when tab comes into focus
@@ -324,6 +344,44 @@ export default function FavouritesScreen() {
     );
   };
 
+  const handleRemoveAll = () => {
+    console.log('Favourites: handleRemoveAll called');
+    
+    // Provide haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    Alert.alert(
+      'Remove All Favourites',
+      `Are you sure you want to remove all ${favourites.length} favourite${favourites.length !== 1 ? 's' : ''}? This action cannot be undone.`,
+      [
+        { 
+          text: 'Cancel', 
+          style: 'cancel',
+          onPress: () => console.log('Favourites: Remove all cancelled')
+        },
+        { 
+          text: 'Remove All', 
+          style: 'destructive',
+          onPress: async () => {
+            console.log('Favourites: User confirmed remove all');
+            try {
+              await removeAllFavourites();
+              setFavourites([]);
+              
+              // Provide haptic feedback
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              
+              console.log('Favourites: Successfully removed all favourites');
+            } catch (error) {
+              console.error('Favourites: Error removing all favourites:', error);
+              Alert.alert('Error', 'Failed to remove all favourites. Please try again.');
+            }
+          }
+        },
+      ]
+    );
+  };
+
   const circuitFavourites = useMemo(() => 
     favourites.filter(fav => fav.type === 'circuit'),
     [favourites]
@@ -363,20 +421,31 @@ export default function FavouritesScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.scrollContent}>
           {favourites.length > 0 && (
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{favourites.length}</Text>
-                <Text style={styles.statLabel}>Total</Text>
+            <>
+              <View style={styles.statsContainer}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>{favourites.length}</Text>
+                  <Text style={styles.statLabel}>Total</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>{circuitFavourites.length}</Text>
+                  <Text style={styles.statLabel}>Circuits</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>{customFavourites.length}</Text>
+                  <Text style={styles.statLabel}>Custom</Text>
+                </View>
               </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{circuitFavourites.length}</Text>
-                <Text style={styles.statLabel}>Circuits</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{customFavourites.length}</Text>
-                <Text style={styles.statLabel}>Custom</Text>
-              </View>
-            </View>
+
+              <TouchableOpacity
+                style={styles.removeAllButton}
+                onPress={handleRemoveAll}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="trash" size={20} color="#FFFFFF" />
+                <Text style={styles.removeAllButtonText}>Remove All Favourites</Text>
+              </TouchableOpacity>
+            </>
           )}
 
           {favourites.length === 0 ? (

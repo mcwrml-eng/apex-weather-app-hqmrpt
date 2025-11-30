@@ -67,6 +67,17 @@ export async function removeFavourite(id: string): Promise<boolean> {
   }
 }
 
+export async function removeAllFavourites(): Promise<boolean> {
+  try {
+    await AsyncStorage.setItem(FAVOURITES_STORAGE_KEY, JSON.stringify([]));
+    console.log('Favourites: Removed all favourites successfully');
+    return true;
+  } catch (error) {
+    console.error('Favourites: Error removing all favourites:', error);
+    return false;
+  }
+}
+
 export async function isFavourite(id: string): Promise<boolean> {
   try {
     const favourites = await getFavourites();
