@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout } from '../../styles/commonStyles';
@@ -14,7 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useWeather } from '../../hooks/useWeather';
 import WeatherSymbol from '../../components/WeatherSymbol';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 
 const FAVOURITES_STORAGE_KEY = '@motorsport_weather_favourites';
 
@@ -227,26 +227,35 @@ export default function FavouritesScreen() {
     },
   });
 
-  // Load favourites from storage
-  useEffect(() => {
-    loadFavourites();
-  }, []);
-
-  const loadFavourites = async () => {
+  // Load favourites from storage - using useFocusEffect to reload when tab comes into focus
+  const loadFavourites = useCallback(async () => {
     try {
       console.log('Favourites: Loading favourites from storage');
+      setLoading(true);
       const stored = await AsyncStorage.getItem(FAVOURITES_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        console.log('Favourites: Loaded', parsed.length, 'favourites');
+        console.log('Favourites: Loaded', parsed.length, 'favourites:', parsed.map((f: FavouriteLocation) => f.id));
         setFavourites(parsed);
+      } else {
+        console.log('Favourites: No favourites found in storage');
+        setFavourites([]);
       }
     } catch (error) {
       console.error('Favourites: Error loading favourites:', error);
+      setFavourites([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Use useFocusEffect to reload favourites when the tab comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('Favourites: Tab focused, reloading favourites');
+      loadFavourites();
+    }, [loadFavourites])
+  );
 
   const removeFavourite = async (id: string) => {
     try {
