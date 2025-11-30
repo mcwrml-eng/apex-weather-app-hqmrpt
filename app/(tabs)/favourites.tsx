@@ -166,15 +166,35 @@ export default function FavouritesScreen() {
       color: colors.text,
       fontFamily: 'Roboto_500Medium',
     },
+    circuitCardWrapper: {
+      position: 'relative',
+      marginBottom: spacing.md,
+    },
     removeButton: {
       position: 'absolute',
-      top: spacing.md,
-      right: spacing.md,
-      backgroundColor: colors.error + '20',
+      top: spacing.sm,
+      left: spacing.sm,
+      backgroundColor: colors.error,
       borderRadius: borderRadius.full,
-      padding: spacing.sm,
-      borderWidth: 1,
-      borderColor: colors.error + '40',
+      width: 32,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 10,
+      boxShadow: shadows.md,
+    },
+    customRemoveButton: {
+      position: 'absolute',
+      top: spacing.md,
+      left: spacing.md,
+      backgroundColor: colors.error,
+      borderRadius: borderRadius.full,
+      width: 32,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 10,
+      boxShadow: shadows.md,
     },
     categoryBadge: {
       position: 'absolute',
@@ -263,7 +283,7 @@ export default function FavouritesScreen() {
       const updated = favourites.filter(fav => fav.id !== id);
       setFavourites(updated);
       await AsyncStorage.setItem(FAVOURITES_STORAGE_KEY, JSON.stringify(updated));
-      console.log('Favourites: Removed successfully');
+      console.log('Favourites: Removed successfully. Remaining favourites:', updated.length);
     } catch (error) {
       console.error('Favourites: Error removing favourite:', error);
       Alert.alert('Error', 'Failed to remove favourite. Please try again.');
@@ -271,6 +291,7 @@ export default function FavouritesScreen() {
   };
 
   const handleRemove = (favourite: FavouriteLocation) => {
+    console.log('Favourites: handleRemove called for:', favourite.id);
     Alert.alert(
       'Remove Favourite',
       `Remove ${favourite.name} from favourites?`,
@@ -373,17 +394,18 @@ export default function FavouritesScreen() {
                     };
                     
                     return (
-                      <View key={favourite.id} style={{ position: 'relative' }}>
+                      <View key={favourite.id} style={styles.circuitCardWrapper}>
+                        <TouchableOpacity
+                          style={styles.removeButton}
+                          onPress={() => handleRemove(favourite)}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="close" size={20} color="#FFFFFF" />
+                        </TouchableOpacity>
                         <CircuitCard
                           circuit={circuit}
                           category={favourite.category || 'f1'}
                         />
-                        <TouchableOpacity
-                          style={styles.removeButton}
-                          onPress={() => handleRemove(favourite)}
-                        >
-                          <Ionicons name="close" size={20} color={colors.error} />
-                        </TouchableOpacity>
                       </View>
                     );
                   })}
@@ -492,10 +514,11 @@ function CustomLocationCard({ favourite, onRemove, colors, styles, unit }: Custo
         )}
 
         <TouchableOpacity
-          style={styles.removeButton}
+          style={styles.customRemoveButton}
           onPress={onRemove}
+          activeOpacity={0.7}
         >
-          <Ionicons name="close" size={20} color={colors.error} />
+          <Ionicons name="close" size={20} color="#FFFFFF" />
         </TouchableOpacity>
       </LinearGradient>
     </View>
