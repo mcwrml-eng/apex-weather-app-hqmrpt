@@ -16,7 +16,6 @@ import WeatherSymbol from '../../components/WeatherSymbol';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { removeAllFavourites } from '../../utils/favourites';
 
 const FAVOURITES_STORAGE_KEY = '@motorsport_weather_favourites';
 
@@ -169,54 +168,7 @@ export default function FavouritesScreen() {
       fontFamily: 'Roboto_500Medium',
     },
     circuitCardWrapper: {
-      position: 'relative',
       marginBottom: spacing.md,
-    },
-    removeButton: {
-      position: 'absolute',
-      top: spacing.md,
-      right: spacing.md,
-      backgroundColor: colors.error,
-      borderRadius: borderRadius.full,
-      width: 36,
-      height: 36,
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 999,
-      elevation: 10,
-      boxShadow: shadows.md,
-    },
-    customRemoveButton: {
-      position: 'absolute',
-      top: spacing.md,
-      right: spacing.md,
-      backgroundColor: colors.error,
-      borderRadius: borderRadius.full,
-      width: 36,
-      height: 36,
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 999,
-      elevation: 10,
-      boxShadow: shadows.md,
-    },
-    categoryBadge: {
-      position: 'absolute',
-      top: spacing.md,
-      left: spacing.md,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.xs,
-      borderRadius: borderRadius.sm,
-      backgroundColor: colors.backgroundAlt,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    categoryText: {
-      fontSize: 11,
-      fontWeight: '600',
-      color: colors.text,
-      fontFamily: 'Roboto_500Medium',
-      textTransform: 'uppercase',
     },
     statsContainer: {
       flexDirection: 'row',
@@ -249,25 +201,6 @@ export default function FavouritesScreen() {
       letterSpacing: 0.5,
       marginTop: spacing.xs,
     },
-    removeAllButton: {
-      backgroundColor: colors.error,
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.md,
-      borderRadius: borderRadius.md,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginHorizontal: spacing.md,
-      marginBottom: spacing.lg,
-      boxShadow: shadows.md,
-    },
-    removeAllButtonText: {
-      color: '#FFFFFF',
-      fontSize: 16,
-      fontWeight: '600',
-      fontFamily: 'Roboto_500Medium',
-      marginLeft: spacing.sm,
-    },
   });
 
   // Load favourites from storage - using useFocusEffect to reload when tab comes into focus
@@ -299,105 +232,6 @@ export default function FavouritesScreen() {
       loadFavourites();
     }, [loadFavourites])
   );
-
-  const removeFavourite = async (id: string) => {
-    try {
-      console.log('Favourites: Removing favourite with id:', id);
-      
-      // First update the UI immediately for better UX
-      const updated = favourites.filter(fav => fav.id !== id);
-      console.log('Favourites: Updated list after removal:', updated.length, 'items');
-      setFavourites(updated);
-      
-      // Then update AsyncStorage
-      await AsyncStorage.setItem(FAVOURITES_STORAGE_KEY, JSON.stringify(updated));
-      console.log('Favourites: Successfully saved updated list to storage');
-      
-      // Provide haptic feedback
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (error) {
-      console.error('Favourites: Error removing favourite:', error);
-      // Reload favourites from storage if there was an error
-      await loadFavourites();
-      Alert.alert('Error', 'Failed to remove favourite. Please try again.');
-    }
-  };
-
-  const handleRemove = (favourite: FavouriteLocation, event?: any) => {
-    // Stop event propagation if event is provided
-    if (event) {
-      event.stopPropagation();
-      event.preventDefault();
-    }
-    
-    console.log('Favourites: handleRemove called for:', favourite.id, favourite.name);
-    
-    // Provide haptic feedback
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
-    Alert.alert(
-      'Remove Favourite',
-      `Remove ${favourite.name} from favourites?`,
-      [
-        { 
-          text: 'Cancel', 
-          style: 'cancel',
-          onPress: () => console.log('Favourites: Remove cancelled')
-        },
-        { 
-          text: 'Remove', 
-          style: 'destructive',
-          onPress: () => {
-            console.log('Favourites: User confirmed removal');
-            removeFavourite(favourite.id);
-          }
-        },
-      ]
-    );
-  };
-
-  const handleRemoveAll = () => {
-    console.log('Favourites: handleRemoveAll called');
-    
-    // Provide haptic feedback
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
-    Alert.alert(
-      'Remove All Favourites',
-      `Are you sure you want to remove all ${favourites.length} favourite${favourites.length !== 1 ? 's' : ''}? This action cannot be undone.`,
-      [
-        { 
-          text: 'Cancel', 
-          style: 'cancel',
-          onPress: () => console.log('Favourites: Remove all cancelled')
-        },
-        { 
-          text: 'Remove All', 
-          style: 'destructive',
-          onPress: async () => {
-            console.log('Favourites: User confirmed remove all');
-            try {
-              // First update the UI immediately
-              setFavourites([]);
-              
-              // Then update AsyncStorage
-              await removeAllFavourites();
-              
-              // Provide haptic feedback
-              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              
-              console.log('Favourites: Successfully removed all favourites');
-            } catch (error) {
-              console.error('Favourites: Error removing all favourites:', error);
-              // Reload favourites from storage if there was an error
-              await loadFavourites();
-              Alert.alert('Error', 'Failed to remove all favourites. Please try again.');
-            }
-          }
-        },
-      ]
-    );
-  };
 
   const circuitFavourites = useMemo(() => 
     favourites.filter(fav => fav.type === 'circuit'),
@@ -438,31 +272,20 @@ export default function FavouritesScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.scrollContent}>
           {favourites.length > 0 && (
-            <>
-              <View style={styles.statsContainer}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>{favourites.length}</Text>
-                  <Text style={styles.statLabel}>Total</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>{circuitFavourites.length}</Text>
-                  <Text style={styles.statLabel}>Circuits</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>{customFavourites.length}</Text>
-                  <Text style={styles.statLabel}>Custom</Text>
-                </View>
+            <View style={styles.statsContainer}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{favourites.length}</Text>
+                <Text style={styles.statLabel}>Total</Text>
               </View>
-
-              <TouchableOpacity
-                style={styles.removeAllButton}
-                onPress={handleRemoveAll}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="trash" size={20} color="#FFFFFF" />
-                <Text style={styles.removeAllButtonText}>Remove All Favourites</Text>
-              </TouchableOpacity>
-            </>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{circuitFavourites.length}</Text>
+                <Text style={styles.statLabel}>Circuits</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{customFavourites.length}</Text>
+                <Text style={styles.statLabel}>Custom</Text>
+              </View>
+            </View>
           )}
 
           {favourites.length === 0 ? (
@@ -500,17 +323,6 @@ export default function FavouritesScreen() {
                     return (
                       <View key={favourite.id} style={styles.circuitCardWrapper}>
                         <TouchableOpacity
-                          style={styles.removeButton}
-                          onPress={(e) => {
-                            console.log('Favourites: Remove button pressed for circuit:', favourite.id);
-                            handleRemove(favourite, e);
-                          }}
-                          activeOpacity={0.7}
-                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        >
-                          <Ionicons name="close" size={20} color="#FFFFFF" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
                           onPress={() => {
                             console.log('Favourites: Circuit card pressed, navigating to:', favourite.slug);
                             router.push(`/circuit/${favourite.slug}?category=${favourite.category || 'f1'}`);
@@ -538,10 +350,6 @@ export default function FavouritesScreen() {
                     <CustomLocationCard
                       key={favourite.id}
                       favourite={favourite}
-                      onRemove={(e) => {
-                        console.log('Favourites: Remove button pressed for custom location:', favourite.id);
-                        handleRemove(favourite, e);
-                      }}
                       colors={colors}
                       styles={styles}
                       unit={unit}
@@ -559,29 +367,16 @@ export default function FavouritesScreen() {
 
 interface CustomLocationCardProps {
   favourite: FavouriteLocation;
-  onRemove: (event?: any) => void;
   colors: any;
   styles: any;
   unit: string;
 }
 
-function CustomLocationCard({ favourite, onRemove, colors, styles, unit }: CustomLocationCardProps) {
+function CustomLocationCard({ favourite, colors, styles, unit }: CustomLocationCardProps) {
   const { current, loading } = useWeather(favourite.latitude, favourite.longitude, unit === 'metric' ? 'metric' : 'imperial');
 
   return (
-    <View style={{ position: 'relative', marginBottom: spacing.md }}>
-      <TouchableOpacity
-        style={styles.customRemoveButton}
-        onPress={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          onRemove(e);
-        }}
-        activeOpacity={0.7}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-      >
-        <Ionicons name="close" size={20} color="#FFFFFF" />
-      </TouchableOpacity>
+    <View style={{ marginBottom: spacing.md }}>
       <View style={styles.customLocationCard}>
         <LinearGradient
           colors={[colors.card, colors.backgroundAlt]}
