@@ -172,7 +172,7 @@ export default function FavouritesScreen() {
     },
     removeButton: {
       position: 'absolute',
-      top: spacing.sm,
+      top: 60,
       left: spacing.sm,
       backgroundColor: colors.error,
       borderRadius: borderRadius.full,
@@ -185,7 +185,7 @@ export default function FavouritesScreen() {
     },
     customRemoveButton: {
       position: 'absolute',
-      top: spacing.md,
+      top: 60,
       left: spacing.md,
       backgroundColor: colors.error,
       borderRadius: borderRadius.full,
@@ -279,11 +279,12 @@ export default function FavouritesScreen() {
 
   const removeFavourite = async (id: string) => {
     try {
-      console.log('Favourites: Removing favourite:', id);
+      console.log('Favourites: Removing favourite with id:', id);
       const updated = favourites.filter(fav => fav.id !== id);
+      console.log('Favourites: Updated list after removal:', updated.length, 'items');
       setFavourites(updated);
       await AsyncStorage.setItem(FAVOURITES_STORAGE_KEY, JSON.stringify(updated));
-      console.log('Favourites: Removed successfully. Remaining favourites:', updated.length);
+      console.log('Favourites: Successfully saved updated list to storage');
     } catch (error) {
       console.error('Favourites: Error removing favourite:', error);
       Alert.alert('Error', 'Failed to remove favourite. Please try again.');
@@ -291,16 +292,23 @@ export default function FavouritesScreen() {
   };
 
   const handleRemove = (favourite: FavouriteLocation) => {
-    console.log('Favourites: handleRemove called for:', favourite.id);
+    console.log('Favourites: handleRemove called for:', favourite.id, favourite.name);
     Alert.alert(
       'Remove Favourite',
       `Remove ${favourite.name} from favourites?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Cancel', 
+          style: 'cancel',
+          onPress: () => console.log('Favourites: Remove cancelled')
+        },
         { 
           text: 'Remove', 
           style: 'destructive',
-          onPress: () => removeFavourite(favourite.id)
+          onPress: () => {
+            console.log('Favourites: User confirmed removal');
+            removeFavourite(favourite.id);
+          }
         },
       ]
     );
@@ -397,7 +405,10 @@ export default function FavouritesScreen() {
                       <View key={favourite.id} style={styles.circuitCardWrapper}>
                         <TouchableOpacity
                           style={styles.removeButton}
-                          onPress={() => handleRemove(favourite)}
+                          onPress={() => {
+                            console.log('Favourites: Remove button pressed for circuit:', favourite.id);
+                            handleRemove(favourite);
+                          }}
                           activeOpacity={0.7}
                         >
                           <Ionicons name="close" size={20} color="#FFFFFF" />
@@ -421,7 +432,10 @@ export default function FavouritesScreen() {
                     <CustomLocationCard
                       key={favourite.id}
                       favourite={favourite}
-                      onRemove={() => handleRemove(favourite)}
+                      onRemove={() => {
+                        console.log('Favourites: Remove button pressed for custom location:', favourite.id);
+                        handleRemove(favourite);
+                      }}
                       colors={colors}
                       styles={styles}
                       unit={unit}
