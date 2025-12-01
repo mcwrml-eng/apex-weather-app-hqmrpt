@@ -18,6 +18,9 @@ export default function AppHeader({ title, subtitle, icon, showThemeToggle = tru
   const colors = getColors(isDark);
   const shadows = getShadows(isDark);
 
+  // Adjust font size based on title length
+  const titleFontSize = title.length > 15 ? 26 : 32;
+
   const styles = StyleSheet.create({
     container: {
       backgroundColor: colors.background,
@@ -40,18 +43,22 @@ export default function AppHeader({ title, subtitle, icon, showThemeToggle = tru
       flexDirection: 'row',
       alignItems: 'center',
       flex: 1,
+      marginRight: spacing.sm,
+    },
+    iconWrapper: {
+      marginRight: spacing.sm,
     },
     title: {
-      fontSize: 32,
+      fontSize: titleFontSize,
       fontWeight: '800',
       color: colors.text,
       fontFamily: 'Roboto_700Bold',
-      marginLeft: icon ? spacing.md : 0,
-      letterSpacing: -1,
+      letterSpacing: -0.5,
       flex: 1,
+      flexShrink: 1,
     },
     themeToggleContainer: {
-      marginLeft: spacing.lg,
+      flexShrink: 0,
     },
     subtitle: {
       fontSize: 16,
@@ -68,12 +75,14 @@ export default function AppHeader({ title, subtitle, icon, showThemeToggle = tru
       <View style={styles.content}>
         <View style={styles.topRow}>
           <View style={styles.titleContainer}>
-            {icon}
-            <Text style={styles.title}>{title}</Text>
+            {icon && <View style={styles.iconWrapper}>{icon}</View>}
+            <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+              {title}
+            </Text>
           </View>
           {showThemeToggle && (
             <View style={styles.themeToggleContainer}>
-              <ThemeToggle size={24} />
+              <ThemeToggle size={22} />
             </View>
           )}
         </View>
