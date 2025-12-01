@@ -33,6 +33,7 @@ export default function MotoGPScreen() {
       borderWidth: 1,
       borderColor: colors.border,
       marginHorizontal: layout.screenPadding,
+      marginTop: spacing.md,
       marginBottom: spacing.lg,
     },
     searchIcon: {
