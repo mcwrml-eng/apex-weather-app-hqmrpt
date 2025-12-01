@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../state/ThemeContext';
 import { getColors, spacing, borderRadius, animations } from '../styles/commonStyles';
@@ -11,13 +11,15 @@ import Animated, {
   withTiming,
   interpolateColor 
 } from 'react-native-reanimated';
+import Logo from './Logo';
 
 interface Props {
   size?: number;
   style?: any;
+  showLogo?: boolean;
 }
 
-export default function ThemeToggle({ size = 28, style }: Props) {
+export default function ThemeToggle({ size = 28, style, showLogo = true }: Props) {
   const { theme, toggleTheme, isDark } = useTheme();
   const colors = getColors(isDark);
   
@@ -67,39 +69,58 @@ export default function ThemeToggle({ size = 28, style }: Props) {
     toggleTheme();
   };
 
+  const logoSize = size < 24 ? 'small' : 'medium';
+
   return (
-    <TouchableOpacity
-      onPress={handlePress}
-      style={[
-        styles.container, 
-        { 
-          width: containerSize,
-          height: containerSize,
-          borderRadius: containerSize / 2,
-        }, 
-        style
-      ]}
-      activeOpacity={0.7}
-    >
-      <Animated.View style={[
-        styles.iconContainer, 
-        animatedIconStyle,
-        {
-          borderRadius: containerSize / 2,
-          borderWidth: 2,
-        }
-      ]}>
-        <Ionicons
-          name={isDark ? 'moon' : 'sunny'}
-          size={size}
-          color={isDark ? colors.accent : colors.primary}
+    <View style={[styles.wrapper, style]}>
+      {showLogo && (
+        <Logo 
+          size={logoSize}
+          variant="default"
+          showBackground={false}
+          style={styles.logo}
         />
-      </Animated.View>
-    </TouchableOpacity>
+      )}
+      <TouchableOpacity
+        onPress={handlePress}
+        style={[
+          styles.container, 
+          { 
+            width: containerSize,
+            height: containerSize,
+            borderRadius: containerSize / 2,
+          }
+        ]}
+        activeOpacity={0.7}
+      >
+        <Animated.View style={[
+          styles.iconContainer, 
+          animatedIconStyle,
+          {
+            borderRadius: containerSize / 2,
+            borderWidth: 2,
+          }
+        ]}>
+          <Ionicons
+            name={isDark ? 'moon' : 'sunny'}
+            size={size}
+            color={isDark ? colors.accent : colors.primary}
+          />
+        </Animated.View>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  logo: {
+    marginRight: spacing.xs,
+  },
   container: {
     alignItems: 'center',
     justifyContent: 'center',
