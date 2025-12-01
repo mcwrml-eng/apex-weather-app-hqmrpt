@@ -266,7 +266,7 @@ export default function CoverPage() {
         />
         
         <View style={styles.themeToggleContainer}>
-          <ThemeToggle />
+          <ThemeToggle showLogo={false} />
         </View>
         
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
