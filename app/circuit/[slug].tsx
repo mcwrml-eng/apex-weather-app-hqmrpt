@@ -1353,12 +1353,6 @@ function DetailScreen() {
               onPress={toggleUnit}
               style={buttonStyles.secondary}
             />
-            <View style={{ height: 18 }} />
-            <Text style={styles.muted}>
-              Enhanced weather data from Open-Meteo API. Includes UV index, visibility, pressure, wind gusts, detailed forecasts, 
-              written text summaries, animated wind visualization with map underlay, and sunrise/sunset times for each track location. 
-              Data updates every 10 minutes for accuracy.
-            </Text>
           </BottomSheetView>
         </BottomSheet>
 
