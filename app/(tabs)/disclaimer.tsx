@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Linking, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getColors, getCommonStyles, spacing, borderRadius, getShadows, layout } from '../../styles/commonStyles';
 import { useTheme } from '../../state/ThemeContext';
@@ -14,6 +14,13 @@ export default function DisclaimerScreen() {
   const colors = getColors(isDark);
   const commonStyles = getCommonStyles(isDark);
   const shadows = getShadows(isDark);
+
+  const handleEmailPress = () => {
+    const email = 'support@raceweather.uk';
+    const subject = 'Motorsport Weather App - Feedback';
+    Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}`);
+    console.log('Opening email client for:', email);
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -81,6 +88,37 @@ export default function DisclaimerScreen() {
       color: colors.textSecondary,
       fontFamily: 'Roboto_400Regular',
       lineHeight: 22,
+    },
+    supportCard: {
+      backgroundColor: colors.card,
+      borderRadius: borderRadius.lg,
+      padding: spacing.lg,
+      marginBottom: spacing.lg,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      boxShadow: shadows.md,
+    },
+    supportText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      fontFamily: 'Roboto_400Regular',
+      lineHeight: 22,
+      marginBottom: spacing.md,
+    },
+    emailButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.primary,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      borderRadius: borderRadius.md,
+      marginTop: spacing.sm,
+    },
+    emailButtonText: {
+      fontSize: 14,
+      color: '#FFFFFF',
+      fontFamily: 'Roboto_500Medium',
+      marginLeft: spacing.sm,
     },
     versionText: {
       fontSize: 14,
@@ -213,6 +251,26 @@ export default function DisclaimerScreen() {
             <View style={styles.pointContainer}>
               <Ionicons name="speedometer" size={20} color={colors.accent} style={styles.pointIcon} />
               <Text style={styles.pointText}>{t('weather_source_4')}</Text>
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Feedback & Support</Text>
+            <View style={styles.supportCard}>
+              <Text style={styles.supportText}>
+                We value your feedback and are here to help! Whether you have suggestions for improvements, 
+                encountered a technical issue, or simply want to share your experience with the app, we&apos;d 
+                love to hear from you.
+              </Text>
+              <Text style={styles.supportText}>
+                For feedback, bug reports, or technical assistance, please don&apos;t hesitate to reach out 
+                to our support team. We aim to respond to all inquiries as quickly as possible to ensure you 
+                have the best experience with Motorsport Weather App.
+              </Text>
+              <TouchableOpacity style={styles.emailButton} onPress={handleEmailPress}>
+                <Ionicons name="mail" size={20} color="#FFFFFF" />
+                <Text style={styles.emailButtonText}>support@raceweather.uk</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
