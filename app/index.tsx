@@ -46,7 +46,7 @@ export default function CoverPage() {
     },
     themeToggleContainer: {
       position: 'absolute',
-      top: 60,
+      top: 48,
       right: spacing.lg,
       zIndex: 10,
     },
