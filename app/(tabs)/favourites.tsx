@@ -303,6 +303,9 @@ export default function FavouritesScreen() {
               <Text style={styles.emptyHint}>
                 Tap the heart icon on any circuit or custom location to add it to your favourites
               </Text>
+              <Text style={styles.emptyHint}>
+                Tap the heart icon again on any circuit or custom location to remove it from your favourites
+              </Text>
             </View>
           ) : (
             <>
