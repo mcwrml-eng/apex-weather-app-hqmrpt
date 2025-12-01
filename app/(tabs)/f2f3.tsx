@@ -13,7 +13,7 @@ import { f2Circuits, f3Circuits } from '../../data/f2f3-circuits';
 
 export default function F2F3Screen() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'f2' | 'f3'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'f2' | 'f3'>('f2');
   const { isDark } = useTheme();
   const { t } = useLanguage();
   
@@ -69,10 +69,6 @@ export default function F2F3Screen() {
       backgroundColor: colors.card,
       alignItems: 'center',
     },
-    filterButtonAll: {
-      backgroundColor: isDark ? '#4A4A4A' : '#D0D0D0',
-      borderColor: isDark ? '#5A5A5A' : '#B0B0B0',
-    },
     filterButtonF2: {
       backgroundColor: isDark ? '#1565C0' : '#90CAF9',
       borderColor: isDark ? '#1976D2' : '#64B5F6',
@@ -90,9 +86,6 @@ export default function F2F3Screen() {
       fontWeight: '600',
       fontFamily: 'Roboto_500Medium',
       textTransform: 'uppercase',
-    },
-    filterTextAll: {
-      color: isDark ? '#FFFFFF' : '#1A1A1A',
     },
     filterTextF2: {
       color: isDark ? '#FFFFFF' : '#0D47A1',
@@ -170,9 +163,7 @@ export default function F2F3Screen() {
       let circuits = allCircuits;
 
       // Filter by category
-      if (selectedCategory !== 'all') {
-        circuits = circuits.filter(circuit => circuit.category === selectedCategory);
-      }
+      circuits = circuits.filter(circuit => circuit.category === selectedCategory);
 
       // Filter by search query
       if (searchQuery.trim()) {
@@ -247,26 +238,6 @@ export default function F2F3Screen() {
               <TouchableOpacity 
                 style={[
                   styles.filterButton,
-                  styles.filterButtonAll,
-                  selectedCategory === 'all' && styles.filterButtonActive
-                ]}
-                onPress={() => {
-                  console.log('F2F3Screen: Filter button pressed - ALL');
-                  setSelectedCategory('all');
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={[
-                  styles.filterText,
-                  styles.filterTextAll,
-                  selectedCategory === 'all' && styles.filterTextActive
-                ]}>
-                  All
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[
-                  styles.filterButton,
                   styles.filterButtonF2,
                   selectedCategory === 'f2' && styles.filterButtonActive
                 ]}
@@ -322,7 +293,7 @@ export default function F2F3Screen() {
             </View>
 
             <Text style={styles.sectionTitle}>
-              {selectedCategory === 'all' ? t('all_circuits') : selectedCategory.toUpperCase() + ' ' + t('circuits')} ({filteredCircuits.length})
+              {selectedCategory.toUpperCase() + ' ' + t('circuits')} ({filteredCircuits.length})
             </Text>
 
             {filteredCircuits.length > 0 ? (
