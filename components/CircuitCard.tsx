@@ -16,6 +16,7 @@ export interface Circuit {
   country: string;
   latitude: number;
   longitude: number;
+  trackDirection?: number; // Main straight direction in degrees (0-360)
 }
 
 export type Category = 'f1' | 'f2' | 'f3' | 'motogp' | 'indycar' | 'nascar';
