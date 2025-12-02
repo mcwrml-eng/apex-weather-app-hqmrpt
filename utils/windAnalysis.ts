@@ -20,18 +20,26 @@ export function calculateAngleDifference(angle1: number, angle2: number): number
 
 /**
  * Calculate headwind/tailwind component
- * Positive = headwind, Negative = tailwind
+ * Positive = tailwind, Negative = headwind
+ * 
+ * Note: Wind direction in meteorology is the direction the wind is COMING FROM.
+ * For headwind/tailwind analysis:
+ * - Tailwind: wind coming from behind (same general direction as track)
+ * - Headwind: wind coming from ahead (opposite direction to track)
  */
 export function calculateHeadTailwind(
   windSpeed: number,
   windDirection: number,
   trackDirection: number
 ): number {
-  // Calculate the angle difference between wind and track direction
+  // Calculate the angle difference between wind source and track direction
+  // Wind direction is where wind is coming FROM
+  // Track direction is where the car is going TO
   const angleDiff = calculateAngleDifference(trackDirection, windDirection);
   
   // Calculate the component along the track direction
-  // cos(0°) = 1 (full headwind), cos(180°) = -1 (full tailwind)
+  // cos(0°) = 1 (wind from same direction as track = tailwind)
+  // cos(180°) = -1 (wind from opposite direction = headwind)
   const component = windSpeed * Math.cos((angleDiff * Math.PI) / 180);
   
   return component;
@@ -46,7 +54,7 @@ export function calculateCrosswind(
   windDirection: number,
   trackDirection: number
 ): number {
-  // Calculate the angle difference between wind and track direction
+  // Calculate the angle difference between wind source and track direction
   const angleDiff = calculateAngleDifference(trackDirection, windDirection);
   
   // Calculate the component perpendicular to the track direction
@@ -68,11 +76,11 @@ export function getWindType(
   
   const angleDiff = Math.abs(calculateAngleDifference(trackDirection, windDirection));
   
-  // Headwind: wind coming from ahead (within 45° of track direction)
-  if (angleDiff <= 45) return 'headwind';
+  // Tailwind: wind coming from behind (within 45° of track direction)
+  if (angleDiff <= 45) return 'tailwind';
   
-  // Tailwind: wind coming from behind (within 45° of opposite track direction)
-  if (angleDiff >= 135) return 'tailwind';
+  // Headwind: wind coming from ahead (within 45° of opposite track direction)
+  if (angleDiff >= 135) return 'headwind';
   
   // Crosswind: wind coming from the side
   return 'crosswind';
@@ -153,9 +161,9 @@ export function getRelativeWindDirection(
   const angleDiff = calculateAngleDifference(trackDirection, windDirection);
   const absAngle = Math.abs(angleDiff);
   
-  if (absAngle <= 22.5) return 'Direct Headwind';
-  if (absAngle <= 67.5) return angleDiff > 0 ? 'Headwind from Right' : 'Headwind from Left';
+  if (absAngle <= 22.5) return 'Direct Tailwind';
+  if (absAngle <= 67.5) return angleDiff > 0 ? 'Tailwind from Right' : 'Tailwind from Left';
   if (absAngle <= 112.5) return angleDiff > 0 ? 'Crosswind from Right' : 'Crosswind from Left';
-  if (absAngle <= 157.5) return angleDiff > 0 ? 'Tailwind from Right' : 'Tailwind from Left';
-  return 'Direct Tailwind';
+  if (absAngle <= 157.5) return angleDiff > 0 ? 'Headwind from Right' : 'Headwind from Left';
+  return 'Direct Headwind';
 }

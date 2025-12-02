@@ -260,7 +260,9 @@ function TrackWindAnalysis({ windSpeed, windDirection, trackDirection, unit, cir
       {/* Metrics Grid */}
       <View style={styles.metricsGrid}>
         <View style={styles.metricCard}>
-          <Text style={styles.metricLabel}>Headwind/Tailwind</Text>
+          <Text style={styles.metricLabel}>
+            {analysis.headTailwind >= 0 ? 'Tailwind' : 'Headwind'}
+          </Text>
           <Text style={[styles.metricValue, { color: windTypeColor }]}>
             {Math.abs(Math.round(analysis.headTailwind))}
           </Text>
