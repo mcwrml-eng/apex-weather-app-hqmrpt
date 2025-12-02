@@ -10,7 +10,6 @@ import WindBarGraphs from '../../components/WindBarGraphs';
 import WindRadarGraph from '../../components/WindRadarGraph';
 import WeatherChart from '../../components/WeatherChart';
 import WeatherSymbol from '../../components/WeatherSymbol';
-import TrackWindAnalysis from '../../components/TrackWindAnalysis';
 import EnhancedWeatherForecast from '../../components/EnhancedWeatherForecast';
 import WeatherTextForecast from '../../components/WeatherTextForecast';
 import WeatherAlerts from '../../components/WeatherAlerts';
@@ -1268,19 +1267,6 @@ function DetailScreen() {
           {/* Wind Analysis */}
           {!loading && windData.length > 0 && (
             <>
-              {/* Track Wind Analysis - Headwind/Tailwind */}
-              {current && circuit.trackDirection !== undefined && (
-                <SafeComponent componentName="TrackWindAnalysis">
-                  <TrackWindAnalysis
-                    windSpeed={current.wind_speed}
-                    windDirection={current.wind_direction}
-                    trackDirection={circuit.trackDirection}
-                    unit={unit}
-                    circuitName={circuit.name}
-                  />
-                </SafeComponent>
-              )}
-
               <SafeComponent componentName="WindBarGraphs">
                 <WindBarGraphs
                   hourlyData={windData}

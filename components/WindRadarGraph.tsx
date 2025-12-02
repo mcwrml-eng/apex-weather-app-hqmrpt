@@ -95,15 +95,10 @@ function WindRadarGraph({ hourlyData, unit }: Props) {
   ];
   
   // Convert wind direction to radar coordinates
-  // Wind direction indicates where wind is coming FROM
-  // To show where it's traveling TO, we add 180 degrees
   const getRadarPoint = (direction: number, speed: number, isGust: boolean = false) => {
-    // Add 180 degrees to show where wind is traveling to, not from
-    const travelDirection = direction + 180;
-    
     // Convert direction to radians (0° = North, clockwise)
     // Subtract 90° to start from North instead of East
-    const angleRad = ((travelDirection - 90) * Math.PI) / 180;
+    const angleRad = ((direction - 90) * Math.PI) / 180;
     
     // Calculate radius based on speed (normalized to maxValue)
     const normalizedSpeed = Math.min(speed / maxValue, 1);
@@ -113,7 +108,7 @@ function WindRadarGraph({ hourlyData, unit }: Props) {
     const x = centerX + radius * Math.cos(angleRad);
     const y = centerY + radius * Math.sin(angleRad);
     
-    return { x, y, radius, angle: travelDirection };
+    return { x, y, radius, angle: direction };
   };
 
   // Generate compass directions
@@ -129,15 +124,12 @@ function WindRadarGraph({ hourlyData, unit }: Props) {
   ];
 
   // Calculate wind direction frequency for each sector
-  // Note: We calculate frequency based on where wind is traveling TO (add 180)
   const sectorSize = 45; // 8 sectors of 45 degrees each
   const sectorCounts = new Array(8).fill(0);
   const sectorSpeeds = new Array(8).fill(0);
   
   displayData.forEach(hour => {
-    // Convert to travel direction (where wind is going)
-    const travelDirection = (hour.windDirection + 180) % 360;
-    const sectorIndex = Math.floor(((travelDirection + sectorSize / 2) % 360) / sectorSize);
+    const sectorIndex = Math.floor(((hour.windDirection + sectorSize / 2) % 360) / sectorSize);
     sectorCounts[sectorIndex]++;
     sectorSpeeds[sectorIndex] += hour.windSpeed;
   });
@@ -147,7 +139,7 @@ function WindRadarGraph({ hourlyData, unit }: Props) {
     sectorCounts[index] > 0 ? total / sectorCounts[index] : 0
   );
 
-  // Find dominant wind direction (where wind is traveling to)
+  // Find dominant wind direction
   const maxSectorIndex = sectorCounts.indexOf(Math.max(...sectorCounts));
   const dominantDirection = maxSectorIndex * sectorSize;
   const dominantDirectionLabel = getWindDirectionLabel(dominantDirection);
@@ -156,7 +148,7 @@ function WindRadarGraph({ hourlyData, unit }: Props) {
     <View style={styles.container}>
       <Text style={styles.title}>Wind Direction Analysis - Radar Chart</Text>
       <Text style={styles.subtitle}>
-        Polar visualization showing where wind is traveling to (arrows point to destination)
+        Polar visualization of wind patterns with speed and direction correlation
       </Text>
       
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -355,7 +347,7 @@ function WindRadarGraph({ hourlyData, unit }: Props) {
             <View style={styles.statItem}>
               <Text style={styles.statLabel}>Dominant Direction</Text>
               <Text style={styles.statValue}>{dominantDirectionLabel}</Text>
-              <Text style={styles.statSubtext}>{dominantDirection}° (traveling to)</Text>
+              <Text style={styles.statSubtext}>{dominantDirection}°</Text>
             </View>
             
             <View style={styles.statItem}>
@@ -414,7 +406,7 @@ function WindRadarGraph({ hourlyData, unit }: Props) {
             • <Text style={styles.bold}>Distance from center</Text>: Wind speed intensity
           </Text>
           <Text style={styles.explanationText}>
-            • <Text style={styles.bold}>Direction</Text>: Where wind is traveling TO (N=North, E=East, etc.)
+            • <Text style={styles.bold}>Direction</Text>: Wind direction (N=North, E=East, etc.)
           </Text>
           <Text style={styles.explanationText}>
             • <Text style={styles.bold}>Blue dots</Text>: Average wind speed
@@ -424,9 +416,6 @@ function WindRadarGraph({ hourlyData, unit }: Props) {
           </Text>
           <Text style={styles.explanationText}>
             • <Text style={styles.bold}>Shaded sectors</Text>: Direction frequency (darker = more common)
-          </Text>
-          <Text style={styles.explanationText}>
-            • <Text style={styles.bold}>Note</Text>: All directions show where wind is blowing TO, not FROM
           </Text>
         </View>
       </ScrollView>

@@ -192,9 +192,7 @@ function getStyles(colors: any) {
 }
 
 const WindDirectionArrow = memo(({ direction, size = 20, colors }: { direction: number; size?: number; colors: any }) => {
-  // Wind direction indicates where wind is coming FROM
-  // To show where it's traveling TO, we add 180 degrees
-  const rotation = direction + 180;
+  const rotation = direction;
   
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
@@ -430,9 +428,9 @@ function WindBarGraphs({ hourlyData, unit }: Props) {
       </View>
 
       <View style={styles.directionContainer}>
-        <Text style={dynamicStyles.directionTitle}>Wind Direction - Where Wind is Traveling To</Text>
+        <Text style={dynamicStyles.directionTitle}>Accurate Wind Direction Arrows</Text>
         <Text style={dynamicStyles.directionSubtitle}>
-          Arrows point to where the wind is blowing towards
+          Visual representation of wind direction changes over time
         </Text>
         
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
