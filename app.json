@@ -27,9 +27,14 @@
         "foregroundImage": "./assets/images/c84e183c-9c73-456c-a90b-f3be78ef7b8b.png",
         "backgroundColor": "#374151"
       },
+      "splash": {
+        "image": "./assets/images/c84e183c-9c73-456c-a90b-f3be78ef7b8b.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#374151"
+      },
       "edgeToEdgeEnabled": true,
       "package": "com.gridweather.pro",
-      "versionCode": 3,
+      "versionCode": 4,
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE"
@@ -45,7 +50,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#374151"
+          "backgroundColor": "#374151",
+          "image": "./assets/images/c84e183c-9c73-456c-a90b-f3be78ef7b8b.png",
+          "imageWidth": 200
         }
       ]
     ],
