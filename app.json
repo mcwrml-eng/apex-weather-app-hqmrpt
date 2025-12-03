@@ -1,9 +1,9 @@
 
 {
   "expo": {
-    "name": "Grid Weather Pro",
+    "name": "apex-weather-app-hqmrpt",
     "slug": "apex-weather-app-hqmrpt",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/c84e183c-9c73-456c-a90b-f3be78ef7b8b.png",
     "userInterfaceStyle": "automatic",
@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gridweather.pro",
-      "buildNumber": "4",
+      "buildNumber": "5",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": []
