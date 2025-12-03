@@ -1,6 +1,5 @@
-
 {
-  "name": "grid-weather-pro",
+  "name": "apex-weather-app-hqmrpt",
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {

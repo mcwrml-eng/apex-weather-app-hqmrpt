@@ -1,8 +1,9 @@
+
 {
   "expo": {
-    "name": "Meteorological Services",
-    "slug": "Meteorological Services",
-    "version": "1.3",
+    "name": "Grid Weather Pro",
+    "slug": "apex-weather-app-hqmrpt",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/c84e183c-9c73-456c-a90b-f3be78ef7b8b.png",
     "userInterfaceStyle": "automatic",
@@ -28,7 +29,11 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.gridweather.pro",
-      "versionCode": 4
+      "versionCode": 3,
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
     },
     "web": {
       "favicon": "./assets/images/c84e183c-9c73-456c-a90b-f3be78ef7b8b.png",
@@ -48,6 +53,5 @@
       "typedRoutes": true
     },
     "scheme": "gridweatherpro"
-  },
-  "scheme": "Meteorological Services"
+  }
 }

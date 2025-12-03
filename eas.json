@@ -1,3 +1,4 @@
+
 {
   "cli": {
     "version": ">= 16.0.0"
@@ -14,6 +15,9 @@
       "distribution": "internal",
       "ios": {
         "simulator": false
+      },
+      "android": {
+        "buildType": "apk"
       }
     },
     "production": {
@@ -22,11 +26,15 @@
         "buildConfiguration": "Release"
       },
       "android": {
-        "buildType": "apk"
+        "buildType": "app-bundle"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./path/to/api-key.json"
+      }
+    }
   }
 }
