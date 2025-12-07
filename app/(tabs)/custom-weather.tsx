@@ -444,6 +444,16 @@ export default function CustomWeatherScreen() {
       marginTop: spacing.sm,
       fontStyle: 'italic',
     },
+    radarSection: {
+      marginTop: spacing.lg,
+    },
+    radarSectionTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+      fontFamily: 'Roboto_500Medium',
+      marginBottom: spacing.md,
+    },
   });
 
   // Search for locations using Open-Meteo Geocoding API
@@ -533,13 +543,18 @@ export default function CustomWeatherScreen() {
     handleLocationSelect(location);
   };
 
-  const handleManualCoordinates = () => {
+  const handleManualCoordinates = async () => {
     if (parsedLat !== null && parsedLon !== null) {
       console.log('CustomWeather: Using manual coordinates:', parsedLat, parsedLon);
       setSelectedLocation(null);
       setLocationSearch('');
       setSearchResults([]);
       setShowSearchResults(false);
+      
+      // Check if this location is favourited
+      const favouriteId = `custom-${parsedLat}-${parsedLon}`;
+      const status = await isFavourite(favouriteId);
+      setIsFav(status);
     }
   };
 
@@ -917,37 +932,33 @@ export default function CustomWeatherScreen() {
                     </LinearGradient>
                   </View>
 
-                  {/* Rainfall Radar for Custom Location */}
-                  {selectedLocation && (
-                    <View style={{ marginTop: spacing.lg }}>
+                  {/* Rainfall Radar Section - ENHANCED with better visibility */}
+                  <View style={styles.radarSection}>
+                    <Text style={styles.radarSectionTitle}>Real-Time Rainfall Radar</Text>
+                    {selectedLocation ? (
                       <TrackRainfallRadar
                         latitude={selectedLocation.latitude}
                         longitude={selectedLocation.longitude}
                         circuitName={selectedLocation.name}
                         country={selectedLocation.country || 'Unknown'}
                         category="f1"
-                        compact={true}
+                        compact={false}
                         showControls={true}
                         autoStartAnimation={false}
                       />
-                    </View>
-                  )}
-
-                  {/* Rainfall Radar for Manual Coordinates */}
-                  {!selectedLocation && parsedLat !== null && parsedLon !== null && (
-                    <View style={{ marginTop: spacing.lg }}>
+                    ) : parsedLat !== null && parsedLon !== null ? (
                       <TrackRainfallRadar
                         latitude={parsedLat}
                         longitude={parsedLon}
                         circuitName="Custom Location"
                         country="Unknown"
                         category="f1"
-                        compact={true}
+                        compact={false}
                         showControls={true}
                         autoStartAnimation={false}
                       />
-                    </View>
-                  )}
+                    ) : null}
+                  </View>
                 </>
               ) : null}
             </View>
