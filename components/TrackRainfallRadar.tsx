@@ -189,7 +189,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
     setErrorMessage('');
 
     try {
-      console.log(`Fetching detailed projected rain forecast data for ${circuitName} at ${latitude}, ${longitude}`);
+      console.log(`Fetching rainfall radar data for ${circuitName} at ${latitude}, ${longitude}`);
       
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=precipitation,weather_code,wind_speed_10m,wind_direction_10m&minutely_15=precipitation,precipitation_probability&hourly=precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m&daily=sunrise,sunset&timezone=auto&forecast_days=2`;
       
@@ -200,7 +200,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       }
       
       const data = await response.json();
-      console.log('Detailed projected rain forecast data received');
+      console.log('Rainfall radar data received');
       
       // Process minutely data
       const minutelyData: PrecipitationData[] = [];
@@ -288,23 +288,23 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       
       let summary = '';
       if (!hasRain) {
-        summary = 'No rainfall expected in the forecast period';
+        summary = 'No rainfall detected or expected in the forecast period';
       } else if (currentPrecip > 0) {
         if (currentPrecip < 0.3) {
-          summary = 'Light rain currently over circuit';
+          summary = 'Light rain currently detected over location';
         } else if (currentPrecip < 1) {
           summary = 'Light precipitation currently falling';
         } else if (currentPrecip < 3) {
-          summary = 'Moderate rainfall currently over circuit';
+          summary = 'Moderate rainfall currently over location';
         } else if (currentPrecip < 7) {
-          summary = 'Heavy rainfall currently affecting circuit';
+          summary = 'Heavy rainfall currently affecting location';
         } else {
-          summary = 'Intense precipitation currently over circuit';
+          summary = 'Intense precipitation currently over location';
         }
       } else if (avgPrecipitation < 0.3) {
-        summary = 'Trace precipitation with scattered light showers';
+        summary = 'Trace precipitation with scattered light showers expected';
       } else if (avgPrecipitation < 1) {
-        summary = 'Light precipitation in the vicinity';
+        summary = 'Light precipitation expected in the vicinity';
       } else if (avgPrecipitation < 3) {
         summary = 'Moderate rainfall approaching';
       } else if (avgPrecipitation < 7) {
@@ -334,9 +334,9 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       
       setLoading(false);
     } catch (err) {
-      console.error('Error fetching projected rain forecast data:', err);
+      console.error('Error fetching rainfall radar data:', err);
       setError(true);
-      setErrorMessage(err instanceof Error ? err.message : 'Failed to load projected rain forecast');
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to load rainfall radar');
       setLoading(false);
     }
   }, [latitude, longitude, circuitName, generateEnhancedRadarGrid]);
@@ -1023,12 +1023,12 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         <View style={styles.header}>
           <View style={styles.titleContainer}>
             <Icon name="rainy" size={20} color={colors.precipitation} />
-            <Text style={styles.title}>Projected Rain Forecast</Text>
+            <Text style={styles.title}>Rainfall Radar</Text>
           </View>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading detailed forecast data...</Text>
+          <Text style={styles.loadingText}>Loading rainfall radar data...</Text>
         </View>
       </View>
     );
@@ -1040,12 +1040,12 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         <View style={styles.header}>
           <View style={styles.titleContainer}>
             <Icon name="rainy" size={20} color={colors.precipitation} />
-            <Text style={styles.title}>Projected Rain Forecast</Text>
+            <Text style={styles.title}>Rainfall Radar</Text>
           </View>
         </View>
         <View style={styles.errorContainer}>
           <Icon name="cloud-offline" size={48} color={colors.error} />
-          <Text style={styles.errorText}>Unable to load forecast data</Text>
+          <Text style={styles.errorText}>Unable to load rainfall radar data</Text>
           {errorMessage ? (
             <Text style={styles.errorDetails}>{errorMessage}</Text>
           ) : null}
@@ -1073,7 +1073,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Icon name="rainy" size={20} color={colors.precipitation} />
-          <Text style={styles.title}>Projected Rain Forecast</Text>
+          <Text style={styles.title}>Rainfall Radar</Text>
         </View>
         <View style={styles.headerControls}>
           <TouchableOpacity 
@@ -1086,7 +1086,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       </View>
       
       <Text style={styles.subtitle}>
-        High-resolution precipitation forecast for {circuitName} (Circuit Local Time)
+        Real-time precipitation data and short-term forecast for {circuitName}
       </Text>
 
       {!radarData.hasRain && (
@@ -1097,9 +1097,9 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
             color={isDark ? 'rgba(76, 175, 80, 1)' : 'rgba(56, 142, 60, 1)'} 
           />
           <View style={styles.noRainBannerContent}>
-            <Text style={styles.noRainBannerTitle}>No Rain Expected</Text>
+            <Text style={styles.noRainBannerTitle}>No Rain Detected</Text>
             <Text style={styles.noRainBannerText}>
-              Clear conditions forecast for the next 24 hours
+              Clear conditions - no rainfall detected or expected
             </Text>
           </View>
         </View>
@@ -1108,7 +1108,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       {radarData.hasRain && showControls && (
         <View style={styles.timelineContainer}>
           <View style={styles.timelineHeader}>
-            <Text style={styles.timelineTitle}>Forecast Timeline (Circuit Local Time)</Text>
+            <Text style={styles.timelineTitle}>Rainfall Timeline (Local Time)</Text>
             <Text style={styles.currentTimeDisplay}>
               {formatTime(currentFrameTime)}
             </Text>
@@ -1250,7 +1250,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
                     <Icon name="sunny" size={32} color="#fff" />
                     <View>
                       <Text style={styles.noRainText}>No Rain</Text>
-                      <Text style={styles.noRainSubtext}>Clear Forecast</Text>
+                      <Text style={styles.noRainSubtext}>Clear Conditions</Text>
                     </View>
                   </View>
                 </View>
@@ -1273,7 +1273,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
         </View>
         
         <Text style={styles.infoText}>
-          Center of radar shows circuit location • Distance rings: {distanceRings.join('km, ')}km
+          Center shows location • Distance rings: {distanceRings.join('km, ')}km
           {radarData.hasRain && ` • Frame ${currentFrame + 1}/${radarData.gridData.length}`}
         </Text>
       </View>
@@ -1290,7 +1290,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
           <View style={styles.rainDirectionInfo}>
             <Icon name="arrow-forward" size={20} color={isDark ? 'rgba(150, 200, 255, 1)' : 'rgba(50, 100, 200, 1)'} />
             <Text style={styles.rainDirectionText}>
-              Rain travelling {getWindDirectionLabel(radarData.rainDirection)} ({radarData.rainDirection.toFixed(0)}°) at {getRainMovementDescription(radarData.rainSpeed).toLowerCase()} speed ({radarData.rainSpeed.toFixed(1)} km/h)
+              Rain moving {getWindDirectionLabel(radarData.rainDirection)} ({radarData.rainDirection.toFixed(0)}°) at {getRainMovementDescription(radarData.rainSpeed).toLowerCase()} speed ({radarData.rainSpeed.toFixed(1)} km/h)
             </Text>
           </View>
         )}
@@ -1350,7 +1350,7 @@ const TrackRainfallRadar: React.FC<TrackRainfallRadarProps> = ({
       </View>
 
       <Text style={styles.infoText}>
-        High-resolution data from Open-Meteo • Optimized for smooth scrolling • All times shown in circuit&apos;s local timezone
+        Real-time data from Open-Meteo • All times in local timezone • Combines current conditions with short-term forecast
       </Text>
     </View>
   );
