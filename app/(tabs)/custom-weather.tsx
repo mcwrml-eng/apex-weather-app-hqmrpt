@@ -10,6 +10,7 @@ import AppHeader from '../../components/AppHeader';
 import { useWeather } from '../../hooks/useWeather';
 import WeatherSymbol from '../../components/WeatherSymbol';
 import TwelveHourForecast from '../../components/TwelveHourForecast';
+import TrackRainfallRadar from '../../components/TrackRainfallRadar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { toggleFavourite, isFavourite } from '../../utils/favourites';
 import * as Haptics from 'expo-haptics';
@@ -823,97 +824,131 @@ export default function CustomWeatherScreen() {
                   </Text>
                 </View>
               ) : current ? (
-                <View style={styles.weatherCard}>
-                  <LinearGradient
-                    colors={[colors.card, colors.backgroundAlt]}
-                    style={styles.gradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                  >
-                    <View style={styles.weatherHeader}>
-                      <View style={styles.locationInfo}>
-                        <Text style={styles.locationNameText}>
-                          {selectedLocation?.name || 'Custom Location'}
-                        </Text>
-                        <Text style={styles.coordinatesText}>
-                          {(selectedLocation?.latitude || parsedLat)?.toFixed(4)}°, {(selectedLocation?.longitude || parsedLon)?.toFixed(4)}°
-                        </Text>
-                      </View>
+                <>
+                  <View style={styles.weatherCard}>
+                    <LinearGradient
+                      colors={[colors.card, colors.backgroundAlt]}
+                      style={styles.gradient}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                    >
+                      <View style={styles.weatherHeader}>
+                        <View style={styles.locationInfo}>
+                          <Text style={styles.locationNameText}>
+                            {selectedLocation?.name || 'Custom Location'}
+                          </Text>
+                          <Text style={styles.coordinatesText}>
+                            {(selectedLocation?.latitude || parsedLat)?.toFixed(4)}°, {(selectedLocation?.longitude || parsedLon)?.toFixed(4)}°
+                          </Text>
+                        </View>
 
-                      <View style={styles.weatherContainer}>
-                        <WeatherSymbol
-                          weatherCode={current.weather_code}
-                          size={40}
-                          latitude={selectedLocation?.latitude || parsedLat || 0}
-                          longitude={selectedLocation?.longitude || parsedLon || 0}
-                        />
-                        <Text style={styles.temperature}>
-                          {Math.round(current.temperature)}°
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.weatherInfo}>
-                      <View style={styles.infoItem}>
-                        <Text style={styles.infoLabel}>Wind</Text>
-                        <Text style={styles.infoValue}>
-                          {Math.round(current.wind_speed)} {unit === 'metric' ? 'km/h' : 'mph'}
-                        </Text>
-                      </View>
-                      <View style={styles.infoItem}>
-                        <Text style={styles.infoLabel}>Humidity</Text>
-                        <Text style={styles.infoValue}>
-                          {Math.round(current.humidity)}%
-                        </Text>
-                      </View>
-                      <View style={styles.infoItem}>
-                        <Text style={styles.infoLabel}>Pressure</Text>
-                        <Text style={styles.infoValue}>
-                          {Math.round(current.pressure)} hPa
-                        </Text>
-                      </View>
-                    </View>
-
-                    {/* 12-Hour Forecast Section */}
-                    {hourly && hourly.length > 0 && (
-                      <View style={styles.forecastSection}>
-                        <TwelveHourForecast
-                          hourlyData={hourly}
-                          unit={unit === 'metric' ? 'metric' : 'imperial'}
-                          latitude={selectedLocation?.latitude || parsedLat || 0}
-                          longitude={selectedLocation?.longitude || parsedLon || 0}
-                          sunrise={daily?.days?.[0]?.sunrise}
-                          sunset={daily?.days?.[0]?.sunset}
-                        />
-                      </View>
-                    )}
-
-                    {/* 7-Day Forecast Section */}
-                    {daily && daily.days && daily.days.length > 0 && (
-                      <View style={styles.forecastSection}>
-                        <Text style={styles.forecastTitle}>7-Day Forecast</Text>
-                        <View style={styles.forecastRow}>
-                          {daily.days.slice(0, 7).map((day, index) => (
-                            <View key={index} style={styles.forecastDay}>
-                              <Text style={styles.forecastDayName}>
-                                {day.weekday}
-                              </Text>
-                              <WeatherSymbol
-                                weatherCode={day.weather_code}
-                                size={24}
-                                latitude={selectedLocation?.latitude || parsedLat || 0}
-                                longitude={selectedLocation?.longitude || parsedLon || 0}
-                              />
-                              <Text style={styles.forecastTemp}>
-                                {Math.round(day.max)}°
-                              </Text>
-                            </View>
-                          ))}
+                        <View style={styles.weatherContainer}>
+                          <WeatherSymbol
+                            weatherCode={current.weather_code}
+                            size={40}
+                            latitude={selectedLocation?.latitude || parsedLat || 0}
+                            longitude={selectedLocation?.longitude || parsedLon || 0}
+                          />
+                          <Text style={styles.temperature}>
+                            {Math.round(current.temperature)}°
+                          </Text>
                         </View>
                       </View>
-                    )}
-                  </LinearGradient>
-                </View>
+
+                      <View style={styles.weatherInfo}>
+                        <View style={styles.infoItem}>
+                          <Text style={styles.infoLabel}>Wind</Text>
+                          <Text style={styles.infoValue}>
+                            {Math.round(current.wind_speed)} {unit === 'metric' ? 'km/h' : 'mph'}
+                          </Text>
+                        </View>
+                        <View style={styles.infoItem}>
+                          <Text style={styles.infoLabel}>Humidity</Text>
+                          <Text style={styles.infoValue}>
+                            {Math.round(current.humidity)}%
+                          </Text>
+                        </View>
+                        <View style={styles.infoItem}>
+                          <Text style={styles.infoLabel}>Pressure</Text>
+                          <Text style={styles.infoValue}>
+                            {Math.round(current.pressure)} hPa
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* 12-Hour Forecast Section */}
+                      {hourly && hourly.length > 0 && (
+                        <View style={styles.forecastSection}>
+                          <TwelveHourForecast
+                            hourlyData={hourly}
+                            unit={unit === 'metric' ? 'metric' : 'imperial'}
+                            latitude={selectedLocation?.latitude || parsedLat || 0}
+                            longitude={selectedLocation?.longitude || parsedLon || 0}
+                            sunrise={daily?.days?.[0]?.sunrise}
+                            sunset={daily?.days?.[0]?.sunset}
+                          />
+                        </View>
+                      )}
+
+                      {/* 7-Day Forecast Section */}
+                      {daily && daily.days && daily.days.length > 0 && (
+                        <View style={styles.forecastSection}>
+                          <Text style={styles.forecastTitle}>7-Day Forecast</Text>
+                          <View style={styles.forecastRow}>
+                            {daily.days.slice(0, 7).map((day, index) => (
+                              <View key={index} style={styles.forecastDay}>
+                                <Text style={styles.forecastDayName}>
+                                  {day.weekday}
+                                </Text>
+                                <WeatherSymbol
+                                  weatherCode={day.weather_code}
+                                  size={24}
+                                  latitude={selectedLocation?.latitude || parsedLat || 0}
+                                  longitude={selectedLocation?.longitude || parsedLon || 0}
+                                />
+                                <Text style={styles.forecastTemp}>
+                                  {Math.round(day.max)}°
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        </View>
+                      )}
+                    </LinearGradient>
+                  </View>
+
+                  {/* Rainfall Radar for Custom Location */}
+                  {selectedLocation && (
+                    <View style={{ marginTop: spacing.lg }}>
+                      <TrackRainfallRadar
+                        latitude={selectedLocation.latitude}
+                        longitude={selectedLocation.longitude}
+                        circuitName={selectedLocation.name}
+                        country={selectedLocation.country || 'Unknown'}
+                        category="f1"
+                        compact={true}
+                        showControls={true}
+                        autoStartAnimation={false}
+                      />
+                    </View>
+                  )}
+
+                  {/* Rainfall Radar for Manual Coordinates */}
+                  {!selectedLocation && parsedLat !== null && parsedLon !== null && (
+                    <View style={{ marginTop: spacing.lg }}>
+                      <TrackRainfallRadar
+                        latitude={parsedLat}
+                        longitude={parsedLon}
+                        circuitName="Custom Location"
+                        country="Unknown"
+                        category="f1"
+                        compact={true}
+                        showControls={true}
+                        autoStartAnimation={false}
+                      />
+                    </View>
+                  )}
+                </>
               ) : null}
             </View>
           ) : (
